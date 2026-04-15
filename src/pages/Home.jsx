@@ -1,5 +1,5 @@
 import HeroSection from './home/HeroSection'
-import LiveMarketChartsSection from './home/LiveMarketChartsSection'
+import TickerTape from '../components/TickerTape'
 import AboutSection from './home/AboutSection'
 import VisionMissionSection from './home/VisionMissionSection'
 import WhySection from './home/WhySection'
@@ -11,21 +11,20 @@ import ToolsSection from './home/ToolsSection'
 import EducationSection from './home/EducationSection'
 import IslamicAccountSection from './home/IslamicAccountSection'
 import PaymentsSection from './home/PaymentsSection'
-import PartnerProgramSection from './home/PartnerProgramSection'
 import SecuritySection from './home/SecuritySection'
 import StartTradingSection from './home/StartTradingSection'
 import BottomSection from './home/BottomSection'
 
 const Home = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       {/* 1. Hero */}
       <HeroSection />
 
-      {/* 2. Live Market Charts */}
-      <LiveMarketChartsSection />
+      {/* Live Market Ticker */}
+      <TickerTape />
 
-      {/* 3. About */}
+      {/* 2. About */}
       <AboutSection />
 
       {/* 4. Vision Mission Values */}
@@ -58,10 +57,7 @@ const Home = () => {
       {/* 13. Payments */}
       <PaymentsSection />
 
-      {/* 14. Partner Program */}
-      <PartnerProgramSection />
-
-      {/* 15. Security */}
+      {/* 14. Security */}
       <SecuritySection />
 
       {/* 16. Start Trading */}
