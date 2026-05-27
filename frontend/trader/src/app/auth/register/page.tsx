@@ -1,22 +1,13 @@
 'use client';
 
 /**
- * Sign-up page (SwissCresta).
- *
- * Visual layer mirrors the sign-in page (shader background, pill inputs,
- * white-on-black). Functional layer hits the existing /auth/register
- * endpoint with first_name / last_name / email / phone / password +
- * optional referral_code; on success the user lands on /accounts where
- * the OnboardingGate takes over (email verify only — wallet linking
- * was removed in the wallet-integration purge).
- *
- * Google + Demo are surfaced too so a first-time visitor who realises
- * they'd rather social-login can do that without leaving the page.
+ * Sign-up page (SwissCresta) — Vantage-style light auth surface.
+ * Mirrors the login page styling. The Three.js shader background was
+ * removed for the redesign.
  */
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
@@ -25,30 +16,6 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import { BRAND_NAME } from '@/config/brand';
-
-/**
- * CanvasRevealEffect is dynamic-imported with `ssr: false` — Turbopack
- * breaks @react-three/fiber on the server module-eval path (the inner
- * react-reconciler reads
- * `React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner`
- * which Turbopack's strict resolution leaves undefined). Loading
- * client-only sidesteps the issue and also code-splits the ~600 KB
- * Three.js bundle into its own chunk. See the trader sign-in page for
- * the same comment + same import shape.
- */
-const CanvasRevealEffect = dynamic(
-  () =>
-    import('@/components/ui/canvas-reveal-effect').then((m) => ({
-      default: m.CanvasRevealEffect,
-    })),
-  { ssr: false, loading: () => null },
-);
-
-/* ────────────────────────────────────────────────────────────────────
- * Helpers (kept inline so login + register can stay self-contained
- * without forcing a shared file just yet — if a third auth surface
- * shows up, lift PillInput into components/ui).
- * ──────────────────────────────────────────────────────────────────── */
 
 const fadeUp = (delay: number) => ({
   initial: { y: 14, opacity: 0 },
@@ -77,12 +44,12 @@ function PillInput(props: {
           placeholder={props.placeholder}
           autoComplete={props.autoComplete}
           inputMode={props.inputMode}
-          className={`w-full backdrop-blur-[1px] bg-white/[0.04] text-white placeholder-white/30
-                      border border-white/10 rounded-full py-3 px-5
-                      focus:outline-none focus:border-white/40 focus:bg-white/[0.06]
+          className={`w-full bg-white text-[#0A0A0A] placeholder-[#9A9A9A]
+                      border border-[#E5E5E5] rounded-full py-3 px-5
+                      focus:outline-none focus:border-[#E94E1B] focus:ring-2 focus:ring-[#E94E1B]/20
                       transition-colors
                       ${props.rightAdornment ? 'pr-12' : ''}
-                      ${props.error ? 'border-red-400/50' : ''}`}
+                      ${props.error ? 'border-[#DC2626]/60' : ''}`}
         />
         {props.rightAdornment && (
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
@@ -91,18 +58,15 @@ function PillInput(props: {
         )}
       </div>
       {props.error && (
-        <span className="block text-[11px] text-red-300/80 mt-1.5 pl-3">{props.error}</span>
+        <span className="block text-[11px] text-[#DC2626] mt-1.5 pl-3">{props.error}</span>
       )}
       {!props.error && props.helper && (
-        <span className="block text-[11px] text-white/40 mt-1.5 pl-3">{props.helper}</span>
+        <span className="block text-[11px] text-[#9A9A9A] mt-1.5 pl-3">{props.helper}</span>
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
- * Page
- * ════════════════════════════════════════════════════════════════════ */
 export default function RegisterPage() {
   return (
     <Suspense fallback={null}>
@@ -126,8 +90,6 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
-  /* Honour ?ref=CODE from referral links — IB partners share URLs like
-   * https://trade.swisscresta.com/auth/register?ref=NXJ4Z9. */
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) setForm((prev) => ({ ...prev, referral_code: ref }));
@@ -188,55 +150,26 @@ function RegisterContent() {
     }
   };
 
-  /* Cheap strength meter — char-count buckets are enough for a UX hint;
-   * server enforces real policy on /auth/register. */
   const strength = form.password.length >= 12 ? 4
                   : form.password.length >= 10 ? 3
                   : form.password.length >= 8 ? 2
                   : form.password.length > 0 ? 1 : 0;
-  const strengthColors = ['#ef4444', '#f59e0b', '#22c55e', '#6366F1'];
-  const strengthLabels = ['Weak', 'OK', 'Good', 'Strong'];
+  const strengthColors: readonly [string, string, string, string] = ['#ef4444', '#f59e0b', '#22c55e', '#E94E1B'];
+  const strengthLabels: readonly [string, string, string, string] = ['Weak', 'OK', 'Good', 'Strong'];
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative flex flex-col min-h-screen bg-black overflow-hidden">
+      <div className="relative flex flex-col min-h-screen bg-white overflow-hidden">
 
-        {/* Shader background — matches login. Same animation, same speed
-            so a user toggling between login ↔ register doesn't see the
-            dots restart and feel jarring. */}
-        <div className="absolute inset-0 z-0">
-          <CanvasRevealEffect
-            animationSpeed={3}
-            containerClassName="bg-black"
-            colors={[
-              [255, 255, 255],
-              [255, 255, 255],
-            ]}
-            dotSize={6}
-            reverse={false}
-          />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,0,0,0.85)_0%,_rgba(0,0,0,1)_100%)]" />
-          <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-black to-transparent" />
-        </div>
-
-        {/* Brand mark — inline Swiss-flag SVG + wordmark. Matches the
-            login page lockup so a user toggling between sign-in and
-            register sees the brand identity stay still. */}
         <div className="relative z-10 px-6 pt-6 sm:px-10 sm:pt-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <svg viewBox="0 0 32 32" aria-hidden="true" className="w-7 h-7 shrink-0">
-              <rect width="32" height="32" rx="4" fill="#DC2626" />
-              <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-              <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-            </svg>
-            <span className="inline-flex items-baseline font-bold tracking-tight text-xl">
-              <span className="text-white">{BRAND_NAME.slice(0, 5)}</span>
-              <span className="text-[#6366F1]">{BRAND_NAME.slice(5)}</span>
+            <span className="inline-flex items-baseline font-bold italic tracking-tight text-xl">
+              <span className="text-[#0A0A0A]">{BRAND_NAME.slice(0, 5)}</span>
+              <span className="text-[#E94E1B]">{BRAND_NAME.slice(5)}</span>
             </span>
           </Link>
         </div>
 
-        {/* Form */}
         <div className="relative z-10 flex-1 flex items-center justify-center px-6 py-10">
           <AnimatePresence mode="wait">
             <motion.div
@@ -248,10 +181,10 @@ function RegisterContent() {
               className="w-full max-w-sm space-y-5 text-center"
             >
               <motion.div {...fadeUp(0.1)} className="space-y-1">
-                <h1 className="text-[2.25rem] font-bold leading-[1.1] tracking-tight text-white">
+                <h1 className="text-[2.25rem] font-bold leading-[1.1] tracking-tight text-[#0A0A0A]">
                   Create your account
                 </h1>
-                <p className="text-sm text-white/60 font-light">
+                <p className="text-sm text-[#5B5B5B] font-light">
                   Trade FX, crypto and CFDs in minutes.
                 </p>
               </motion.div>
@@ -317,7 +250,7 @@ function RegisterContent() {
                       <button
                         type="button"
                         onClick={() => setShowPass(!showPass)}
-                        className="w-9 h-9 flex items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-[#5B5B5B] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
                         aria-label={showPass ? 'Hide password' : 'Show password'}
                       >
                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -331,7 +264,7 @@ function RegisterContent() {
                           key={i}
                           className="h-1 flex-1 rounded-full transition-colors"
                           style={{
-                            background: i <= strength ? strengthColors[strength - 1] : 'rgba(255,255,255,0.08)',
+                            background: i <= strength ? strengthColors[strength - 1] : 'rgba(0,0,0,0.08)',
                           }}
                         />
                       ))}
@@ -357,7 +290,7 @@ function RegisterContent() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPass(!showConfirmPass)}
-                        className="w-9 h-9 flex items-center justify-center rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                        className="w-9 h-9 flex items-center justify-center rounded-full text-[#5B5B5B] hover:text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
                         aria-label={showConfirmPass ? 'Hide password' : 'Show password'}
                       >
                         {showConfirmPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -370,8 +303,8 @@ function RegisterContent() {
                   <button
                     type="submit"
                     disabled={loading || isLoading}
-                    className="w-full rounded-full bg-white text-black font-medium py-3
-                               hover:bg-white/90 active:bg-white/80
+                    className="w-full rounded-full bg-[#E94E1B] text-white font-semibold py-3
+                               hover:bg-[#C73E11] active:bg-[#A6320D]
                                disabled:opacity-50 disabled:cursor-not-allowed
                                transition-colors inline-flex items-center justify-center gap-2"
                   >
@@ -383,9 +316,9 @@ function RegisterContent() {
               </form>
 
               <motion.div {...fadeUp(0.46)} className="flex items-center gap-4">
-                <div className="h-px bg-white/10 flex-1" />
-                <span className="text-white/40 text-xs">or continue with</span>
-                <div className="h-px bg-white/10 flex-1" />
+                <div className="h-px bg-[#E5E5E5] flex-1" />
+                <span className="text-[#9A9A9A] text-xs">or continue with</span>
+                <div className="h-px bg-[#E5E5E5] flex-1" />
               </motion.div>
 
               <motion.div {...fadeUp(0.5)} className="space-y-2.5">
@@ -396,8 +329,8 @@ function RegisterContent() {
                   type="button"
                   onClick={handleDemo}
                   disabled={demoLoading || isLoading}
-                  className="w-full backdrop-blur-[2px] flex items-center justify-center gap-2
-                             bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10
+                  className="w-full flex items-center justify-center gap-2
+                             bg-white hover:bg-[#F5F5F5] text-[#0A0A0A] border border-[#E5E5E5]
                              rounded-full py-3 px-4 transition-colors
                              disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -407,20 +340,20 @@ function RegisterContent() {
                 </button>
               </motion.div>
 
-              <motion.p {...fadeUp(0.56)} className="text-sm text-white/50 pt-2">
+              <motion.p {...fadeUp(0.56)} className="text-sm text-[#5B5B5B] pt-2">
                 Already have an account?{' '}
-                <Link href="/auth/login" className="text-white hover:text-[#A5B4FC] transition-colors underline-offset-2 hover:underline">
+                <Link href="/auth/login" className="text-[#E94E1B] hover:text-[#C73E11] transition-colors underline-offset-2 hover:underline font-semibold">
                   Sign in
                 </Link>
               </motion.p>
 
-              <motion.p {...fadeUp(0.62)} className="text-[11px] text-white/30 pt-4 leading-relaxed">
+              <motion.p {...fadeUp(0.62)} className="text-[11px] text-[#9A9A9A] pt-4 leading-relaxed">
                 By creating an account, you agree to our{' '}
-                <Link href="/terms" className="underline hover:text-white/50">Terms</Link>
+                <Link href="/terms" className="underline hover:text-[#0A0A0A]">Terms</Link>
                 {', '}
-                <Link href="/privacy" className="underline hover:text-white/50">Privacy Notice</Link>
+                <Link href="/privacy" className="underline hover:text-[#0A0A0A]">Privacy Notice</Link>
                 {', and '}
-                <Link href="/risk" className="underline hover:text-white/50">Risk Disclosure</Link>.
+                <Link href="/risk" className="underline hover:text-[#0A0A0A]">Risk Disclosure</Link>.
               </motion.p>
             </motion.div>
           </AnimatePresence>

@@ -15,7 +15,7 @@ const COLUMNS: Column[] = [
         ensuring its financial strength and resilience. View SwissCresta&apos;s latest{' '}
         <a
           href="#"
-          className="text-indigo-500 hover:underline underline-offset-2 font-semibold"
+          className="text-[#E94E1B] hover:underline underline-offset-2 font-semibold"
         >
           financial reports
         </a>
@@ -32,7 +32,7 @@ const COLUMNS: Column[] = [
         service quality. For more information, see the section{' '}
         <a
           href="#"
-          className="text-indigo-500 hover:underline underline-offset-2 font-semibold"
+          className="text-[#E94E1B] hover:underline underline-offset-2 font-semibold"
         >
           About Us
         </a>
@@ -69,13 +69,13 @@ export default function MmRockSolid() {
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-20">
-        <h2 className={`${HEADING_SECTION} text-indigo-500 max-w-2xl`}>
+        <h2 className={`${HEADING_SECTION} text-[#E94E1B] max-w-2xl`}>
           Rely on a rock solid partner
         </h2>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-16 gap-y-6">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-sm bg-indigo-500 inline-block" />
+            <span className="w-5 h-5 rounded-sm bg-[#E94E1B] inline-block" />
             <LogoChip label="SwissCresta" className="text-gray-900 font-bold" />
           </div>
           <LogoChip label="finma" />

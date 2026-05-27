@@ -24,8 +24,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Professional forex and CFD trading platform',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0a0a0a',
-    theme_color: '#6366F1',
+    background_color: '#ffffff',
+    theme_color: '#E94E1B',
     icons: [
       { src: SWISS_FLAG_DATA_URI, sizes: 'any', type: 'image/svg+xml' },
     ],

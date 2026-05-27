@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useUIStore } from '@/stores/uiStore';
 
 const LIGHT_BG = '#ffffff';
-const LIGHT_TEXT = '#111827';
+const LIGHT_TEXT = '#0A0A0A';
 const DARK_BG = '#0a0a0a';
 const DARK_TEXT = '#ffffff';
 

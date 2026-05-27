@@ -65,14 +65,14 @@ export function SwissCrestaWordmark({
         title="Trading home"
         className={cn(
           'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
           className,
         )}
       >
         {hideFlag ? (
           <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none">
             <span className="text-text-primary">S</span>
-            <span className="text-[#6366F1]">C</span>
+            <span className="text-[#E94E1B]">C</span>
           </span>
         ) : (
           <SwissFlagMark className="w-6 h-6" />
@@ -89,12 +89,12 @@ export function SwissCrestaWordmark({
       <span
         className={cn(
           'inline-flex items-baseline font-bold tracking-tight',
-          'text-xl sm:text-2xl drop-shadow-[0_0_24px_rgba(99,102,241,0.18)]',
+          'text-xl sm:text-2xl drop-shadow-[0_0_24px_rgba(233,78,27,0.18)]',
           textClassName,
         )}
       >
         <span className="text-text-primary">Swiss</span>
-        <span className="text-[#6366F1]">Cresta</span>
+        <span className="text-[#E94E1B]">Cresta</span>
       </span>
     </span>
   );
@@ -103,7 +103,7 @@ export function SwissCrestaWordmark({
     <Link
       href={href}
       className={cn(
-        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1]/60 focus-visible:rounded-md',
+        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
         className,
       )}
     >

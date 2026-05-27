@@ -37,24 +37,31 @@ const config: Config = {
           inverse: 'var(--text-inverse)',
         },
         buy: {
-          DEFAULT: '#2962FF',
+          DEFAULT: '#1E66F5',
           light: '#5B8CFF',
           dark: '#0D3FA3',
-          bg: 'rgba(41,98,255,0.1)',
-          glow: 'rgba(41,98,255,0.22)',
+          bg: 'rgba(30,102,245,0.1)',
+          glow: 'rgba(30,102,245,0.22)',
         },
         sell: {
-          DEFAULT: '#ef4444',
+          DEFAULT: '#DC2626',
           light: '#f87171',
-          dark: '#dc2626',
-          bg: 'rgba(239,68,68,0.1)',
-          glow: 'rgba(239,68,68,0.2)',
+          dark: '#b91c1c',
+          bg: 'rgba(220,38,38,0.1)',
+          glow: 'rgba(220,38,38,0.2)',
         },
-        accent: { DEFAULT: '#6366F1', light: '#818CF8', dark: '#4F46E5' },
-        success: '#4F46E5',
-        warning: '#FFB300',
+        /* Vantage-style accent — orange #E94E1B for CTAs, brand marks, NEW badges. */
+        accent: {
+          DEFAULT: '#E94E1B',
+          hover: '#C73E11',
+          soft: '#FCE6DD',
+          light: '#F58A60',
+          dark: '#C73E11',
+        },
+        success: '#10B981',
+        warning: '#F59E0B',
         info: '#29B6F6',
-        danger: '#FF1744',
+        danger: '#DC2626',
         rainbow: {
           red: '#FF6B6B',
           orange: '#FFA94D',
@@ -64,12 +71,12 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — SwissCresta gold-on-black brand */
+        /* Landing-page palette — SwissCresta brand */
         'primary': {
-          bg: '#08090b',
-          secondary: '#101114',
-          accent: '#6366F1',
-          purple: '#4F46E5',
+          bg: '#FFFFFF',
+          secondary: '#FAFAFA',
+          accent: '#E94E1B',
+          purple: '#C73E11',
         },
         /* ─────────────────────────────────────────────────────────
            Marketing site palette (`mkt.*` namespace)
@@ -105,10 +112,10 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #818CF8 0%, #6366F1 50%, #4F46E5 100%)',
-        'gradient-hero': 'linear-gradient(135deg, #08090b 0%, #0e0d09 50%, #08090b 100%)',
-        'gradient-section': 'linear-gradient(180deg, #08090b 0%, #101114 100%)',
-        'gradient-section-alt': 'linear-gradient(180deg, #101114 0%, #08090b 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #F58A60 0%, #E94E1B 50%, #C73E11 100%)',
+        'gradient-hero': 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%)',
+        'gradient-section': 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
+        'gradient-section-alt': 'linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

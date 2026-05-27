@@ -3,7 +3,6 @@ import './globals.css';
 import { Suspense } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import GoogleAuthProvider from '@/components/providers/GoogleAuthProvider';
 import NotificationListener from '@/components/NotificationListener';
@@ -56,7 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href={SWISS_FLAG_ICON} />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var N='swisscresta-ui';var LEG=['novafx-ui','fxartha-ui'];if(!localStorage.getItem(N)){for(var i=0;i<LEG.length;i++){var v=localStorage.getItem(LEG[i]);if(v){localStorage.setItem(N,v);break;}}for(var j=0;j<LEG.length;j++){localStorage.removeItem(LEG[j]);}}var s=localStorage.getItem(N);var t='dark';if(s){var j2=JSON.parse(s);t=(j2&&j2.state&&j2.state.theme)||(j2&&j2.theme)||'dark';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#111827';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#111827';}})();`,
+            __html: `(function(){try{var N='swisscresta-ui';var LEG=['novafx-ui','fxartha-ui'];if(!localStorage.getItem(N)){for(var i=0;i<LEG.length;i++){var v=localStorage.getItem(LEG[i]);if(v){localStorage.setItem(N,v);break;}}for(var j=0;j<LEG.length;j++){localStorage.removeItem(LEG[j]);}}var s=localStorage.getItem(N);var t='light';if(s){var j2=JSON.parse(s);t=(j2&&j2.state&&j2.state.theme)||(j2&&j2.theme)||'light';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#0A0A0A';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#0A0A0A';}})();`,
           }}
         />
       </head>
@@ -77,9 +76,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ProfileCompleteGate />
             <OnboardingGate />
             {children}
-            <Suspense fallback={null}>
-              <MobileBottomNav />
-            </Suspense>
             <Toaster
               position="top-center"
               containerClassName="swisscresta-toaster"
@@ -116,7 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 loading: {
                   duration: Infinity,
                   className: 'swisscresta-hot-toast',
-                  iconTheme: { primary: '#6366F1', secondary: 'var(--toast-bg)' },
+                  iconTheme: { primary: '#E94E1B', secondary: 'var(--toast-bg)' },
                 },
               }}
             />

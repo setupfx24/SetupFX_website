@@ -7,7 +7,7 @@ import { insuranceApi, type PolicyOut, type ClaimOut } from '@/lib/api/insurance
 import InsuranceOnboardingModal from '@/components/insurance/InsuranceOnboardingModal';
 
 const STATUS_COLOR: Record<PolicyOut['status'], string> = {
-  active: '#6366F1',
+  active: '#E94E1B',
   claimed: '#22c55e',
   expired: '#888888',
   denied: '#ef4444',
@@ -49,7 +49,7 @@ export default function InsurancePage() {
       <div className="space-y-5 pb-8">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-            <ShieldCheck size={22} className="text-[#6366F1]" /> Trade Insurance
+            <ShieldCheck size={22} className="text-[#E94E1B]" /> Trade Insurance
           </h1>
           <button
             type="button"
@@ -57,7 +57,7 @@ export default function InsurancePage() {
               try { localStorage.removeItem('fx-insurance-onboarded'); } catch { /* private mode */ }
               window.location.reload();
             }}
-            className="text-xs text-text-tertiary hover:text-text-primary inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border-primary hover:border-[#6366F1]/40"
+            className="text-xs text-text-tertiary hover:text-text-primary inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border-primary hover:border-[#E94E1B]/40"
           >
             <HelpCircle size={13} /> How it works
           </button>
@@ -91,7 +91,7 @@ export default function InsurancePage() {
                       </span>
                       <span className="text-sm font-semibold text-text-primary truncate flex-1">
                         {p.instrument_symbol || '—'} <span className="text-text-tertiary">·</span>{' '}
-                        <span className="text-[#6366F1]">{TIER_LABEL[p.tier]}</span>
+                        <span className="text-[#E94E1B]">{TIER_LABEL[p.tier]}</span>
                       </span>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-mono tabular-nums text-text-primary">

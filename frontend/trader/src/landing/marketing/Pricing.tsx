@@ -12,7 +12,7 @@ export default function Pricing() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div className="bg-gray-50 rounded-[2rem] px-8 py-14 md:py-20 flex flex-col items-center justify-center text-center">
             <div className="text-2xl md:text-3xl font-extrabold text-gray-900">Spreads from</div>
-            <div className={`${TEXT_STAT} text-indigo-500 mt-2 leading-none`}>1.1</div>
+            <div className={`${TEXT_STAT} text-[#E94E1B] mt-2 leading-none`}>1.1</div>
             <div className="text-xl md:text-2xl font-extrabold text-gray-900 mt-2">pips</div>
           </div>
 
@@ -46,7 +46,7 @@ export default function Pricing() {
               <button
                 type="button"
                 aria-label="Next"
-                className="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-colors"
+                className="w-9 h-9 rounded-full bg-[#E94E1B] text-white flex items-center justify-center hover:bg-[#E94E1B] transition-colors"
               >
                 <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
               </button>

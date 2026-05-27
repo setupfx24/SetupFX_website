@@ -183,11 +183,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     onClick={() => setSelectedId(g.id)}
                     className={clsx(
                       'relative text-left rounded-xl p-4 transition-all',
-                      sel ? 'ring-2 ring-[#6366F1]/60' : '',
+                      sel ? 'ring-2 ring-[#E94E1B]/60' : '',
                     )}
                     style={{
                       background: 'var(--bg-card-nested)',
-                      border: `1px solid ${sel ? '#6366F1' : 'var(--border-primary)'}`,
+                      border: `1px solid ${sel ? '#E94E1B' : 'var(--border-primary)'}`,
                     }}
                   >
                     {stocks && <Badge color="#f59e0b">Trading on stocks</Badge>}
@@ -195,9 +195,9 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm mb-3"
                       style={{
-                        background: 'rgba(99,102,241,0.12)',
-                        color: '#6366F1',
-                        border: '1px solid rgba(99,102,241,0.3)',
+                        background: 'rgba(233,78,27,0.12)',
+                        color: '#E94E1B',
+                        border: '1px solid rgba(233,78,27,0.3)',
                       }}
                     >
                       {i + 1}
@@ -262,7 +262,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             onClick={handleCreate}
             disabled={creating || !selected}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold disabled:opacity-50 transition-all"
-            style={{ background: '#6366F1', color: '#1a1408' }}
+            style={{ background: '#E94E1B', color: '#1a1408' }}
           >
             {creating && <Loader2 size={14} className="animate-spin" />}
             Create account
@@ -289,7 +289,7 @@ function TypePill({ active, disabled, label }: { active: boolean; disabled: bool
     <span
       className="px-4 py-1.5 text-sm font-semibold rounded-md transition-colors select-none"
       style={{
-        background: active ? '#6366F1' : 'transparent',
+        background: active ? '#E94E1B' : 'transparent',
         color: active ? '#1a1408' : 'var(--text-secondary)',
         opacity: disabled ? 0.55 : 1,
         cursor: disabled ? 'not-allowed' : 'default',

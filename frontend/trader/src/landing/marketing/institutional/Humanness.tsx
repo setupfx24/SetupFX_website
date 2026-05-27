@@ -7,7 +7,7 @@ export default function Humanness() {
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-12 md:py-16">
-        <div className="relative rounded-3xl bg-indigo-500 text-white overflow-hidden">
+        <div className="relative rounded-3xl bg-[#E94E1B] text-white overflow-hidden">
           <div className="grid lg:grid-cols-12 gap-8 items-stretch">
             <div className="lg:col-span-6 p-8 md:p-10 lg:p-12 flex flex-col justify-center">
               <Eyebrow className="text-white/80">Collaboration</Eyebrow>
@@ -23,7 +23,7 @@ export default function Humanness() {
               <div className="mt-6">
                 <Button
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-indigo-500 px-6 py-3 rounded-md"
+                  className="border-white text-white hover:bg-white hover:text-[#E94E1B] px-6 py-3 rounded-md"
                 >
                   Explore
                 </Button>
@@ -33,7 +33,7 @@ export default function Humanness() {
               <ImagePlaceholder
                 label="Office"
                 rounded="rounded-none"
-                className="absolute inset-0 w-full h-full border-0 bg-indigo-500/40"
+                className="absolute inset-0 w-full h-full border-0 bg-[#E94E1B]/40"
               />
             </div>
           </div>

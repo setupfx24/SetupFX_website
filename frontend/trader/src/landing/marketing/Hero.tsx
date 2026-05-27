@@ -7,7 +7,7 @@ export default function Hero() {
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 relative pt-4 md:pt-6 lg:pt-8 pb-16 md:pb-20 lg:pb-24">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div className="md:col-span-7 lg:col-span-7 relative z-10 md:pl-6 lg:pl-12">
-            <h1 className={`${TEXT_DISPLAY} text-indigo-500`}>Unlimited.</h1>
+            <h1 className={`${TEXT_DISPLAY} text-[#E94E1B]`}>Unlimited.</h1>
             <p className="mt-6 text-lg md:text-xl font-semibold text-gray-900 max-w-xl">
               Trade with Swiss leader in digital banking.
             </p>

@@ -109,7 +109,7 @@ export default function InsuranceOnboardingModal({ forceOpen }: { forceOpen?: bo
       onClick={close}
     >
       <div
-        className="relative w-full max-w-md rounded-2xl border border-[#6366F1]/30 bg-bg-secondary shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md rounded-2xl border border-[#E94E1B]/30 bg-bg-secondary shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -128,17 +128,17 @@ export default function InsuranceOnboardingModal({ forceOpen }: { forceOpen?: bo
               key={i}
               className={
                 'h-1.5 rounded-full transition-all ' +
-                (i === step ? 'w-6 bg-[#6366F1]' : 'w-1.5 bg-border-primary')
+                (i === step ? 'w-6 bg-[#E94E1B]' : 'w-1.5 bg-border-primary')
               }
             />
           ))}
         </div>
 
         <div className="px-6 pb-6 pt-3 text-center">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#6366F1]/5 border border-[#6366F1]/35 flex items-center justify-center mb-4">
-            <Icon size={28} className="text-[#6366F1]" />
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#E94E1B]/20 to-[#E94E1B]/5 border border-[#E94E1B]/35 flex items-center justify-center mb-4">
+            <Icon size={28} className="text-[#E94E1B]" />
           </div>
-          <p className="text-[10.5px] uppercase tracking-wider text-[#6366F1] font-semibold mb-1">{s.eyebrow}</p>
+          <p className="text-[10.5px] uppercase tracking-wider text-[#E94E1B] font-semibold mb-1">{s.eyebrow}</p>
           <h2 className="text-xl font-bold text-text-primary leading-tight">{s.title}</h2>
           <p className="text-sm text-text-secondary mt-3 whitespace-pre-line leading-relaxed">{s.body}</p>
         </div>
@@ -148,7 +148,7 @@ export default function InsuranceOnboardingModal({ forceOpen }: { forceOpen?: bo
             <button
               type="button"
               onClick={back}
-              className="px-3 py-2.5 rounded-lg border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#6366F1]/45 text-sm flex items-center gap-1"
+              className="px-3 py-2.5 rounded-lg border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#E94E1B]/45 text-sm flex items-center gap-1"
             >
               <ArrowLeft size={14} /> Back
             </button>
@@ -164,7 +164,7 @@ export default function InsuranceOnboardingModal({ forceOpen }: { forceOpen?: bo
           <button
             type="button"
             onClick={advance}
-            className="flex-1 px-4 py-2.5 rounded-lg bg-[#6366F1] text-bg-base hover:brightness-110 text-sm font-bold flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 rounded-lg bg-[#E94E1B] text-bg-base hover:brightness-110 text-sm font-bold flex items-center justify-center gap-2"
           >
             {s.cta} <ArrowRight size={14} />
           </button>

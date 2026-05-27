@@ -4,21 +4,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fallback: before JS runs, use dark. Script in <head> overrides immediately. */
+/* Default :root tokens — LIGHT (Vantage-style white surface).
+ * The trader app is light by default; the trading terminal opts INTO
+ * dark via [data-theme="dark"] / .theme-dark on its wrapper. */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+
+  --bg-page: #FFFFFF;
+  --bg-base: #FFFFFF;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F5F5F5;
+  --bg-hover: #F5F5F5;
+  --bg-active: #EDEDED;
+  --bg-input: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-nested: #F9F9F9;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-light: rgba(255, 255, 255, 0.55);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.92);
+
+  --border-primary: #E5E5E5;
+  --border-secondary: #EDEDED;
+  --border-accent: #E94E1B;
+  --border-glass: rgba(0, 0, 0, 0.06);
+  --border-glass-bright: rgba(0, 0, 0, 0.10);
+
+  --text-primary: #0A0A0A;
+  --text-secondary: #5B5B5B;
+  --text-tertiary: #9A9A9A;
+  --text-inverse: #FFFFFF;
+
+  --accent: #E94E1B;
+  --accent-hover: #C73E11;
+  --accent-soft: #FCE6DD;
+
+  --scrollbar-track: #F5F5F5;
+  --scrollbar-thumb: #D4D4D4;
+  --scrollbar-hover: #9CA3AF;
+
+  --input-bg: #FFFFFF;
+  --input-border: #E5E5E5;
+  --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  --input-focus-border: #E94E1B;
+  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-placeholder: #9A9A9A;
+
+  --selection-bg: rgba(233, 78, 27, 0.14);
+
+  --noise-opacity: 0;
+  --emboss-bg: rgba(0, 0, 0, 0.03);
+  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+
+  --toast-bg: #FFFFFF;
+  --toast-fg: #0A0A0A;
+  --toast-border: rgba(0, 0, 0, 0.1);
 }
 
 /* SwissCresta marketing tokens (`--mkt-*`) live in
- * `src/styles/marketing.css`, scoped under `[data-mkt]`. That file is
- * imported by the landing layout so the trader-app's dark theme
- * (below) keeps owning every CSS variable that's not prefixed `--mkt-`. */
+ * `src/styles/marketing.css`, scoped under `[data-mkt]`. */
 
 /* ======================================= */
 /* CSS VARIABLES — DARK (Vantablack) THEME */
+/* Opt-in only — used by the trading terminal and any code that      */
+/* explicitly sets data-theme="dark" or .theme-dark.                  */
 /* ======================================= */
 
-/* Dark theme — aligned with crucial-ui (SetupFX): #0a0a0a base, #111 cards, #6366F1 accent */
 [data-theme="dark"], .theme-dark {
   --bg-page: #050707;
   --bg-base: #0a0a0a;
@@ -127,49 +178,53 @@
 /* ======================================= */
 
 [data-theme="light"] {
-  --bg-base: #ffffff;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --bg-hover: #f3f4f6;
-  --bg-active: #e5e7eb;
-  --bg-input: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-nested: #f9fafb;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-light: rgba(255, 255, 255, 0.85);
-  --bg-glass-heavy: rgba(249, 250, 251, 0.98);
+  --bg-base: #FFFFFF;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F5F5F5;
+  --bg-hover: #F5F5F5;
+  --bg-active: #EDEDED;
+  --bg-input: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-nested: #F9F9F9;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-light: rgba(255, 255, 255, 0.55);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.92);
 
-  --border-primary: #e5e7eb;
-  --border-secondary: #d1d5db;
-  --border-accent: #111827;
+  --border-primary: #E5E5E5;
+  --border-secondary: #EDEDED;
+  --border-accent: #E94E1B;
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
 
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --text-inverse: #ffffff;
+  --text-primary: #0A0A0A;
+  --text-secondary: #5B5B5B;
+  --text-tertiary: #9A9A9A;
+  --text-inverse: #FFFFFF;
 
-  --scrollbar-track: #f3f4f6;
-  --scrollbar-thumb: #d1d5db;
-  --scrollbar-hover: #9ca3af;
+  --accent: #E94E1B;
+  --accent-hover: #C73E11;
+  --accent-soft: #FCE6DD;
 
-  --input-bg: #ffffff;
-  --input-border: #e5e7eb;
-  --input-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  --input-focus-border: #111827;
-  --input-focus-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
-  --input-placeholder: #9ca3af;
+  --scrollbar-track: #F5F5F5;
+  --scrollbar-thumb: #D4D4D4;
+  --scrollbar-hover: #9CA3AF;
 
-  --selection-bg: rgba(0, 0, 0, 0.08);
+  --input-bg: #FFFFFF;
+  --input-border: #E5E5E5;
+  --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  --input-focus-border: #E94E1B;
+  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-placeholder: #9A9A9A;
+
+  --selection-bg: rgba(233, 78, 27, 0.14);
 
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.03);
-  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 
-  --toast-bg: #ffffff;
-  --toast-fg: #111827;
+  --toast-bg: #FFFFFF;
+  --toast-fg: #0A0A0A;
   --toast-border: rgba(0, 0, 0, 0.1);
 
   /* Stat-card surfaces — light mode. Soft tinted gradients so the
@@ -267,42 +322,45 @@
 }
 
 .theme-light {
-  --bg-base: #ffffff;
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --bg-hover: #f3f4f6;
-  --bg-active: #e5e7eb;
-  --bg-input: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-nested: #f9fafb;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-light: rgba(255, 255, 255, 0.85);
-  --bg-glass-heavy: rgba(249, 250, 251, 0.98);
-  --border-primary: #e5e7eb;
-  --border-secondary: #d1d5db;
-  --border-accent: #111827;
+  --bg-base: #FFFFFF;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F5F5F5;
+  --bg-hover: #F5F5F5;
+  --bg-active: #EDEDED;
+  --bg-input: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-nested: #F9F9F9;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-light: rgba(255, 255, 255, 0.55);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.92);
+  --border-primary: #E5E5E5;
+  --border-secondary: #EDEDED;
+  --border-accent: #E94E1B;
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --text-inverse: #ffffff;
-  --scrollbar-track: #f3f4f6;
-  --scrollbar-thumb: #d1d5db;
-  --scrollbar-hover: #9ca3af;
-  --input-bg: #ffffff;
-  --input-border: #e5e7eb;
-  --input-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  --input-focus-border: #111827;
-  --input-focus-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
-  --input-placeholder: #9ca3af;
-  --selection-bg: rgba(0, 0, 0, 0.08);
+  --text-primary: #0A0A0A;
+  --text-secondary: #5B5B5B;
+  --text-tertiary: #9A9A9A;
+  --text-inverse: #FFFFFF;
+  --accent: #E94E1B;
+  --accent-hover: #C73E11;
+  --accent-soft: #FCE6DD;
+  --scrollbar-track: #F5F5F5;
+  --scrollbar-thumb: #D4D4D4;
+  --scrollbar-hover: #9CA3AF;
+  --input-bg: #FFFFFF;
+  --input-border: #E5E5E5;
+  --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  --input-focus-border: #E94E1B;
+  --input-focus-shadow: 0 0 0 3px rgba(233, 78, 27, 0.12);
+  --input-placeholder: #9A9A9A;
+  --selection-bg: rgba(233, 78, 27, 0.14);
   --noise-opacity: 0;
   --emboss-bg: rgba(0, 0, 0, 0.03);
-  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
-  --toast-bg: #ffffff;
-  --toast-fg: #111827;
+  --emboss-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  --toast-bg: #FFFFFF;
+  --toast-fg: #0A0A0A;
   --toast-border: rgba(0, 0, 0, 0.1);
   color-scheme: light;
 }
@@ -502,30 +560,30 @@ html {
 }
 
 .skeu-btn-buy {
-  background: linear-gradient(180deg, #818CF8 0%, #6366F1 50%, #4F46E5 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(99,102,241,0.28), 0 2px 4px rgba(0,0,0,0.15);
+  background: linear-gradient(180deg, #5B8CFF 0%, #1E66F5 50%, #1849C2 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.15), 0 4px 16px rgba(30,102,245,0.28), 0 2px 4px rgba(0,0,0,0.15);
   color: #ffffff;
 }
 .skeu-btn-buy:hover {
-  background: linear-gradient(180deg, #f5d984 0%, #818CF8 50%, #6366F1 100%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(99,102,241,0.38);
+  background: linear-gradient(180deg, #7CA3FF 0%, #5B8CFF 50%, #1E66F5 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.12), 0 6px 24px rgba(30,102,245,0.38);
 }
 .skeu-btn-buy:active {
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%);
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(99,102,241,0.2);
+  background: linear-gradient(180deg, #1E66F5 0%, #1849C2 100%);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35), 0 2px 8px rgba(30,102,245,0.2);
   transform: translateY(1px);
 }
 [data-theme="light"] .skeu-btn-buy,
 .theme-light .skeu-btn-buy {
-  background: #6366F1;
+  background: #1E66F5;
   color: #ffffff;
   border: none;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(30, 102, 245, 0.3);
 }
 [data-theme="light"] .skeu-btn-buy:hover,
 .theme-light .skeu-btn-buy:hover {
-  background: #4F46E5;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  background: #1849C2;
+  box-shadow: 0 4px 12px rgba(30, 102, 245, 0.4);
 }
 
 .skeu-btn-sell {
@@ -678,7 +736,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #6366F1; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #E94E1B; outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
@@ -844,18 +902,6 @@ html {
   }
 }
 
-/* ───────────────────────────────────────────────────────────── */
-/* Accounts page — flatten AppHeader frame to match Crucial Markets.
-   The default header is a rounded-xl glowing green box. On /accounts,
-   strip that frame so the only framed element is the tabs panel below. */
-/* ───────────────────────────────────────────────────────────── */
-html[data-page="accounts"] header.h-\[65px\] {
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-html[data-page="accounts"] header.h-\[65px\] + div,
-html[data-page="accounts"] div:has(> header.h-\[65px\]) {
-  background: transparent !important;
-}
+/* Legacy AppHeader override removed — the new sticky AppNavbar is
+   already flat / hairline-bordered, so the per-page reset is no
+   longer needed. */

@@ -28,7 +28,7 @@ export default function Platforms() {
               <span className="text-[10px] text-gray-600">Apple Inc.</span>
             </div>
             <div className="mt-2 text-lg font-bold">298.87</div>
-            <div className="text-xs font-semibold text-indigo-500">USD +1.28%</div>
+            <div className="text-xs font-semibold text-[#E94E1B]">USD +1.28%</div>
             <div className="mt-3 h-8 bg-gray-100 rounded" />
           </div>
 
@@ -39,7 +39,7 @@ export default function Platforms() {
             </div>
             <div className="mt-2 text-lg font-bold">1.1719</div>
             <div className="mt-2 flex gap-2">
-              <span className="text-[10px] px-2 py-1 rounded bg-indigo-500 text-white font-semibold">
+              <span className="text-[10px] px-2 py-1 rounded bg-[#E94E1B] text-white font-semibold">
                 Buy
               </span>
               <span className="text-[10px] px-2 py-1 rounded bg-gray-900 text-white font-semibold">

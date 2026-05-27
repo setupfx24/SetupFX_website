@@ -33,7 +33,7 @@ export default function FooterLinks({ columns, align = 'center' }: FooterLinksPr
         >
           {cols.map((col) => (
             <div key={col.heading} className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-500">
+              <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-[#E94E1B]">
                 {col.heading}
               </h3>
               <ul className="flex flex-col gap-2">
@@ -41,7 +41,7 @@ export default function FooterLinks({ columns, align = 'center' }: FooterLinksPr
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-sm text-gray-600 hover:text-indigo-500 transition-colors"
+                      className="text-sm text-gray-600 hover:text-[#E94E1B] transition-colors"
                     >
                       {link}
                     </a>

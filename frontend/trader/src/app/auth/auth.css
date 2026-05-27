@@ -3,14 +3,14 @@
    ══════════════════════════════════════════════ */
 
 :root {
-  --auth-bg: #08090b;
-  --auth-input-bg: #14151a;
-  --auth-border: #232428;
-  --auth-accent: #6366F1;        /* SwissCresta indigo */
-  --auth-accent-light: #818CF8;
-  --auth-accent-dark: #4F46E5;
-  --auth-text: #ffffff;
-  --auth-muted: #8a8a92;
+  --auth-bg: #FFFFFF;
+  --auth-input-bg: #FFFFFF;
+  --auth-border: #E5E5E5;
+  --auth-accent: #E94E1B;        /* SwissCresta orange */
+  --auth-accent-light: #F58A60;
+  --auth-accent-dark: #C73E11;
+  --auth-text: #0A0A0A;
+  --auth-muted: #5B5B5B;
   --auth-radius-md: 12px;
   --auth-radius-lg: 16px;
 }
@@ -402,16 +402,31 @@
 }
 
 .auth-btn--outline {
-  background: transparent !important;
-  color: #ffffff !important;
-  border: 1px solid #2a2a2a;
+  background: #ffffff !important;
+  color: #0A0A0A !important;
+  border: 1px solid #E5E5E5;
+  border-radius: 9999px;
+  height: 46px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .auth-btn--outline:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: #F5F5F5 !important;
+  border-color: #D4D4D4;
   box-shadow: none;
   transform: none;
+}
+
+.auth-btn--outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .auth-btn--demo {

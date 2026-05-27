@@ -30,23 +30,23 @@ export const mktColors = {
   // ── Surfaces ───────────────────────────────────────────────
   bgCanvas:   '#FFFFFF',
   bgSurface:  '#FFFFFF',
-  bgDeep:     '#0B1B33',
-  bgDeep2:    '#142847',
+  bgDeep:     '#0A0A0A',
+  bgDeep2:    '#1A1A1A',
 
   // ── Ink ────────────────────────────────────────────────────
-  inkPrimary:   '#0B1B33',
-  inkSecondary: '#4A5878',
-  inkTertiary:  '#8892AC',
-  inkInverse:   '#F7F5F0',
+  inkPrimary:   '#0A0A0A',
+  inkSecondary: '#5B5B5B',
+  inkTertiary:  '#9A9A9A',
+  inkInverse:   '#FFFFFF',
 
   // ── Hairlines ──────────────────────────────────────────────
-  line:     '#E5E7EB',
-  lineDark: '#1F3458',
+  line:     '#E5E5E5',
+  lineDark: '#0A0A0A',
 
   // ── Accent + signal ────────────────────────────────────────
-  accent:    '#B8965A',  // antique gold — use sparingly
-  positive:  '#1F7A4D',  // up-moves on quote tables
-  negative:  '#B0322C',  // down-moves on quote tables
+  accent:    '#E94E1B',  // Vantage orange — primary CTA/brand accent
+  positive:  '#10B981',  // up-moves on quote tables
+  negative:  '#DC2626',  // down-moves on quote tables
 } as const;
 
 /** Typography scale (in px) — matches the brief's responsive type

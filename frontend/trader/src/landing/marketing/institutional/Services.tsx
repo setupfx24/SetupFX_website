@@ -37,7 +37,7 @@ function CryptoCoins() {
       {coins.map((c, i) => (
         <span
           key={i}
-          className="absolute rounded-full bg-indigo-500/20 border border-indigo-500/30"
+          className="absolute rounded-full bg-[#E94E1B]/20 border border-[#E94E1B]/30"
           style={{ width: c.size, height: c.size, top: c.top, right: c.right }}
         />
       ))}

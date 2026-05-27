@@ -45,7 +45,7 @@ export default function HeroSection() {
       className="relative overflow-hidden"
       style={{
         background:
-          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18), transparent 60%), ' +
+          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(233,78,27,0.18), transparent 60%), ' +
           'linear-gradient(180deg, #0B0F1A 0%, #0B0F1A 60%, #0F1530 100%)',
       }}
     >

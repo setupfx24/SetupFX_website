@@ -12,7 +12,7 @@ const features = [
   },
   {
     icon: Sliders,
-    accent: '#818CF8',
+    accent: '#F58A60',
     title: 'Adjust Allocation',
     desc: 'Increase or decrease how much capital follows a Master Trader on demand.',
   },

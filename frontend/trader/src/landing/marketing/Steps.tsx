@@ -34,7 +34,7 @@ export default function Steps() {
               {STEPS.map((step, i) => (
                 <li
                   key={step.title}
-                  className={`pl-5 ${i === 0 ? 'border-l-2 border-indigo-500' : 'border-l-2 border-gray-200'}`}
+                  className={`pl-5 ${i === 0 ? 'border-l-2 border-[#E94E1B]' : 'border-l-2 border-gray-200'}`}
                 >
                   <h3 className="text-base font-bold text-gray-900">
                     {i + 1}. {step.title}

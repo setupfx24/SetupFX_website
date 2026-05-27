@@ -57,9 +57,9 @@ function ResetPasswordForm() {
             <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
             <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
           </svg>
-          <span className="inline-flex items-baseline font-bold tracking-tight text-lg select-none">
+          <span className="inline-flex items-baseline font-bold italic tracking-tight text-lg select-none">
             <span className="text-text-primary">Swiss</span>
-            <span className="text-[#6366F1]">Cresta</span>
+            <span className="text-[#E94E1B]">Cresta</span>
           </span>
         </div>
         <div className="glass-panel rounded-3xl p-8 noise-texture overflow-hidden">

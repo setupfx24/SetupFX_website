@@ -46,8 +46,8 @@ export default function FxCopyTrading() {
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: 'rgba(99,102,241,0.06)',
-                    border: '1px solid rgba(99,102,241,0.22)',
+                    background: 'rgba(233,78,27,0.06)',
+                    border: '1px solid rgba(233,78,27,0.22)',
                   }}
                 >
                   <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
@@ -60,8 +60,8 @@ export default function FxCopyTrading() {
                 <div
                   className="rounded-xl p-4"
                   style={{
-                    background: 'rgba(99,102,241,0.06)',
-                    border: '1px solid rgba(99,102,241,0.22)',
+                    background: 'rgba(233,78,27,0.06)',
+                    border: '1px solid rgba(233,78,27,0.22)',
                   }}
                 >
                   <div className="text-[11px] uppercase tracking-wider mb-1" style={{ color: 'var(--fx-text-3)' }}>
@@ -92,7 +92,7 @@ export default function FxCopyTrading() {
               <div
                 className="grid grid-cols-12 px-5 md:px-6 py-4 text-[11px] font-bold uppercase tracking-[0.18em]"
                 style={{
-                  background: 'rgba(99,102,241,0.04)',
+                  background: 'rgba(233,78,27,0.04)',
                   borderBottom: '1px solid var(--fx-line)',
                   color: 'var(--fx-text-3)',
                 }}
@@ -163,7 +163,7 @@ export default function FxCopyTrading() {
                         background:
                           'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
                         color: '#1a1408',
-                        boxShadow: '0 6px 16px -6px rgba(99,102,241,0.5)',
+                        boxShadow: '0 6px 16px -6px rgba(233,78,27,0.5)',
                       }}
                     >
                       Copy

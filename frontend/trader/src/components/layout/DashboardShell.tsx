@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { MessageSquare } from 'lucide-react';
-import { useShellStore } from '@/stores/shellStore';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import AppSidebar from './AppSidebar';
-import AppHeader from './AppHeader';
+import AppNavbar from './AppNavbar';
 import DashboardFooter from './DashboardFooter';
 
+/**
+ * DashboardShell — top-navbar layout for the logged-in app pages.
+ *
+ * The Vantage-inspired redesign replaces the previous sidebar +
+ * AppHeader pair with a single sticky horizontal AppNavbar. Content
+ * sits in a max-w-[1400px] centered wrapper directly beneath.
+ */
 export default function DashboardShell({
   children,
   className,
@@ -18,43 +23,33 @@ export default function DashboardShell({
   className?: string;
   mainClassName?: string;
 }) {
-  const { sidebarOpen } = useShellStore();
   const pathname = usePathname();
 
   return (
     <div
       className={cn(
-        'h-[100dvh] flex overflow-hidden pb-[70px] lg:pb-0 bg-bg-base text-text-primary',
+        'min-h-[100dvh] flex flex-col bg-bg-base text-text-primary',
         className,
       )}
-      
     >
-      <AppSidebar />
-      <div
+      <AppNavbar />
+
+      <main
+        key={pathname}
         className={cn(
-          'flex min-w-0 flex-1 flex-col bg-bg-base transition-[margin] duration-200',
-          sidebarOpen && 'lg:ml-[260px]',
+          'dashboard-main-scroll flex-1 page-fade-in',
+          mainClassName,
         )}
       >
-        <AppHeader />
-        <main
-          key={pathname}
-          className={cn(
-            'dashboard-main-scroll min-h-0 flex-1 overflow-y-auto bg-bg-base p-2.5 sm:p-4 md:p-6 page-fade-in',
-            mainClassName,
-          )}
-        >
+        <div className="mx-auto max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           {children}
-          {/* Compliance + nav footer — full-width band at the bottom
-              of every dashboard page. Renders below the page content
-              and scrolls with it (not fixed) so it doesn't eat
-              terminal vertical space. */}
-          <DashboardFooter />
-        </main>
-      </div>
+        </div>
+        <DashboardFooter />
+      </main>
+
       <Link
         href="/support"
-        className="fixed bottom-20 md:bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#6366F1] hover:bg-[#4F46E5] shadow-lg shadow-[#6366F1]/20 flex items-center justify-center transition-colors"
+        className="fixed bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#E94E1B] hover:bg-[#C73E11] shadow-lg shadow-[#E94E1B]/20 flex items-center justify-center transition-colors"
         aria-label="Support"
       >
         <MessageSquare size={20} className="text-white" />

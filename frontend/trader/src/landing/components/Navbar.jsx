@@ -32,13 +32,13 @@ const THEMES = {
     accent:      'var(--fx-gold-light)',
     accentSoft:  'var(--fx-gold-soft)',
     brandLeft:   '#FFFFFF',                    // "Swiss"
-    brandRight:  '#6366F1',                    // "Cresta"
+    brandRight:  '#E94E1B',                    // "Cresta"
     dropdownBg:  'rgba(16,17,20,0.96)',
     iconBg:      'rgba(255,255,255,0.04)',
     hoverBg:     'rgba(255,255,255,0.04)',
     ctaGhostText:    '#F5F5F5',
     ctaGhostBorder:  'rgba(255,255,255,0.18)',
-    ctaPrimaryBg:    '#6366F1',
+    ctaPrimaryBg:    '#E94E1B',
     ctaPrimaryText:  '#FFFFFF',
   },
   light: {

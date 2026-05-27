@@ -17,7 +17,7 @@ export default function ExploreLink({
   return (
     <a
       href={href}
-      className={`group inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-500 hover:text-indigo-600 transition-colors ${className}`}
+      className={`group inline-flex items-center gap-1.5 text-sm font-semibold text-[#E94E1B] hover:text-[#E94E1B] transition-colors ${className}`}
     >
       <span>{children}</span>
       <ArrowRight

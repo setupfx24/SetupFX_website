@@ -18,8 +18,8 @@ export default function InLogic() {
             className="mt-12 md:mt-16 relative rounded-2xl p-7 md:p-10 overflow-hidden"
             style={{
               background:
-                'linear-gradient(160deg, rgba(99,102,241,0.08) 0%, var(--fx-bg-elev-2) 60%)',
-              border: '1px solid rgba(99,102,241,0.30)',
+                'linear-gradient(160deg, rgba(233,78,27,0.08) 0%, var(--fx-bg-elev-2) 60%)',
+              border: '1px solid rgba(233,78,27,0.30)',
             }}
           >
             <div className="absolute inset-0 fx-grid-bg" />
@@ -28,7 +28,7 @@ export default function InLogic() {
               <div className="flex-1">
                 <Node
                   icon={ShieldCheck}
-                  color="#818CF8"
+                  color="#F58A60"
                   label="Coverage Pool"
                   title="$3,000 / period"
                   sub="Plan capacity"
@@ -87,7 +87,7 @@ export default function InLogic() {
                     width: '90%',
                     background:
                       'linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold))',
-                    boxShadow: '0 0 12px rgba(99,102,241,0.55)',
+                    boxShadow: '0 0 12px rgba(233,78,27,0.55)',
                   }}
                 />
               </div>
@@ -129,7 +129,7 @@ function Node({ icon: Icon, color, label, title, sub, step, highlight = false })
         style={{
           background: 'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold))',
           color: '#1a1408',
-          boxShadow: '0 6px 14px -6px rgba(99,102,241,0.55)',
+          boxShadow: '0 6px 14px -6px rgba(233,78,27,0.55)',
         }}
       >
         {step}

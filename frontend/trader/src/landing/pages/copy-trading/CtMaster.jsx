@@ -63,9 +63,9 @@ export default function CtMaster() {
               className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(99,102,241,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(99,102,241,0.35)',
+                  'linear-gradient(180deg, rgba(233,78,27,0.10) 0%, rgba(233,78,27,0.02) 60%), var(--fx-bg-elev)',
+                border: '1px solid rgba(233,78,27,0.35)',
+                boxShadow: '0 24px 60px -28px rgba(233,78,27,0.35)',
               }}
             >
               <div className="flex items-center justify-between mb-5">
@@ -88,9 +88,9 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(99,102,241,0.15)',
+                    background: 'rgba(233,78,27,0.15)',
                     color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(99,102,241,0.35)',
+                    border: '1px solid rgba(233,78,27,0.35)',
                   }}
                 >
                   Verification

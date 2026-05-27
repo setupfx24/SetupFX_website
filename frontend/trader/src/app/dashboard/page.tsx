@@ -367,7 +367,7 @@ function AccountBalanceCard({
               className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }
-                : { color: '#6366F1', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)' }}
+                : { color: '#E94E1B', background: 'rgba(233,78,27,0.12)', border: '1px solid rgba(233,78,27,0.3)' }}
             >
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
@@ -380,9 +380,9 @@ function AccountBalanceCard({
             <div
               className="absolute top-full left-0 mt-2 z-30 rounded-xl p-1.5 min-w-[260px]"
               style={{
-                background: 'rgba(16,17,20,0.97)',
+                background: 'var(--bg-card)',
                 border: '1px solid var(--border-primary)',
-                boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
               }}
             >
               {accounts.map((acc) => (
@@ -397,7 +397,7 @@ function AccountBalanceCard({
                     className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                     style={acc.is_demo
                       ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                      : { color: '#6366F1', background: 'rgba(99,102,241,0.12)' }}
+                      : { color: '#E94E1B', background: 'rgba(233,78,27,0.12)' }}
                   >
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
@@ -413,7 +413,7 @@ function AccountBalanceCard({
           <Link
             href="/wallet"
             className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
-            style={{ background: '#6366F1', color: '#1a1408' }}
+            style={{ background: '#E94E1B', color: '#ffffff' }}
           >
             <ArrowDownToLine size={14} /> Deposit
           </Link>
@@ -465,7 +465,7 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
       <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">{label}</p>
       <p
         className={clsx('mt-1 font-bold tabular-nums', highlight ? 'text-xl md:text-2xl' : 'text-base md:text-lg')}
-        style={{ color: highlight ? '#6366F1' : 'var(--text-primary)' }}
+        style={{ color: highlight ? '#E94E1B' : 'var(--text-primary)' }}
       >
         {value}
       </p>
@@ -512,13 +512,13 @@ function StatusProgramCard() {
       <div className="flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-bold text-text-primary mb-2 flex items-center gap-2">
-            <BadgeCheck size={18} className="text-[#6366F1]" /> Status program
+            <BadgeCheck size={18} className="text-[#E94E1B]" /> Status program
           </h2>
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/rewards"
               className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors"
-              style={{ background: 'rgba(99,102,241,0.14)', color: '#6366F1', border: '1px solid rgba(99,102,241,0.35)' }}
+              style={{ background: 'rgba(233,78,27,0.14)', color: '#E94E1B', border: '1px solid rgba(233,78,27,0.35)' }}
             >
               Challenges
             </Link>
@@ -534,11 +534,11 @@ function StatusProgramCard() {
         <div
           className="md:w-[420px] rounded-xl p-4 flex items-center gap-4"
           style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(155,125,58,0.06) 100%)',
-            border: '1px solid rgba(99,102,241,0.32)',
+            background: 'linear-gradient(135deg, rgba(233,78,27,0.12) 0%, rgba(155,125,58,0.06) 100%)',
+            border: '1px solid rgba(233,78,27,0.32)',
           }}
         >
-          <Gift size={28} className="text-[#6366F1] shrink-0" />
+          <Gift size={28} className="text-[#E94E1B] shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-text-primary leading-tight">Welcome cashback</p>
             <p className="text-xs text-text-secondary leading-tight mt-0.5">
@@ -549,7 +549,7 @@ function StatusProgramCard() {
             <Link
               href="/rewards"
               className="px-3 py-1.5 text-xs font-bold rounded-md"
-              style={{ background: '#6366F1', color: '#1a1408' }}
+              style={{ background: '#E94E1B', color: '#ffffff' }}
             >
               Activate
             </Link>
@@ -584,7 +584,7 @@ function InviteFriendsCard() {
           </p>
           <Link
             href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#6366F1] hover:underline"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#E94E1B] hover:underline"
           >
             Learn details <ArrowRight size={12} />
           </Link>
@@ -600,9 +600,9 @@ function BonusCard() {
       <div className="flex items-center gap-4">
         <div
           className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.32)' }}
+          style={{ background: 'rgba(233,78,27,0.14)', border: '1px solid rgba(233,78,27,0.32)' }}
         >
-          <Gift size={26} className="text-[#6366F1]" />
+          <Gift size={26} className="text-[#E94E1B]" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-text-primary">50% deposit bonus</h3>
@@ -612,7 +612,7 @@ function BonusCard() {
           <Link
             href="/wallet"
             className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-bold rounded-md"
-            style={{ background: '#6366F1', color: '#1a1408' }}
+            style={{ background: '#E94E1B', color: '#ffffff' }}
           >
             Get bonus <ArrowRight size={12} />
           </Link>
@@ -663,7 +663,7 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
             <span
               key={i}
               className="w-1.5 h-1.5 rounded-full transition-colors"
-              style={{ background: i === index ? '#6366F1' : 'rgba(255,255,255,0.4)' }}
+              style={{ background: i === index ? '#E94E1B' : 'rgba(255,255,255,0.4)' }}
             />
           ))}
         </div>

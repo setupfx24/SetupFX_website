@@ -102,8 +102,8 @@ export default function HomeWhyUs() {
                     <div
                       className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl mt-0.5 transition-colors"
                       style={{
-                        background: 'rgba(99,102,241,0.10)',
-                        border: '1px solid rgba(99,102,241,0.25)',
+                        background: 'rgba(233,78,27,0.10)',
+                        border: '1px solid rgba(233,78,27,0.25)',
                       }}
                     >
                       <Icon size={20} style={{ color: '#A5B4FC' }} />

@@ -36,7 +36,7 @@ function WorldMap() {
             <span
               key={i}
               className={`block aspect-square rounded-full ${
-                isDot ? 'bg-indigo-500/60' : 'bg-transparent'
+                isDot ? 'bg-[#E94E1B]/60' : 'bg-transparent'
               }`}
             />
           )
