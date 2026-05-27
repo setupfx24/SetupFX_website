@@ -146,13 +146,12 @@ void main(){gl_Position=position;}`;
 
 const hexToRgb = (hex: string): [number, number, number] | null => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? [
-        parseInt(result[1], 16) / 255,
-        parseInt(result[2], 16) / 255,
-        parseInt(result[3], 16) / 255,
-      ]
-    : null;
+  if (!result || !result[1] || !result[2] || !result[3]) return null;
+  return [
+    parseInt(result[1], 16) / 255,
+    parseInt(result[2], 16) / 255,
+    parseInt(result[3], 16) / 255,
+  ];
 };
 
 interface SmokeBackgroundProps {
