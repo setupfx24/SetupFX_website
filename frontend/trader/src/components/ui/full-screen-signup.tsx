@@ -7,7 +7,6 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
-import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
 import api from '@/lib/api/client';
 
 type Mode = 'login' | 'signup';
@@ -158,11 +157,17 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[20rem] md:min-h-[36rem]">
-          <SwissCrestaWordmark
-            href="/"
-            className="flex items-center gap-2"
-            textClassName="text-xl font-bold tracking-tight text-white"
-          />
+          <Link href="/" className="inline-flex items-center gap-2 self-start relative z-10">
+            <svg viewBox="0 0 32 32" className="w-7 h-7 shrink-0" aria-hidden>
+              <rect width="32" height="32" rx="4" fill="#DC2626" />
+              <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
+              <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
+            </svg>
+            <span className="text-xl font-bold tracking-tight">
+              <span className="text-white">Swiss</span>
+              <span className="text-[#E94E1B]">Cresta</span>
+            </span>
+          </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
             {copy.hero}
           </h1>

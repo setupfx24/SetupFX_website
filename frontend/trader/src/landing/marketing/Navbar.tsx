@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronDown, ChevronRight, Globe, Menu, X } from 'lucide-react'
+import { ChevronRight, Globe, Menu, X } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
 import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark'
@@ -304,10 +304,12 @@ export default function MarketingNavbar({
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-      <nav className="w-full mx-auto px-6 md:px-10 lg:px-16 relative flex items-center justify-between h-20">
-        <Wordmark />
+      <nav className="w-full mx-auto px-6 md:px-10 lg:px-16 relative flex items-center gap-6 h-20">
+        <div className="shrink-0">
+          <Wordmark />
+        </div>
 
-        <ul className="hidden lg:flex items-center gap-10 absolute left-1/2 -translate-x-1/2">
+        <ul className="hidden lg:flex flex-1 items-center justify-center gap-8 xl:gap-10 min-w-0">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
             return (
@@ -325,29 +327,32 @@ export default function MarketingNavbar({
           })}
         </ul>
 
-        <div className="hidden md:flex items-center gap-3 ml-auto">
+        <div className="hidden md:flex items-center gap-3 ml-auto shrink-0">
           {showCta && (
             <>
-              <a
-                href="#"
+              <Link
+                href="/auth/login"
                 className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold hover:bg-gray-900 hover:text-white transition-colors"
               >
                 Login
-              </a>
-              <Button variant="primary" className="px-5 py-2 rounded-full">
+              </Link>
+              <Button
+                variant="primary"
+                href="/auth/register"
+                className="px-5 py-2 rounded-full"
+              >
                 {ctaLabel}
               </Button>
             </>
           )}
-          <button
-            type="button"
-            className="flex items-center gap-1 text-sm text-gray-900 hover:text-[#E94E1B] transition-colors ml-1"
-            aria-label="Language"
+          <span
+            className="flex items-center gap-1 text-sm text-gray-900 ml-1 select-none"
+            aria-label="Language: English"
+            title="Multi-language support coming soon"
           >
             <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
             <span className="font-medium">EN</span>
-            <ChevronDown className="w-3.5 h-3.5" strokeWidth={2.5} />
-          </button>
+          </span>
         </div>
 
         <button
@@ -430,13 +435,18 @@ export default function MarketingNavbar({
             )}
             {showCta && (
               <li className="flex items-center gap-3 pt-3 border-t border-gray-200">
-                <a
-                  href="#"
+                <Link
+                  href="/auth/login"
+                  onClick={() => setOpen(false)}
                   className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold"
                 >
                   Login
-                </a>
-                <Button variant="primary" className="px-5 py-2 rounded-full">
+                </Link>
+                <Button
+                  variant="primary"
+                  href="/auth/register"
+                  className="px-5 py-2 rounded-full"
+                >
                   {ctaLabel}
                 </Button>
               </li>
