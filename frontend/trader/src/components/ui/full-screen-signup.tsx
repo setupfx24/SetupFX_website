@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
-import SwissCrestaWordmark from '@/components/layout/SwissCrestaWordmark';
+import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
 
 type Mode = 'login' | 'signup';
 

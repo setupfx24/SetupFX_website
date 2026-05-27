@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ChevronDown, ChevronRight, Globe, Menu, X } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
-import SwissCrestaWordmark from '@/components/layout/SwissCrestaWordmark'
+import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark'
 
 /**
  * Comprehensive SwissCresta marketing Navbar, ported from the legacy
