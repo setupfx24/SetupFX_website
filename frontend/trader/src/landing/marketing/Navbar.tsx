@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, Globe, Menu, X } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
-import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark'
 
 /**
  * Comprehensive SwissCresta marketing Navbar, ported from the legacy
@@ -71,11 +71,16 @@ const NAV_LINKS: { label: string; key: ActivePage; href: string }[] = [
 
 function Wordmark() {
   return (
-    <SwissCrestaWordmark
-      href="/"
-      className="flex items-center gap-2"
-      textClassName="text-xl font-bold tracking-tight"
-    />
+    <Link href="/" className="inline-flex items-center" aria-label="SwissCresta home">
+      <Image
+        src="/marketing/swisscresta-logo.png"
+        alt="SwissCresta"
+        width={220}
+        height={48}
+        priority
+        className="h-10 w-auto"
+      />
+    </Link>
   )
 }
 
