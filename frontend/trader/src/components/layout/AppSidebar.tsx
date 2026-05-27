@@ -18,8 +18,6 @@ import {
   Settings,
   X,
   FileText,
-  HelpCircle,
-  Headphones,
   Receipt,
   Calculator,
   ChevronDown,
@@ -214,22 +212,6 @@ export default function AppSidebar() {
             <FileText size={14} className="text-accent shrink-0 opacity-90" />
             <span>Terms & Conditions</span>
           </Link>
-
-          <div className="rounded-xl p-3.5 border border-border-primary bg-card-nested">
-            <div className="flex items-center gap-1.5 mb-1">
-              <HelpCircle size={14} className="text-accent shrink-0" />
-              <span className="text-xs font-semibold text-text-primary">Need Help?</span>
-            </div>
-            <p className="text-[10px] text-text-tertiary mb-3 leading-relaxed">Contact our 24/7 support team</p>
-            <Link
-              href="/support"
-              prefetch={false}
-              className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-border-primary text-xs text-text-secondary hover:text-text-primary hover:border-accent/35 hover:bg-accent/5 transition-colors"
-            >
-              <Headphones size={12} className="text-accent/80" />
-              <span>Get Support</span>
-            </Link>
-          </div>
 
         </div>
       </aside>
