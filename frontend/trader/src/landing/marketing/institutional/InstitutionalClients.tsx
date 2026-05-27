@@ -11,7 +11,7 @@ interface Tab {
   body: string
 }
 
-const TABS: Tab[] = [
+const TABS: readonly [Tab, ...Tab[]] = [
   {
     key: 'banks',
     label: 'Banks',

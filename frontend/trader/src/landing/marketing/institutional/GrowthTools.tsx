@@ -9,7 +9,7 @@ interface Tab {
   label: string
 }
 
-const TABS: Tab[] = [
+const TABS: readonly [Tab, ...Tab[]] = [
   { key: 'trading', label: 'Trading Platform' },
   { key: 'liquidity', label: 'Liquidity Coverage' },
   { key: 'venues', label: 'Cross Trading Venues' },
