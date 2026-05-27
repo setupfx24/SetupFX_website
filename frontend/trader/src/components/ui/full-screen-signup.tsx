@@ -59,6 +59,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
+  const demoLogin = useAuthStore((s) => s.demoLogin);
   const refreshUser = useAuthStore((s) => s.refreshUser);
 
   const [email, setEmail] = useState('');
@@ -129,6 +130,20 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
       router.push('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Invalid or expired code.';
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    try {
+      setSubmitting(true);
+      await demoLogin();
+      toast.success('Demo account ready. Welcome to SwissCresta.');
+      router.push('/dashboard');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not start a demo session.';
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -242,6 +257,21 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {submitting ? 'Please wait…' : copy.cta}
+                </button>
+
+                <div className="flex items-center gap-3 my-1">
+                  <span className="flex-1 h-px bg-[#E5E5E5]" aria-hidden />
+                  <span className="text-xs uppercase tracking-wider text-[#9A9A9A]">or</span>
+                  <span className="flex-1 h-px bg-[#E5E5E5]" aria-hidden />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDemo}
+                  disabled={submitting}
+                  className="w-full bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed border border-[#E5E5E5] text-[#0A0A0A] font-medium py-2.5 px-4 rounded-lg transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  Try with demo
                 </button>
 
                 <div className="text-center text-[#5B5B5B] text-sm">
