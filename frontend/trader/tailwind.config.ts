@@ -50,8 +50,8 @@ const config: Config = {
           bg: 'rgba(239,68,68,0.1)',
           glow: 'rgba(239,68,68,0.2)',
         },
-        accent: { DEFAULT: '#d6a93d', light: '#ecc657', dark: '#9b7d3a' },
-        success: '#9b7d3a',
+        accent: { DEFAULT: '#6366F1', light: '#818CF8', dark: '#4F46E5' },
+        success: '#4F46E5',
         warning: '#FFB300',
         info: '#29B6F6',
         danger: '#FF1744',
@@ -64,16 +64,48 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — FXArtha gold-on-black brand */
+        /* Landing-page palette — SwissCresta gold-on-black brand */
         'primary': {
           bg: '#08090b',
           secondary: '#101114',
-          accent: '#d6a93d',
-          purple: '#9b7d3a',
+          accent: '#6366F1',
+          purple: '#4F46E5',
+        },
+        /* ─────────────────────────────────────────────────────────
+           Marketing site palette (`mkt.*` namespace)
+
+           These are the tokens the new marketing chrome + home
+           sections use. They're CSS-variable references resolving to
+           values defined in `src/styles/marketing.css`, scoped under
+           `[data-mkt]` so the trader app's existing tokens stay
+           untouched. Utility class names follow Tailwind's nested
+           convention — `bg-mkt-canvas`, `text-mkt-ink-primary`,
+           `border-mkt-line`, `text-mkt-accent`, etc.
+           ───────────────────────────────────────────────────────── */
+        mkt: {
+          /* Surfaces */
+          canvas:   'var(--mkt-bg-canvas)',
+          surface:  'var(--mkt-bg-surface)',
+          deep:     'var(--mkt-bg-deep)',
+          'deep-2': 'var(--mkt-bg-deep-2)',
+          /* Ink */
+          ink: {
+            primary:   'var(--mkt-ink-primary)',
+            secondary: 'var(--mkt-ink-secondary)',
+            tertiary:  'var(--mkt-ink-tertiary)',
+            inverse:   'var(--mkt-ink-inverse)',
+          },
+          /* Hairlines */
+          line:        'var(--mkt-line)',
+          'line-dark': 'var(--mkt-line-dark)',
+          /* Accent + signal — use sparingly per design-system rules */
+          accent:    'var(--mkt-accent)',     /* antique gold */
+          positive:  'var(--mkt-positive)',   /* up-move green */
+          negative:  'var(--mkt-negative)',   /* down-move red */
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #ecc657 0%, #d6a93d 50%, #9b7d3a 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #818CF8 0%, #6366F1 50%, #4F46E5 100%)',
         'gradient-hero': 'linear-gradient(135deg, #08090b 0%, #0e0d09 50%, #08090b 100%)',
         'gradient-section': 'linear-gradient(180deg, #08090b 0%, #101114 100%)',
         'gradient-section-alt': 'linear-gradient(180deg, #101114 0%, #08090b 100%)',
@@ -81,6 +113,15 @@ const config: Config = {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        // ── Marketing-design-system fonts (next/font CSS vars) ───────
+        // Wired in src/app/layout.tsx via the fontVariableClass on
+        // <html>. `display` = Fraunces serif (headlines), `body` =
+        // Inter Tight (paragraphs + UI), `numeric` = JetBrains Mono
+        // via next/font specifically (the legacy `mono` above stays
+        // for trader-app code that already uses font-mono).
+        display: ['var(--font-display)', 'Fraunces', 'Georgia', 'serif'],
+        body: ['var(--font-body)', 'Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
+        numeric: ['var(--font-mono)', 'JetBrains Mono', 'Menlo', 'monospace'],
       },
       fontSize: {
         'xxs': ['10px', { lineHeight: '14px' }],
@@ -92,9 +133,42 @@ const config: Config = {
         'xl': ['20px', { lineHeight: '28px' }],
         '2xl': ['28px', { lineHeight: '36px' }],
         '3xl': ['36px', { lineHeight: '44px' }],
+        // ── Marketing display scale (per design-system brief) ───────
+        // Use the responsive pair on H1/H2: e.g.
+        //   <h1 className="text-display-h1-sm md:text-display-h1">
+        'display-h1-sm':  ['40px', { lineHeight: '1.02', letterSpacing: '-0.03em' }],
+        'display-h1':     ['72px', { lineHeight: '1.02', letterSpacing: '-0.03em' }],
+        'display-h2-sm':  ['32px', { lineHeight: '1.08', letterSpacing: '-0.025em' }],
+        'display-h2':     ['52px', { lineHeight: '1.08', letterSpacing: '-0.025em' }],
+        'display-h3':     ['22px', { lineHeight: '1.25' }],
+        'display-h3-lg':  ['28px', { lineHeight: '1.22' }],
+        'body-lg':        ['17px', { lineHeight: '1.55' }],
+        'body-md':        ['15px', { lineHeight: '1.6' }],
+        'caption':        ['12px', { lineHeight: '1.4', letterSpacing: '0.08em' }],
       },
+      letterSpacing: {
+        'caption':        '0.08em',
+        'wordmark':       '0.18em',
+        'display-tight':  '-0.03em',
+        'display-snug':   '-0.025em',
+      },
+      maxWidth: {
+        'container':      '1280px',
+      },
+      /* `boxShadow` is declared ONCE below at the bottom of `extend`.
+         A prior version of this file had two `boxShadow:` blocks —
+         the second silently overrode the first, dropping the `nav`
+         stroke. The two are now merged at the bottom block. */
       borderRadius: { sm: '4px', DEFAULT: '4px', md: '6px', lg: '8px', xl: '12px', '2xl': '16px', '3xl': '24px' },
-      spacing: { '0.5': '2px', '1': '4px', '1.5': '6px', '2': '8px', '3': '12px', '4': '16px', '5': '20px', '6': '24px', '8': '32px', '10': '40px', '12': '48px' },
+      spacing: {
+        '0.5': '2px', '1': '4px', '1.5': '6px', '2': '8px', '3': '12px',
+        '4': '16px', '5': '20px', '6': '24px', '8': '32px', '10': '40px',
+        '12': '48px',
+        // Marketing-section vertical rhythm (per brief: 64px mobile / 96px desktop)
+        'section-y-mobile':   '64px',
+        'section-y-desktop':  '96px',
+        'gutter':             '24px',
+      },
       backdropBlur: { xs: '2px', glass: '16px', 'glass-heavy': '24px', 'glass-ultra': '40px' },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
@@ -119,28 +193,28 @@ const config: Config = {
         slideDown: { '0%': { opacity: '0', transform: 'translateY(-8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
         flashBlue: { '0%': { backgroundColor: 'rgba(41,98,255,0.22)' }, '100%': { backgroundColor: 'transparent' } },
         flashRed: { '0%': { backgroundColor: 'rgba(239,68,68,0.2)' }, '100%': { backgroundColor: 'transparent' } },
-        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(214,169,61,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(214,169,61,0.32)' } },
+        glowPulse: { '0%, 100%': { boxShadow: '0 0 20px rgba(99,102,241,0.18)' }, '50%': { boxShadow: '0 0 40px rgba(99,102,241,0.32)' } },
         float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
         shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
         walletNeonTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -1px 20px rgba(214, 169, 61, 0.22), 0 0 32px rgba(214, 169, 61, 0.12), inset 0 0 24px rgba(214, 169, 61, 0.04)',
+              '0 -1px 20px rgba(99, 102, 241, 0.22), 0 0 32px rgba(99, 102, 241, 0.12), inset 0 0 24px rgba(99, 102, 241, 0.04)',
           },
           '50%': {
             boxShadow:
-              '0 -1px 36px rgba(214, 169, 61, 0.45), 0 0 52px rgba(214, 169, 61, 0.22), inset 0 0 32px rgba(214, 169, 61, 0.08)',
+              '0 -1px 36px rgba(99, 102, 241, 0.45), 0 0 52px rgba(99, 102, 241, 0.22), inset 0 0 32px rgba(99, 102, 241, 0.08)',
           },
         },
         /** Deposit / Withdraw main tabs — stronger pulsing glow */
         walletMainTabGlow: {
           '0%, 100%': {
             boxShadow:
-              '0 -6px 40px rgba(214, 169, 61, 0.38), 0 0 56px rgba(214, 169, 61, 0.2), inset 0 1px 0 rgba(214, 169, 61, 0.14)',
+              '0 -6px 40px rgba(99, 102, 241, 0.38), 0 0 56px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(99, 102, 241, 0.14)',
           },
           '50%': {
             boxShadow:
-              '0 -10px 64px rgba(214, 169, 61, 0.62), 0 0 88px rgba(214, 169, 61, 0.32), inset 0 1px 0 rgba(214, 169, 61, 0.22)',
+              '0 -10px 64px rgba(99, 102, 241, 0.62), 0 0 88px rgba(99, 102, 241, 0.32), inset 0 1px 0 rgba(99, 102, 241, 0.22)',
           },
         },
         walletMainTabText: {
@@ -160,18 +234,29 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
       },
+      /* All elevation tokens live HERE. Previously two `boxShadow:`
+         blocks coexisted — the second one overrode the first, which
+         silently dropped the marketing `nav` shadow. Merged. */
       boxShadow: {
-        'modal': '0 8px 32px rgba(0,0,0,0.6)',
-        'dropdown': '0 4px 16px rgba(0,0,0,0.4)',
-        'glass': '0 8px 32px 0 rgba(0,0,0,0.37)',
-        'glass-sm': '0 4px 16px 0 rgba(0,0,0,0.25)',
-        'glass-lg': '0 16px 48px 0 rgba(0,0,0,0.5)',
-        'inner-light': 'inset 0 1px 0 0 rgba(255,255,255,0.05)',
-        'skeu': 'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3)',
-        'glow-blue': '0 0 20px rgba(41,98,255,0.28), 0 0 60px rgba(41,98,255,0.1)',
-        'glow-red': '0 0 20px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.1)',
-        'neon-green-sm': '0 0 20px rgba(214, 169, 61, 0.25), 0 0 48px rgba(214, 169, 61, 0.08)',
-        'neon-green-lg': '0 0 28px rgba(214, 169, 61, 0.4), 0 0 64px rgba(214, 169, 61, 0.15)',
+        /* ── Marketing design system — sticky nav stroke only ─────
+           Per the brief: hairlines, not shadows. The only allowed
+           elevation is this 1px-deep stroke on the sticky navigation. */
+        'mkt-nav':       '0 1px 0 rgba(11, 27, 51, 0.04)',
+        /* Legacy `nav` alias kept for any code that already references it. */
+        'nav':           '0 1px 0 rgba(11, 27, 51, 0.04)',
+
+        /* ── Trader app legacy shadows ──────────────────────────── */
+        'modal':         '0 8px 32px rgba(0,0,0,0.6)',
+        'dropdown':      '0 4px 16px rgba(0,0,0,0.4)',
+        'glass':         '0 8px 32px 0 rgba(0,0,0,0.37)',
+        'glass-sm':      '0 4px 16px 0 rgba(0,0,0,0.25)',
+        'glass-lg':      '0 16px 48px 0 rgba(0,0,0,0.5)',
+        'inner-light':   'inset 0 1px 0 0 rgba(255,255,255,0.05)',
+        'skeu':          'inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2), 0 2px 8px rgba(0,0,0,0.3)',
+        'glow-blue':     '0 0 20px rgba(41,98,255,0.28), 0 0 60px rgba(41,98,255,0.1)',
+        'glow-red':      '0 0 20px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.1)',
+        'neon-green-sm': '0 0 20px rgba(99, 102, 241, 0.25), 0 0 48px rgba(99, 102, 241, 0.08)',
+        'neon-green-lg': '0 0 28px rgba(99, 102, 241, 0.4), 0 0 64px rgba(99, 102, 241, 0.15)',
       },
     },
   },

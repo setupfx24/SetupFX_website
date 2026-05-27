@@ -8,7 +8,19 @@ export default function LandingFooter() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
           <div className="lg:col-span-2">
-            <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-9 w-auto mb-4" />
+            {/* Brand lockup — inline SVG flag + wordmark. Matches the
+                shared Navbar's logo so the chrome stays consistent
+                regardless of whether the logo PNG has been replaced yet. */}
+            <div className="inline-flex items-center gap-2 mb-4">
+              <svg viewBox="0 0 32 32" aria-hidden="true" className="w-8 h-8 shrink-0">
+                <rect width="32" height="32" rx="4" fill="#DC2626" />
+                <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
+                <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
+              </svg>
+              <span className="font-bold tracking-tight text-lg select-none">
+                <span className="text-gray-900">Swiss</span><span className="text-blue-600">Cresta</span>
+              </span>
+            </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-3 max-w-sm">
               Professional multi-asset trading platform. Licensed under Investment Dealer Licence No. MAK21098161, St. Lucia.
             </p>
@@ -33,7 +45,7 @@ export default function LandingFooter() {
             <ul className="space-y-2 text-sm text-gray-500">
               <li><Link href="/about" className="hover:text-blue-600 transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link></li>
-              <li><Link href="/white-label" className="hover:text-blue-600 transition-colors">Partnerships</Link></li>
+              {/* Partnerships link removed with the partnership-page purge. */}
             </ul>
           </div>
 
@@ -50,7 +62,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} FXArtha. All rights reserved.</p>
+          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} SwissCresta. All rights reserved.</p>
           <div className="flex items-center gap-5 text-sm text-gray-400">
             <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms of Service</Link>

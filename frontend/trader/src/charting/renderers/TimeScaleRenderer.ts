@@ -32,7 +32,7 @@ export class TimeScaleRenderer {
     const labelInterval = Math.max(1, Math.floor(data.length / 8));
 
     for (let i = 0; i < data.length; i += labelInterval) {
-      const bar = data[i];
+      const bar = data[i]!;
       const x = i * (candleWidth + candleGap) + candleWidth / 2;
 
       const date = new Date(bar.time * 1000);

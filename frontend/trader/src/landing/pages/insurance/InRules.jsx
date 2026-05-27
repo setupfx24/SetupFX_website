@@ -16,7 +16,7 @@ const groups = [
   },
   {
     icon: Layers,
-    accent: '#ecc657',
+    accent: '#818CF8',
     title: 'Plan Rules',
     items: [
       'Coverage pool applies across the entire duration',

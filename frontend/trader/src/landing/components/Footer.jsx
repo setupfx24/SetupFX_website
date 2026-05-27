@@ -21,9 +21,9 @@ const columns = {
     { name: 'Demo',     path: '/accounts/demo' },
   ],
   Company: [
-    { name: 'About Us',       path: '/company/about' },
-    { name: 'Why FXArtha',    path: '/company/why-fxartha' },
-    { name: 'Contact',        path: '/company/contact' },
+    { name: 'About Us',       path: '/about' },
+    { name: 'Why SwissCresta',    path: '/company/why-swisscresta' },
+    { name: 'Contact',        path: '/contact' },
   ],
 }
 
@@ -52,19 +52,34 @@ export default function Footer() {
           {/* Brand block — spans more on mobile */}
           <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">
-              <Link to="/" className="inline-block mb-5" aria-label="FXArtha home">
-                <img src="/images/fxartha-logo.png" alt="FXArtha" className="h-7 w-auto" />
+              <Link to="/" className="inline-flex items-center gap-2 mb-5" aria-label="SwissCresta home">
+                {/* Same inline Swiss-flag lockup as the navbar — keeps
+                    the brand consistent without depending on a logo
+                    PNG that may not yet be the final asset. */}
+                <svg
+                  viewBox="0 0 32 32"
+                  aria-hidden="true"
+                  className="w-7 h-7 shrink-0"
+                >
+                  <rect width="32" height="32" rx="4" fill="#DC2626" />
+                  <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
+                  <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
+                </svg>
+                <span className="inline-flex items-baseline font-bold tracking-tight text-lg select-none">
+                  <span className="text-white">Swiss</span>
+                  <span className="text-[#6366F1]">Cresta</span>
+                </span>
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                FXArtha is an institutional-grade forex and CFD broker. Built for serious
+                SwissCresta is an institutional-grade forex and CFD broker. Built for serious
                 traders who demand fast execution, transparent pricing, and a platform that
                 works as hard as they do.
               </p>
 
               <div className="flex items-center gap-2 text-sm mb-5" style={{ color: 'var(--fx-text-3)' }}>
                 <Mail size={14} style={{ color: 'var(--fx-gold-light)' }} />
-                <a href="mailto:support@fxartha.com" className="hover:underline" style={{ color: 'var(--fx-text-2)' }}>
-                  support@fxartha.com
+                <a href="mailto:support@swisscresta.com" className="hover:underline" style={{ color: 'var(--fx-text-2)' }}>
+                  support@swisscresta.com
                 </a>
               </div>
 
@@ -82,7 +97,7 @@ export default function Footer() {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = 'var(--fx-gold-light)'
-                      e.currentTarget.style.borderColor = 'rgba(214,169,61,0.4)'
+                      e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)'
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = 'var(--fx-text-2)'
@@ -143,7 +158,7 @@ export default function Footer() {
             and may not be suitable for all investors. You could lose more than your initial
             investment. Past performance is not indicative of future results. Please ensure
             you fully understand the risks involved and seek independent advice if necessary.
-            FXArtha does not provide investment advice.
+            SwissCresta does not provide investment advice.
           </p>
         </div>
 
@@ -153,7 +168,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            © {year} FXArtha Ltd. All rights reserved.
+            © {year} SwissCresta Ltd. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--fx-text-3)' }}>
             <Link to="/privacy" className="hover:underline">Privacy Policy</Link>

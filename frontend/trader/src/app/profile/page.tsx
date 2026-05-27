@@ -7,7 +7,6 @@ import { User, Shield, Bell, Monitor, ChevronRight, Sun, Moon, Palette } from 'l
 import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/Button';
 import DashboardShell from '@/components/layout/DashboardShell';
-import LinkedWalletCard from '@/components/profile/LinkedWalletCard';
 import EmailVerificationCard from '@/components/profile/EmailVerificationCard';
 import api from '@/lib/api/client';
 
@@ -24,10 +23,12 @@ interface Profile {
   postal_code?: string | null;
   kyc_status: string;
   two_factor_enabled: boolean;
-  // Onboarding flags from /profile (mirror /auth/me) — drive the
-  // EmailVerificationCard's "verified" badge and the Change-Email button.
+  // Onboarding flag from /profile (mirror /auth/me) — drives the
+  // EmailVerificationCard's "verified" badge and the Change-Email
+  // button. `is_wallet_placeholder` removed with the wallet-integration
+  // purge: no SIWE flow means no @wallet.swisscresta.local placeholder
+  // emails any more.
   email_verified?: boolean;
-  is_wallet_placeholder?: boolean;
 }
 
 interface TradingAccount {
@@ -245,7 +246,7 @@ export default function ProfilePage() {
             <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Profile, security, notifications, and active sessions — aligned with FXArtha.
+                Profile, security, notifications, and active sessions — aligned with SwissCresta.
               </p>
             </div>
           </section>
@@ -297,7 +298,7 @@ export default function ProfilePage() {
                   >
                     <Icon size={14} className="shrink-0 opacity-90" />
                     {active ? (
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(214,169,61,0.6)] truncate">
+                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_16px_rgba(99,102,241,0.6)] truncate">
                         {t.label}
                       </span>
                     ) : (
@@ -507,11 +508,11 @@ export default function ProfilePage() {
             <EmailVerificationCard
               email={profile?.email || ''}
               isVerified={Boolean(profile?.email_verified)}
-              isPlaceholder={Boolean(profile?.is_wallet_placeholder)}
+              // No wallet flow any more, so no placeholder emails to
+              // distinguish — every account is a real-email account.
+              isPlaceholder={false}
               onChanged={() => void fetchProfile()}
             />
-
-            <LinkedWalletCard />
           </div>
         )}
 
@@ -582,7 +583,7 @@ export default function ProfilePage() {
                     <div className="flex h-[calc(100%-12px)]">
                       <div className="w-1/4 border-r" style={{ borderColor: '#2a2a2a', background: '#0d0d0d' }} />
                       <div className="flex-1 p-1.5">
-                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#d6a93d' }} />
+                        <div className="h-1.5 w-3/4 rounded-full mb-1" style={{ background: '#6366F1' }} />
                         <div className="h-1 w-1/2 rounded-full" style={{ background: '#333' }} />
                       </div>
                     </div>

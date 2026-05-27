@@ -130,7 +130,7 @@ interface TradingState {
     stop_loss?: number;
     take_profit?: number;
     stop_limit_price?: number;
-  }) => Promise<any>;
+  }) => Promise<unknown>;
 
   orderFormCloneDraft: OrderFormCloneDraft | null;
   setOrderFormCloneDraft: (d: OrderFormCloneDraft | null) => void;
@@ -143,7 +143,7 @@ const DEFAULT_WATCHLIST = [
 ];
 
 const DEFAULT_SYMBOL = 'XAUUSD';
-const SYMBOL_STORAGE_KEY = 'fxartha-selected-symbol';
+const SYMBOL_STORAGE_KEY = 'swisscresta-selected-symbol';
 
 function getPersistedSymbol(): string {
   if (typeof window === 'undefined') return DEFAULT_SYMBOL;
@@ -188,7 +188,11 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     const account = get().activeAccount;
     if (!account) return;
     try {
-      const positions = await api.get<any[]>(`/positions/`, { account_id: account.id, status: 'open' });
+      /* Backend returns positions as a JSON array. We narrow per-field
+       * below via Number()/as casts; typing the wire as Record keeps
+       * the optimistic-merge logic compatible without inventing a
+       * full PositionApiRow contract we can't verify. */
+      const positions = await api.get<Record<string, unknown>[]>(`/positions/`, { account_id: account.id, status: 'open' });
       const list = Array.isArray(positions) ? positions : [];
 
       // Merge instead of replace — preserves React keys for any
@@ -207,7 +211,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       const optimisticPrev = prevPositions.filter((p) => p.id.startsWith('optim-'));
       const optimMatched = new Set<string>();
 
-      const merged = list.map((p: any) => {
+      const merged = list.map((p: Record<string, unknown>) => {
         const serverPos = {
           id: p.id as string,
           account_id: p.account_id as string,
@@ -248,9 +252,11 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     const account = get().activeAccount;
     if (!account) return;
     try {
-      const res = await api.get<any>('/accounts');
-      const items = Array.isArray(res) ? res : (res?.items ?? []);
-      const updated = items.find((a: any) => a.id === account.id);
+      const res = await api.get<unknown>('/accounts');
+      const items: Record<string, unknown>[] = Array.isArray(res)
+        ? res
+        : ((res as { items?: Record<string, unknown>[] } | null)?.items ?? []);
+      const updated = items.find((a) => a.id === account.id);
       if (updated) {
         set({
           activeAccount: {
@@ -262,7 +268,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
             credit: Number(updated.credit) || 0,
             margin_level: Number(updated.margin_level) || 0,
             leverage: Number(updated.leverage) || account.leverage,
-            account_group: updated.account_group ?? account.account_group,
+            account_group: (updated.account_group as AccountGroupInfo | null | undefined) ?? account.account_group,
           },
         });
       }
@@ -348,7 +354,7 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     }
 
     try {
-      const res = await api.post<any>('/orders/', {
+      const res = await api.post<unknown>('/orders/', {
         account_id: data.account_id,
         symbol: data.symbol,
         side: data.side,

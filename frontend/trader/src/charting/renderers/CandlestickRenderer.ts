@@ -18,7 +18,7 @@ export class CandlestickRenderer {
       chartHeight - ((price - viewport.priceMin) / priceRange) * chartHeight;
 
     for (let i = 0; i < data.length; i++) {
-      const bar = data[i];
+      const bar = data[i]!;
       const x = i * (candleWidth + candleGap);
       const centerX = x + candleWidth / 2;
 

@@ -1,4 +1,4 @@
--- FXArtha Main Database Schema
+-- SwissCresta Main Database Schema
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -784,6 +784,18 @@ INSERT INTO account_groups (name, description, leverage_default, is_demo) VALUES
     ('Islamic', 'Swap-free Islamic account', 100, FALSE),
     ('Demo', 'Demo practice account', 100, TRUE);
 
--- Seed super admin (password: FXArthaAdmin2025! — change in production)
-INSERT INTO users (email, password_hash, first_name, last_name, role, status, kyc_status)
-VALUES ('admin@fxartha.com', '$2b$12$OV1PUf7jA8E22RQ184o0n.KkEjbSriZbLaDqO4SJGj/bjleK37Zh2', 'Super', 'Admin', 'super_admin', 'active', 'approved');
+-- Super-admin seeding lives in Alembic migration 0002, NOT here. The
+-- migration reads ADMIN_EMAIL + ADMIN_PASSWORD from the environment and
+-- hashes a freshly generated bcrypt at runtime.
+--
+-- This file used to seed a hard-coded bcrypt hash for the historical
+-- default password "SwissCrestaAdmin2025!". That meant ANY deployment that
+-- ran init-db.sql but skipped migration 0002 ended up with a back-door
+-- super-admin login that the operator had no way to know about. The
+-- hash has been removed; provision the super-admin by running:
+--
+--     docker compose --profile migrate run --rm migrate
+--
+-- with strong ADMIN_PASSWORD already exported in .env. The boot-time
+-- check in packages/common/src/config.py refuses to start in production
+-- if the password is empty or matches any historical default.

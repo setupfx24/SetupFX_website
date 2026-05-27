@@ -116,7 +116,7 @@ def _strip_tags(html: str) -> str:
 
 
 async def send_password_reset_email(
-    to_email: str, reset_link: str, *, app_name: str = "FXArtha",
+    to_email: str, reset_link: str, *, app_name: str = "SwissCresta",
 ) -> bool:
     from .email_templates import render_password_reset
     subject, html, text = render_password_reset(app_name=app_name, reset_link=reset_link)

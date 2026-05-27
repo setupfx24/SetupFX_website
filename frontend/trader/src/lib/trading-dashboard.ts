@@ -266,7 +266,8 @@ export function buildDashboardFromPortfolio(input: {
   let streakTrades = 0;
   let streakKind: 'win' | 'loss' | null = null;
   for (let i = chrono.length - 1; i >= 0; i -= 1) {
-    const t = chrono[i];
+    /* i bounded by chrono.length, safe. */
+    const t = chrono[i]!;
     if (t.pnl === 0) continue;
     const k = t.pnl > 0 ? 'win' : 'loss';
     if (streakKind === null) streakKind = k;
@@ -303,7 +304,8 @@ export function buildDashboardFromPortfolio(input: {
   const defaultMonth =
     input.defaultMonth ??
     (days.length > 0
-      ? days.map((c) => c.date.slice(0, 7)).sort().reverse()[0]
+      /* length > 0 guard makes [0] safe. */
+      ? days.map((c) => c.date.slice(0, 7)).sort().reverse()[0]!
       : `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}`);
 
   // Monthly summary (for the defaultMonth)

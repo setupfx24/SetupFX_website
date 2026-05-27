@@ -5,6 +5,7 @@ import { Loader2, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 
 type Row = {
   rank: number;
@@ -35,8 +36,8 @@ function Inner() {
     try {
       const r = await api.get<Row[]>(`/rewards/leaderboard?kind=${tab}&limit=20`);
       setRows(r);
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not load leaderboard');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not load leaderboard'));
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,7 @@ function Inner() {
     <div className="space-y-5 pb-8">
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-          Leaderboard <Trophy size={22} className="text-[#d6a93d]" />
+          Leaderboard <Trophy size={22} className="text-[#6366F1]" />
         </h1>
         <p className="text-sm text-text-secondary mt-1">Top traders by P&amp;L over the last 30 days, and top earners by Coin balance.</p>
       </header>
@@ -63,7 +64,7 @@ function Inner() {
               className={
                 'px-4 py-2 rounded-lg text-sm font-medium transition-colors ' +
                 (tab === k
-                  ? 'bg-[#d6a93d]/15 text-text-primary border border-[#d6a93d]/40'
+                  ? 'bg-[#6366F1]/15 text-text-primary border border-[#6366F1]/40'
                   : 'text-text-secondary hover:text-text-primary border border-transparent')
               }
             >

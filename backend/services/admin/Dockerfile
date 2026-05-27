@@ -18,11 +18,11 @@ ENV PYTHONPATH=/app
 
 # Drop root — H8 from the security audit. Same uploads/ chown path as
 # gateway so any admin tooling that writes there still works.
-RUN groupadd --system --gid 1001 fxartha \
- && useradd  --system --uid 1001 --gid fxartha --shell /usr/sbin/nologin fxartha \
+RUN groupadd --system --gid 1001 swisscresta \
+ && useradd  --system --uid 1001 --gid swisscresta --shell /usr/sbin/nologin swisscresta \
  && mkdir -p /app/uploads \
- && chown -R fxartha:fxartha /app/uploads
-USER fxartha
+ && chown -R swisscresta:swisscresta /app/uploads
+USER swisscresta
 
 EXPOSE 8001
 

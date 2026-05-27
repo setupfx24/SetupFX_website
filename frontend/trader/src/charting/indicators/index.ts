@@ -1,10 +1,18 @@
 import { OHLCV } from '../core/types';
 
+/* Math hot-path: indicator functions iterate with bounded loops where
+ * every `data[i]` / `result[i-1]` / `kValues[j]` access is provably
+ * in-range. Under `noUncheckedIndexedAccess` TypeScript can't prove this,
+ * so we use non-null assertions (`!`) to silence the false positives.
+ * The alternative (per-iteration `if (!bar) continue` guard) would add
+ * runtime cost to every chart render — unacceptable for indicator math
+ * that runs on every tick of a hot symbol. */
+
 export function sma(data: OHLCV[], period: number): number[] {
   const result: number[] = new Array(data.length).fill(NaN);
   for (let i = period - 1; i < data.length; i++) {
     let sum = 0;
-    for (let j = i - period + 1; j <= i; j++) sum += data[j].close;
+    for (let j = i - period + 1; j <= i; j++) sum += data[j]!.close;
     result[i] = sum / period;
   }
   return result;
@@ -15,7 +23,7 @@ export function ema(data: OHLCV[], period: number): number[] {
   const k = 2 / (period + 1);
   result[period - 1] = data.slice(0, period).reduce((s, d) => s + d.close, 0) / period;
   for (let i = period; i < data.length; i++) {
-    result[i] = data[i].close * k + result[i - 1] * (1 - k);
+    result[i] = data[i]!.close * k + result[i - 1]! * (1 - k);
   }
   return result;
 }
@@ -28,11 +36,11 @@ export function bollingerBands(data: OHLCV[], period = 20, stdDev = 2): { upper:
   for (let i = period - 1; i < data.length; i++) {
     let sumSq = 0;
     for (let j = i - period + 1; j <= i; j++) {
-      sumSq += (data[j].close - middle[i]) ** 2;
+      sumSq += (data[j]!.close - middle[i]!) ** 2;
     }
     const std = Math.sqrt(sumSq / period);
-    upper[i] = middle[i] + stdDev * std;
-    lower[i] = middle[i] - stdDev * std;
+    upper[i] = middle[i]! + stdDev * std;
+    lower[i] = middle[i]! - stdDev * std;
   }
 
   return { upper, middle, lower };
@@ -46,7 +54,7 @@ export function rsi(data: OHLCV[], period = 14): number[] {
   let avgLoss = 0;
 
   for (let i = 1; i <= period; i++) {
-    const change = data[i].close - data[i - 1].close;
+    const change = data[i]!.close - data[i - 1]!.close;
     if (change > 0) avgGain += change;
     else avgLoss += Math.abs(change);
   }
@@ -56,7 +64,7 @@ export function rsi(data: OHLCV[], period = 14): number[] {
   result[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
 
   for (let i = period + 1; i < data.length; i++) {
-    const change = data[i].close - data[i - 1].close;
+    const change = data[i]!.close - data[i - 1]!.close;
     const gain = change > 0 ? change : 0;
     const loss = change < 0 ? Math.abs(change) : 0;
 
@@ -74,8 +82,8 @@ export function macd(data: OHLCV[], fast = 12, slow = 26, signal = 9): { macd: n
   const macdLine: number[] = new Array(data.length).fill(NaN);
 
   for (let i = 0; i < data.length; i++) {
-    if (!isNaN(fastEma[i]) && !isNaN(slowEma[i])) {
-      macdLine[i] = fastEma[i] - slowEma[i];
+    if (!isNaN(fastEma[i]!) && !isNaN(slowEma[i]!)) {
+      macdLine[i] = fastEma[i]! - slowEma[i]!;
     }
   }
 
@@ -83,25 +91,25 @@ export function macd(data: OHLCV[], fast = 12, slow = 26, signal = 9): { macd: n
   const k = 2 / (signal + 1);
   let firstValid = -1;
   for (let i = 0; i < data.length; i++) {
-    if (!isNaN(macdLine[i])) { firstValid = i; break; }
+    if (!isNaN(macdLine[i]!)) { firstValid = i; break; }
   }
 
   if (firstValid >= 0 && firstValid + signal - 1 < data.length) {
     let sum = 0;
-    for (let i = firstValid; i < firstValid + signal; i++) sum += macdLine[i];
+    for (let i = firstValid; i < firstValid + signal; i++) sum += macdLine[i]!;
     signalLine[firstValid + signal - 1] = sum / signal;
 
     for (let i = firstValid + signal; i < data.length; i++) {
-      if (!isNaN(macdLine[i])) {
-        signalLine[i] = macdLine[i] * k + signalLine[i - 1] * (1 - k);
+      if (!isNaN(macdLine[i]!)) {
+        signalLine[i] = macdLine[i]! * k + signalLine[i - 1]! * (1 - k);
       }
     }
   }
 
   const histogram: number[] = new Array(data.length).fill(NaN);
   for (let i = 0; i < data.length; i++) {
-    if (!isNaN(macdLine[i]) && !isNaN(signalLine[i])) {
-      histogram[i] = macdLine[i] - signalLine[i];
+    if (!isNaN(macdLine[i]!) && !isNaN(signalLine[i]!)) {
+      histogram[i] = macdLine[i]! - signalLine[i]!;
     }
   }
 
@@ -115,17 +123,17 @@ export function stochastic(data: OHLCV[], kPeriod = 14, dPeriod = 3): { k: numbe
     let highest = -Infinity;
     let lowest = Infinity;
     for (let j = i - kPeriod + 1; j <= i; j++) {
-      highest = Math.max(highest, data[j].high);
-      lowest = Math.min(lowest, data[j].low);
+      highest = Math.max(highest, data[j]!.high);
+      lowest = Math.min(lowest, data[j]!.low);
     }
     const range = highest - lowest;
-    kValues[i] = range === 0 ? 50 : ((data[i].close - lowest) / range) * 100;
+    kValues[i] = range === 0 ? 50 : ((data[i]!.close - lowest) / range) * 100;
   }
 
   const dValues: number[] = new Array(data.length).fill(NaN);
   for (let i = kPeriod - 1 + dPeriod - 1; i < data.length; i++) {
     let sum = 0;
-    for (let j = i - dPeriod + 1; j <= i; j++) sum += kValues[j];
+    for (let j = i - dPeriod + 1; j <= i; j++) sum += kValues[j]!;
     dValues[i] = sum / dPeriod;
   }
 
@@ -138,12 +146,12 @@ export function atr(data: OHLCV[], period = 14): number[] {
 
   for (let i = 0; i < data.length; i++) {
     if (i === 0) {
-      trValues.push(data[i].high - data[i].low);
+      trValues.push(data[i]!.high - data[i]!.low);
     } else {
       const tr = Math.max(
-        data[i].high - data[i].low,
-        Math.abs(data[i].high - data[i - 1].close),
-        Math.abs(data[i].low - data[i - 1].close)
+        data[i]!.high - data[i]!.low,
+        Math.abs(data[i]!.high - data[i - 1]!.close),
+        Math.abs(data[i]!.low - data[i - 1]!.close)
       );
       trValues.push(tr);
     }
@@ -151,11 +159,11 @@ export function atr(data: OHLCV[], period = 14): number[] {
 
   if (trValues.length >= period) {
     let sum = 0;
-    for (let i = 0; i < period; i++) sum += trValues[i];
+    for (let i = 0; i < period; i++) sum += trValues[i]!;
     result[period - 1] = sum / period;
 
     for (let i = period; i < data.length; i++) {
-      result[i] = (result[i - 1] * (period - 1) + trValues[i]) / period;
+      result[i] = (result[i - 1]! * (period - 1) + trValues[i]!) / period;
     }
   }
 
@@ -168,9 +176,9 @@ export function vwap(data: OHLCV[]): number[] {
   let cumulativeVolume = 0;
 
   for (let i = 0; i < data.length; i++) {
-    const typicalPrice = (data[i].high + data[i].low + data[i].close) / 3;
-    cumulativeTPV += typicalPrice * (data[i].volume || 1);
-    cumulativeVolume += data[i].volume || 1;
+    const typicalPrice = (data[i]!.high + data[i]!.low + data[i]!.close) / 3;
+    cumulativeTPV += typicalPrice * (data[i]!.volume || 1);
+    cumulativeVolume += data[i]!.volume || 1;
     result[i] = cumulativeTPV / cumulativeVolume;
   }
 
@@ -192,8 +200,8 @@ export function ichimoku(data: OHLCV[], tenkan = 9, kijun = 26, senkou = 52): {
   const midpoint = (arr: OHLCV[], start: number, period: number) => {
     let high = -Infinity, low = Infinity;
     for (let i = start; i < start + period && i < arr.length; i++) {
-      high = Math.max(high, arr[i].high);
-      low = Math.min(low, arr[i].low);
+      high = Math.max(high, arr[i]!.high);
+      low = Math.min(low, arr[i]!.low);
     }
     return (high + low) / 2;
   };
@@ -207,9 +215,9 @@ export function ichimoku(data: OHLCV[], tenkan = 9, kijun = 26, senkou = 52): {
   }
 
   for (let i = kijun - 1; i < len; i++) {
-    if (!isNaN(tenkanSen[i]) && !isNaN(kijunSen[i])) {
+    if (!isNaN(tenkanSen[i]!) && !isNaN(kijunSen[i]!)) {
       const idx = i + kijun;
-      if (idx < len) senkouA[idx] = (tenkanSen[i] + kijunSen[i]) / 2;
+      if (idx < len) senkouA[idx] = (tenkanSen[i]! + kijunSen[i]!) / 2;
     }
   }
 

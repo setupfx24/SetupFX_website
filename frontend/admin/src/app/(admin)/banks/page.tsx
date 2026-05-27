@@ -355,7 +355,7 @@ export default function BanksPage() {
                   {
                     key: 'account_holder',
                     label: 'Account Holder',
-                    placeholder: 'e.g. FXArtha Pvt Ltd',
+                    placeholder: 'e.g. SwissCresta Pvt Ltd',
                   },
                   {
                     key: 'account_number',

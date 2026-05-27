@@ -11,7 +11,7 @@ const items = [
   },
   {
     icon: ShieldCheck,
-    accent: '#ecc657',
+    accent: '#818CF8',
     title: 'Trade Insurance (optional)',
     desc: 'Activate partial loss cover on eligible trades, before execution.',
   },

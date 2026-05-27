@@ -5,6 +5,7 @@ import { Loader2, ShoppingBag, Coins, Lock, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
+import { getErrorMessage, getErrorDetail } from '@/lib/errors';
 import { formatInteger } from '@/lib/formatters';
 
 type StoreItem = {
@@ -55,8 +56,8 @@ function Inner() {
       ]);
       setState(s);
       setItems(items);
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not load store');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not load store'));
     } finally {
       setLoading(false);
     }
@@ -70,11 +71,11 @@ function Inner() {
       const res = await api.post<{ redeemed: string; ac_spent: number }>(`/rewards/store/${item.id}/redeem`, {});
       toast.success(`Redeemed ${res.redeemed} (−${formatInteger(res.ac_spent)} AC)`);
       await load();
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err: unknown) {
+      const detail = getErrorDetail(err);
       if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
       else if (detail === 'insufficient_ps') toast.error('Not enough Power Score for this lifestyle reward');
-      else toast.error(detail || err?.message || 'Could not redeem');
+      else toast.error(getErrorMessage(err, 'Could not redeem'));
     } finally {
       setBusyId(null);
     }

@@ -76,18 +76,20 @@ export default function AppHeader() {
       <header
         className="h-[56px] sm:h-[65px] flex items-center justify-between px-3 sm:px-5 rounded-xl bg-bg-secondary border border-border-primary"
       >
-        {/* LEFT — fxartha mark toggles the sidebar (no hamburger) */}
+        {/* LEFT — swisscresta mark toggles the sidebar (no hamburger) */}
         <button
           type="button"
           onClick={toggleSidebar}
           className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-bg-hover transition-colors"
           aria-label="Toggle menu"
         >
-          <img
-            src="/images/fxartha_icon.png"
-            alt="FXArtha"
-            className="w-9 h-9 object-contain"
-          />
+          {/* Inline Swiss-flag SVG — same mark as the navbar / hero /
+              auth pages. Replaces the deleted swisscresta_icon.png. */}
+          <svg viewBox="0 0 32 32" aria-hidden="true" className="w-9 h-9">
+            <rect width="32" height="32" rx="4" fill="#DC2626" />
+            <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
+            <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
+          </svg>
         </button>
 
         {/* RIGHT — XP/Coin chip + balance + bell + user */}
@@ -98,11 +100,11 @@ export default function AppHeader() {
           {/* Balance pill */}
           <Link
             href="/wallet"
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5 hover:bg-[#d6a93d]/10 transition-colors"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-[#6366F1]/30 bg-[#6366F1]/5 hover:bg-[#6366F1]/10 transition-colors"
           >
-            <Wallet size={14} className="text-[#d6a93d] shrink-0" />
-            <span className="text-[#d6a93d] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
-            <ChevronDown size={12} className="text-[#d6a93d]/60 shrink-0 hidden sm:block" />
+            <Wallet size={14} className="text-[#6366F1] shrink-0" />
+            <span className="text-[#6366F1] text-xs sm:text-sm font-medium truncate max-w-[90px] sm:max-w-none">{formatUsd(balance)}</span>
+            <ChevronDown size={12} className="text-[#6366F1]/60 shrink-0 hidden sm:block" />
           </Link>
 
           {/* Theme toggle — lets the user flip dark/light without
@@ -120,7 +122,7 @@ export default function AppHeader() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#d6a93d]/20 border border-[#d6a93d]/30 flex items-center justify-center text-[#d6a93d] text-[10px] sm:text-xs font-bold uppercase">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#6366F1]/20 border border-[#6366F1]/30 flex items-center justify-center text-[#6366F1] text-[10px] sm:text-xs font-bold uppercase">
                 {initials}
               </div>
               <span className="text-sm text-text-primary hidden sm:inline">{handle}</span>

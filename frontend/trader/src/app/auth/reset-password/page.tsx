@@ -48,8 +48,19 @@ function ResetPasswordForm() {
   return (
     <div className="auth-page min-h-screen relative overflow-hidden bg-bg-primary flex flex-col items-center justify-center px-6 py-10">
       <div className="w-full max-w-[400px]">
-        <div className="mb-8 flex justify-center">
-          <img src="/images/fxartha-logo.png" alt="FXArtha" className="w-20 h-20 object-contain" />
+        <div className="mb-8 flex flex-col items-center gap-3">
+          {/* Inline Swiss-flag brand mark — no PNG dependency.
+              Same mark as the navbar / hero so the user knows they
+              haven't been redirected to a different brand mid-reset. */}
+          <svg viewBox="0 0 32 32" aria-hidden="true" className="w-14 h-14">
+            <rect width="32" height="32" rx="4" fill="#DC2626" />
+            <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
+            <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
+          </svg>
+          <span className="inline-flex items-baseline font-bold tracking-tight text-lg select-none">
+            <span className="text-text-primary">Swiss</span>
+            <span className="text-[#6366F1]">Cresta</span>
+          </span>
         </div>
         <div className="glass-panel rounded-3xl p-8 noise-texture overflow-hidden">
           <h1 className="text-xl font-bold text-text-primary mb-2">Reset password</h1>

@@ -4,7 +4,7 @@
  * Custom-styled "Continue with Google" button.
  *
  * Replaces @react-oauth/google's <GoogleLogin> iframe (which forces a white
- * surface and a fixed "personalized" pill shape) with a dark FXArtha
+ * surface and a fixed "personalized" pill shape) with a dark SwissCresta
  * `.auth-btn--outline` button so it visually matches the wallet + demo
  * buttons stacked below it on the auth page.
  *
@@ -26,6 +26,7 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
+import { getErrorDetail, getErrorMessage, getErrorStatus } from '@/lib/errors';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
@@ -133,14 +134,19 @@ export default function GoogleAuthButton({ disabled }: { disabled?: boolean }) {
       await googleLogin(response.credential, ref);
       toast.success('Signed in with Google');
       router.push('/accounts');
-    } catch (err: any) {
-      const status = err?.status ?? err?.response?.status;
-      const detail = err?.detail || err?.response?.data?.detail || err?.message;
+    } catch (err: unknown) {
+      const status = getErrorStatus(err);
+      const detail = getErrorDetail(err) || getErrorMessage(err, '');
       // The sign-in actually succeeded server-side (session created, email
       // dispatched) — we just couldn't load the profile in time. Send the
       // user to /accounts; the layout's loadUser() will resolve identity
       // there. Don't show the misleading "could not be verified" toast.
-      if (err?.profileLoadFailed) {
+      // `profileLoadFailed` is a sentinel field googleLogin tags onto the
+      // thrown error in that specific path (see authStore.googleLogin).
+      const profileLoadFailed =
+        typeof err === 'object' && err !== null && 'profileLoadFailed' in err &&
+        (err as { profileLoadFailed?: boolean }).profileLoadFailed === true;
+      if (profileLoadFailed) {
         toast.success('Signed in with Google');
         router.push('/accounts');
         return;

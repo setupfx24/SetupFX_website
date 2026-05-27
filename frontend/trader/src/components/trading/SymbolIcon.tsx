@@ -100,7 +100,8 @@ function fallbackGradient(symbol: string): string {
   ];
   let hash = 0;
   for (let i = 0; i < symbol.length; i++) hash = (hash * 31 + symbol.charCodeAt(i)) >>> 0;
-  return gradients[hash % gradients.length];
+  /* gradients is non-empty hardcoded above; modulo into its length is safe. */
+  return gradients[hash % gradients.length]!;
 }
 
 type IconKind =
@@ -120,7 +121,8 @@ function resolve(symbol: string): IconKind {
      icon in the cryptocurrency-icons repo served via jsDelivr. */
   const cryptoMatch = s.match(/^([A-Z]{2,6})(USDT|USDC|USD)$/);
   if (cryptoMatch) {
-    const rawBase = cryptoMatch[1];
+    /* Regex has one capturing group; cryptoMatch[1] exists when match succeeds. */
+    const rawBase = cryptoMatch[1]!;
     const base = (CRYPTO_ALIAS[rawBase] || rawBase).toLowerCase();
     return {
       kind: 'crypto',

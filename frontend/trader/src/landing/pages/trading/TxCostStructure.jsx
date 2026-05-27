@@ -5,7 +5,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 const costs = [
   {
     icon: Receipt,
-    accent: '#ecc657',
+    accent: '#818CF8',
     title: 'Brokerage',
     sub: 'Trading Fee',
     desc: 'Applied when a trade is executed.',

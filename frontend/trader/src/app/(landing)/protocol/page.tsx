@@ -17,8 +17,7 @@ export default function ProtocolPage() {
       <PrCompare />
       <PrFlow />
       <FxPageBanner
-        image="/images/Protocol_banner1.png"
-        alt="FX Artha Protocol"
+        alt="SwissCresta Protocol"
         tagline="Execution runs on logic — not control."
         taglineSub="A transparent, system-driven trading protocol."
       />
@@ -26,8 +25,7 @@ export default function ProtocolPage() {
       <PrSecurity />
       <PrTable />
       <FxPageBanner
-        image="/images/Protocol_banner2.png"
-        alt="FX Artha Protocol"
+        alt="SwissCresta Protocol"
         tone="elev"
         tagline="Your funds stay yours."
         taglineSub="Non-custodial by design — verifiable, automated settlement."

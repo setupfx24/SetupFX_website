@@ -25,8 +25,8 @@ export default function PrCompare() {
         <div className="fx-section-frame">
         <SectionHeader
           badge="What Makes Us Different"
-          title="Traditional Broker vs FX Artha"
-          highlight="vs FX Artha"
+          title="Traditional Broker vs SwissCresta"
+          highlight="vs SwissCresta"
           subtitle="The short answer: in one model the broker holds your money. In the other, a smart contract does."
         />
         <div className="relative mt-12 md:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
@@ -72,15 +72,15 @@ export default function PrCompare() {
             </div>
           </ScrollReveal>
 
-          {/* FX Artha Protocol */}
+          {/* SwissCresta Protocol */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <div
               className="relative h-full p-7 md:p-8 rounded-2xl overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(214,169,61,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(214,169,61,0.35)',
+                  'linear-gradient(180deg, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0.02) 60%), var(--fx-bg-elev)',
+                border: '1px solid rgba(99,102,241,0.35)',
+                boxShadow: '0 24px 60px -28px rgba(99,102,241,0.35)',
               }}
             >
               <div className="flex items-center gap-3 mb-5">
@@ -89,7 +89,7 @@ export default function PrCompare() {
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.22em]" style={{ color: 'var(--fx-gold-light)' }}>
-                    FX Artha Protocol
+                    SwissCresta Protocol
                   </div>
                   <div className="text-lg md:text-xl font-bold text-white">
                     Smart-Contract Layer
@@ -118,7 +118,7 @@ export default function PrCompare() {
                   'linear-gradient(180deg, var(--fx-gold-light), var(--fx-gold) 70%, var(--fx-gold-dark))',
                 color: '#1a1408',
                 boxShadow:
-                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(214,169,61,0.45), 0 16px 40px -12px rgba(214,169,61,0.45)',
+                  '0 0 0 6px rgba(8,9,11,1), 0 0 0 7px rgba(99,102,241,0.45), 0 16px 40px -12px rgba(99,102,241,0.45)',
               }}
             >
               VS

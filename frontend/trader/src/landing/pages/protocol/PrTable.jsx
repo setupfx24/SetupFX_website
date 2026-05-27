@@ -16,7 +16,7 @@ export default function PrTable() {
         <div className="fx-section-frame">
         <SectionHeader
           badge="Side by Side"
-          title="FX Artha vs Traditional Brokers"
+          title="SwissCresta vs Traditional Brokers"
           highlight="vs Traditional Brokers"
           subtitle="The five differences that matter most, laid out plainly."
         />
@@ -26,14 +26,14 @@ export default function PrTable() {
             style={{
               background:
                 'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-              border: '1px solid rgba(214,169,61,0.32)',
-              boxShadow: '0 30px 70px -30px rgba(214,169,61,0.30)',
+              border: '1px solid rgba(99,102,241,0.32)',
+              boxShadow: '0 30px 70px -30px rgba(99,102,241,0.30)',
             }}
           >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px]">
                 <thead>
-                  <tr style={{ background: 'rgba(214,169,61,0.06)', borderBottom: '1px solid var(--fx-line)' }}>
+                  <tr style={{ background: 'rgba(99,102,241,0.06)', borderBottom: '1px solid var(--fx-line)' }}>
                     <th
                       className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: 'var(--fx-text-3)' }}
@@ -44,7 +44,7 @@ export default function PrTable() {
                       className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"
                       style={{ color: 'var(--fx-gold-light)' }}
                     >
-                      FX Artha
+                      SwissCresta
                     </th>
                     <th
                       className="text-left px-5 md:px-7 py-4 text-[11px] font-bold uppercase tracking-[0.22em]"

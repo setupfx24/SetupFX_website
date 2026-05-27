@@ -2,8 +2,16 @@
 
 import { create } from 'zustand';
 import api from '@/lib/api/client';
+import { getErrorStatus } from '@/lib/errors';
 import { useNotificationStore } from '@/stores/notificationStore';
 
+/**
+ * User shape returned by `GET /auth/me`. Wallet-related fields
+ * (wallet_address, wallet_linked, is_wallet_placeholder) were removed
+ * when the SIWE / wallet-link UX was retired — the backend may still
+ * send them for legacy accounts, but the frontend no longer reads or
+ * exposes them anywhere.
+ */
 interface User {
   id: string;
   email: string;
@@ -25,28 +33,23 @@ interface User {
   /** True when first_name, last_name, phone, country, and DOB are all set.
    * The ProfileCompleteGate modal blocks the app until this flips true. */
   profile_complete?: boolean;
-  /** Linked SIWE wallet (lowercase 0x). Drives the LinkedWalletCard UI. */
-  wallet_address?: string | null;
-  /** Whether the user has each non-wallet sign-in method available. Used
-   * to disable Unlink when wallet is the only credential. */
+  /** Sign-in methods the user has on record. Used so /profile knows
+   * which auth methods to allow unlinking. */
   has_password?: boolean;
   has_google?: boolean;
-  /** OnboardingGate inputs from /auth/me. Flipped server-side once
-   * profile + email + wallet are all set (or the user is grandfathered
-   * pre-2026-05-08). The frontend gate mirrors this so a UI bug can't
-   * accidentally open access. */
-  wallet_linked?: boolean;
+  /** OnboardingGate inputs — profile + email verification. The wallet
+   * leg of onboarding was removed with the SIWE feature retirement. */
   email_verified?: boolean;
-  is_wallet_placeholder?: boolean;
   onboarding_complete?: boolean;
-}
-
-export interface WalletNonceResponse {
-  nonce: string;
-  issued_at: string;
-  expires_at: string;
-  domain: string;
-  statement: string;
+  /** @deprecated — SIWE wallet sign-in was retired; the server no
+   * longer sends this field. Kept optional in the type so the dormant
+   * wallet UI (LinkedWalletCard, OnChainWalletBalance,
+   * WalletAccountMigrateBanner, the withdraw card in wallet/page.tsx)
+   * still type-checks without needing a sweep-rewrite. At runtime the
+   * field is always undefined and each call site falls through to its
+   * "no wallet linked" branch. Delete this entry + the dormant
+   * components in a follow-up purge. */
+  wallet_address?: string | null;
 }
 
 interface AuthState {
@@ -70,12 +73,6 @@ interface AuthState {
   logout: () => void;
   loadUser: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  walletNonce: (
-    address: string, chainId: number, scope?: 'login' | 'link',
-  ) => Promise<WalletNonceResponse>;
-  walletLogin: (
-    message: string, signature: string, referralCode?: string,
-  ) => Promise<void>;
   setInitialized: (val: boolean) => void;
 }
 
@@ -198,9 +195,9 @@ export const useAuthStore = create<AuthState>()((set) => ({
     try {
       const user = await fetchMe();
       set({ user, isAuthenticated: true, isInitialized: true, token: null });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Only try refresh if it was an auth error (401)
-      const status = e?.status ?? e?.response?.status;
+      const status = getErrorStatus(e);
       if (status === 401 || status === 403) {
         try {
           await api.post('/auth/refresh', {});
@@ -220,25 +217,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
       set({ user, isAuthenticated: true });
     } catch {
       /* swallow — leave existing state untouched */
-    }
-  },
-
-  walletNonce: async (address, chainId, scope = 'login') => {
-    const path = scope === 'link' ? '/profile/wallet/link/nonce' : '/auth/wallet/nonce';
-    return api.post<WalletNonceResponse>(path, { address, chain_id: chainId });
-  },
-
-  walletLogin: async (message, signature, referralCode) => {
-    set({ isLoading: true });
-    try {
-      await api.post('/auth/wallet/verify', {
-        message, signature, referral_code: referralCode,
-      });
-      const user = await api.get<User>('/auth/me');
-      set({ user, isAuthenticated: true, isLoading: false, token: null });
-    } catch (e) {
-      set({ isLoading: false });
-      throw e;
     }
   },
 

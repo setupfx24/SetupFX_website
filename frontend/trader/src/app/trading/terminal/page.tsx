@@ -288,7 +288,8 @@ export default function TradingTerminalPage() {
     const nextTabs = chartTabs.filter(s => s !== symbol);
     setChartTabs(nextTabs);
     if (selectedSymbol === symbol && nextTabs.length > 0) {
-      setSelectedSymbol(nextTabs[nextTabs.length - 1]);
+      // nextTabs[last] safe inside length>0 guard.
+      setSelectedSymbol(nextTabs[nextTabs.length - 1]!);
     }
   };
 

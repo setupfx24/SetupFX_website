@@ -9,19 +9,14 @@ export default function PrHero() {
       className="relative overflow-hidden min-h-screen flex items-center"
       style={{ backgroundColor: 'var(--fx-bg)' }}
     >
-      {/* Background banner */}
-      <div
-        aria-hidden
-        className="absolute inset-0 z-0 bg-no-repeat bg-center bg-cover"
-        style={{ backgroundImage: 'url(/images/Protocol_hero.png)' }}
-      />
-      {/* Dark overlay */}
+      {/* Bitmap hero banner removed — the dark gradient overlay
+          below now carries the full background on its own. */}
       <div
         aria-hidden
         className="absolute inset-0 z-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(214,169,61,0.10) 0%, rgba(214,169,61,0) 60%)',
+            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(99,102,241,0.10) 0%, rgba(99,102,241,0) 60%)',
         }}
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
@@ -35,7 +30,7 @@ export default function PrHero() {
               className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              FX Artha does not hold your funds. Your trades operate through a structured
+              SwissCresta does not hold your funds. Your trades operate through a structured
               smart contract system.
             </p>
             <p

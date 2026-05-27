@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, Mail, ArrowRight, RotateCcw, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -68,9 +69,8 @@ export default function EmailOtpStep({
       setPhase('enter-otp');
       setOtp('');
       setResendIn(RESEND_COOLDOWN_SECONDS);
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : e?.message || 'Could not send code';
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, 'Could not send code');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -90,9 +90,8 @@ export default function EmailOtpStep({
       await api.post<VerifyResp>('/auth/email/verify-otp', { otp: code });
       toast.success('Email verified');
       onVerified();
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail;
-      const msg = typeof detail === 'string' ? detail : e?.message || 'Could not verify code';
+    } catch (e: unknown) {
+      const msg = getErrorMessage(e, 'Could not verify code');
       setError(msg);
       toast.error(msg);
     } finally {
@@ -118,7 +117,7 @@ export default function EmailOtpStep({
                 onChange={(e) => setEmail(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') void sendCode(); }}
                 placeholder="you@example.com"
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#d6a93d] focus:outline-none"
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#6366F1] focus:outline-none"
                 autoFocus
               />
             </div>
@@ -128,7 +127,7 @@ export default function EmailOtpStep({
             type="button"
             onClick={() => void sendCode()}
             disabled={busy || !email.trim()}
-            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#6366F1] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
           >
             {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
             Send code
@@ -152,7 +151,7 @@ export default function EmailOtpStep({
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               onKeyDown={(e) => { if (e.key === 'Enter') void verifyCode(); }}
               placeholder="••••••"
-              className="w-full px-3 py-3 rounded-lg bg-bg-base border border-border-primary text-center text-xl tracking-[0.5em] font-mono text-text-primary placeholder:text-text-tertiary focus:border-[#d6a93d] focus:outline-none"
+              className="w-full px-3 py-3 rounded-lg bg-bg-base border border-border-primary text-center text-xl tracking-[0.5em] font-mono text-text-primary placeholder:text-text-tertiary focus:border-[#6366F1] focus:outline-none"
               autoFocus
             />
           </div>
@@ -162,7 +161,7 @@ export default function EmailOtpStep({
               type="button"
               onClick={() => void verifyCode()}
               disabled={busy || otp.length !== 6}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#d6a93d] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#6366F1] text-bg-base text-sm font-bold hover:brightness-110 disabled:opacity-60 transition-colors"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               Verify

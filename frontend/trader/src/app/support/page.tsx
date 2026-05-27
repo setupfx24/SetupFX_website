@@ -110,7 +110,8 @@ export default function SupportPage() {
 
       if (items.length > 0 && !selectedTicketId) {
 
-        setSelectedTicketId(items[0].id);
+        // items[0] safe inside length>0 guard.
+        setSelectedTicketId(items[0]!.id);
 
       }
 
@@ -278,7 +279,7 @@ export default function SupportPage() {
 
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-[#888]">Loading support...</span>
         </div>
       </DashboardShell>

@@ -27,7 +27,7 @@ def render_layout(
     cta_url: str | None = None,
     footer_note: str | None = None,
 ) -> str:
-    """Wraps body content in the standard FXArtha email shell.
+    """Wraps body content in the standard SwissCresta email shell.
 
     Args:
       title:       big headline at the top of the card (escaped)
@@ -97,11 +97,11 @@ def render_layout(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid {_BORDER};
                        color:{_TEXT_DIM};font-size:12px;line-height:1.5;">
-              FXArtha — Trade without giving your money to any broker.<br>
-              You received this because of activity on your FXArtha account.
+              SwissCresta — Trade without giving your money to any broker.<br>
+              You received this because of activity on your SwissCresta account.
               Need help? Reply to this email or contact
-              <a href="mailto:support@fxartha.com" style="color:{_GOLD};text-decoration:none;">
-                support@fxartha.com</a>.
+              <a href="mailto:support@swisscresta.com" style="color:{_GOLD};text-decoration:none;">
+                support@swisscresta.com</a>.
             </td>
           </tr>
         </table>

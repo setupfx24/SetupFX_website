@@ -105,7 +105,7 @@ export class ChartEngine {
 
   appendCandle(candle: OHLCV) {
     if (this.data.length > 0) {
-      const last = this.data[this.data.length - 1];
+      const last = this.data[this.data.length - 1]!;
       if (last.time === candle.time) {
         this.data[this.data.length - 1] = candle;
       } else {
@@ -360,16 +360,18 @@ export class ChartEngine {
   private toHeikinAshi(data: OHLCV[]): OHLCV[] {
     const ha: OHLCV[] = [];
     for (let i = 0; i < data.length; i++) {
-      const prev = i > 0 ? ha[i - 1] : data[i];
-      const close = (data[i].open + data[i].high + data[i].low + data[i].close) / 4;
+      // Loop bounds guarantee data[i] and ha[i-1] (when i > 0) are in range.
+      const bar = data[i]!;
+      const prev = i > 0 ? ha[i - 1]! : bar;
+      const close = (bar.open + bar.high + bar.low + bar.close) / 4;
       const open = (prev.open + prev.close) / 2;
       ha.push({
-        time: data[i].time,
+        time: bar.time,
         open,
-        high: Math.max(data[i].high, open, close),
-        low: Math.min(data[i].low, open, close),
+        high: Math.max(bar.high, open, close),
+        low: Math.min(bar.low, open, close),
         close,
-        volume: data[i].volume,
+        volume: bar.volume,
       });
     }
     return ha;

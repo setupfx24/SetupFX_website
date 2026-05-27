@@ -106,11 +106,13 @@ jobs:
           PY
 
   frontend:
-    name: Frontend — typecheck both apps
+    name: Frontend — typecheck + lint + build
     runs-on: ubuntu-latest
     strategy:
       matrix:
         app: [trader, admin]
+      # Run both apps to completion even if one fails so we see all errors.
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -124,3 +126,22 @@ jobs:
       - name: Typecheck
         working-directory: frontend/${{ matrix.app }}
         run: npx tsc --noEmit
+      # Lint runs as a separate step (next build has `eslint.ignoreDuringBuilds: true`).
+      # `continue-on-error: true` because the trader app has ~85 pre-existing
+      # warnings under the new flat ESLint config that are tracked as Batch G
+      # backlog. Remove the flag once the warning count is back to 0.
+      - name: Lint
+        working-directory: frontend/${{ matrix.app }}
+        run: npm run lint
+        continue-on-error: true
+      # Build verifies the route manifest + bundle generation. Matches what
+      # the Dockerfile does (sans the standalone flag — that's set at Docker
+      # build time, not in CI).
+      - name: Build
+        working-directory: frontend/${{ matrix.app }}
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          # Build-time NEXT_PUBLIC_* values — CI uses dummies so the build
+          # completes deterministically without leaking real prod URLs.
+          NEXT_PUBLIC_APP_VERSION: ci-${{ github.sha }}

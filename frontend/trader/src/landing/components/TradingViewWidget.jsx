@@ -13,7 +13,12 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
     script.type = 'text/javascript'
     script.async = true
-    script.innerHTML = JSON.stringify({
+    /* JSON.stringify does NOT escape `</script>` — if `symbol` ever
+     * carries that substring (e.g. a future caller passes
+     * `searchParams.get('symbol')` unvalidated), the inline <script>
+     * tag closes early and the rest becomes attacker-controlled
+     * JavaScript. Patch the serialized output before assignment. */
+    const config = JSON.stringify({
       autosize: false,
       width: '100%',
       height: CHART_HEIGHT,
@@ -28,7 +33,8 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
       support_host: 'https://www.tradingview.com',
       backgroundColor: 'rgba(10, 14, 26, 1)',
       gridColor: 'rgba(255, 255, 255, 0.04)',
-    })
+    }).replace(/<\/(script)/gi, '<\\/$1')
+    script.innerHTML = config
 
     const widgetContainer = document.createElement('div')
     widgetContainer.className = 'tradingview-widget-container__widget'

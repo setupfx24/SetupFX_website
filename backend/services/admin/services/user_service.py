@@ -358,11 +358,16 @@ async def deduct_fund(
             detail=f"Insufficient main wallet balance (${float(main_bal):.2f}). Provide a trading account ID to deduct from trading account.",
         )
 
+    # Lock the trading account BEFORE the balance check. Without the
+    # lock two concurrent deduct_fund() calls both read the same
+    # `account.balance`, both pass the sufficiency check, and both
+    # subtract — losing one of the two deductions (effectively a free
+    # admin debit for the user). Lock order: User (above) → TradingAccount.
     account_result = await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        )
+        ).with_for_update()
     )
     account = account_result.scalar_one_or_none()
     if not account:
@@ -403,11 +408,15 @@ async def give_credit(
     user_id: uuid.UUID, body: CreditRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
+    # Lock the account row — concurrent give_credit() calls on the same
+    # account both read `account.credit=0`, both compute `0 + amount`,
+    # both write the same final value. Without the lock the second
+    # admin's credit silently vanishes.
     account_result = await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        )
+        ).with_for_update()
     )
     account = account_result.scalar_one_or_none()
     if not account:
@@ -442,11 +451,14 @@ async def take_credit(
     user_id: uuid.UUID, body: CreditRequest,
     admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:
+    # Lock — same reasoning as give_credit, plus the sufficiency check
+    # must be inside the lock or two concurrent takers can both pass
+    # `old_credit < amt` and double-debit.
     account_result = await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == uuid.UUID(body.account_id),
             TradingAccount.user_id == user_id,
-        )
+        ).with_for_update()
     )
     account = account_result.scalar_one_or_none()
     if not account:

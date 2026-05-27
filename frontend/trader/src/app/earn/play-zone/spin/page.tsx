@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import SpinWheel from '@/components/earn/SpinWheel';
 import api from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 
 type RecentSpin = {
   id: string;
@@ -36,8 +37,8 @@ function Inner() {
     try {
       const s = await api.get<{ ac_balance: number }>('/rewards/state');
       setAcBalance(Number(s.ac_balance ?? 0));
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not load balance');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not load balance'));
     }
   }, []);
 
@@ -71,8 +72,8 @@ function Inner() {
             <p className="text-sm text-text-secondary mt-0.5">Spend Artha Coins to spin the wheel and win cashback or bonus AC.</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#d6a93d]/30 bg-[#d6a93d]/5">
-          <Coins size={14} className="text-[#d6a93d]" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#6366F1]/30 bg-[#6366F1]/5">
+          <Coins size={14} className="text-[#6366F1]" />
           <span className="text-sm font-semibold text-text-primary tabular-nums">{fmt(acBalance)} AC</span>
         </div>
       </header>

@@ -19,8 +19,7 @@ export default function TradingOverviewPage() {
       <TxOverview />
       <TxModes />
       <FxPageBanner
-        image="/images/trading_banner1.png"
-        alt="FX Artha Trading"
+        alt="SwissCresta Trading"
         tagline="Trade smart. Pay less over time."
         taglineSub="Transparent pricing that improves the more you trade."
       />
@@ -28,8 +27,7 @@ export default function TradingOverviewPage() {
       <TxCostStructure />
       <TxXP />
       <FxPageBanner
-        image="/images/trading_banner2.png"
-        alt="FX Artha Trading"
+        alt="SwissCresta Trading"
         tone="elev"
         tagline="Every cost, known upfront."
         taglineSub="No swap charges. No hidden fees. Just three clear components."

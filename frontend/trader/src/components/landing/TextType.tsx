@@ -37,7 +37,8 @@ export default function TextType({
   }, [showCursor, cursorBlinkDuration])
 
   useEffect(() => {
-    const currentText = texts[textIndex]
+    /* textIndex is wrapped (% texts.length) so the access is safe. */
+    const currentText = texts[textIndex] ?? ''
     let timeout: NodeJS.Timeout
 
     if (!isDeleting) {

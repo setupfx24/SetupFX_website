@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Domain split (asymmetric, by design):
- *   - fxartha.com (apex): marketing + auth + every user-app page.
+ *   - swisscresta.com (apex): marketing + auth + every user-app page.
  *     If the user lands on the apex with /trading/terminal, we bounce
  *     them to the trade subdomain so the terminal has a clean origin.
- *   - trade.fxartha.com: hosts the trading terminal canonically, but
+ *   - trade.swisscresta.com: hosts the trading terminal canonically, but
  *     ALSO serves every other page. Previously we redirected non-
  *     terminal traffic back to the apex, but that caused two persistent
  *     production issues: (1) RSC prefetches and TradingView chart
@@ -16,14 +16,92 @@ import { NextResponse, type NextRequest } from 'next/server';
  *     adds no real cost — they're authenticated app pages, not
  *     marketing pages with SEO concerns.
  *
- * The auth cookie is Domain=.fxartha.com so a single session works on
+ * The auth cookie is Domain=.swisscresta.com so a single session works on
  * apex AND subdomain. If NEXT_PUBLIC_MARKETING_HOST or
  * NEXT_PUBLIC_TRADE_HOST is unset (local dev), this middleware no-ops.
+ *
+ * ── Auth-endpoint rate limiting (P1 M4) ─────────────────────────
+ * In-memory token bucket layered in front of the gateway as defense
+ * in depth. Single-instance deploy assumption — each Next.js process
+ * keeps its own counter, so for multi-instance deploys the effective
+ * limit is N × this value. For strict cluster-wide limits, swap the
+ * `rateLimitStore` Map for a Redis-backed implementation (Upstash,
+ * `@upstash/ratelimit`) without changing the surrounding logic.
+ *
+ * Why in middleware and not the proxy route: middleware runs BEFORE
+ * the body is parsed — a flood attack costs us almost nothing, vs
+ * the proxy route which would already have ingested the JSON body.
  */
 
 const TRADE_PREFIXES = ['/trading/terminal'];
-const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/', '/images/', '/frames/'];
+const NEUTRAL_PREFIXES = ['/api/', '/_next/', '/s/', '/static/', '/images/'];
 const NEUTRAL_EXACT = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
+
+/* ── Rate-limit configuration ──────────────────────────────────
+ * Paths NOT listed here are NOT rate-limited at this layer (the
+ * gateway/CDN may still throttle them). Keep the set tight — every
+ * map insertion costs memory per IP. */
+const RATE_LIMITS: Record<string, { limit: number; windowMs: number }> = {
+  '/api/v1/auth/login':           { limit: 5, windowMs: 60_000 },
+  '/api/v1/auth/register':        { limit: 3, windowMs: 60_000 },
+  '/api/v1/auth/reset-password':  { limit: 3, windowMs: 60_000 },
+  '/api/v1/auth/email/start-verification': { limit: 5, windowMs: 60_000 },
+  '/api/v1/auth/email/verify-otp':         { limit: 10, windowMs: 60_000 },
+  '/api/v1/auth/google':          { limit: 10, windowMs: 60_000 },
+};
+
+/* Per-process bucket: key = `${ip}:${path}`, value = recent ts list.
+ * Trimmed lazily on each access. Cap on map size prevents
+ * unbounded growth from spammy IPs. */
+const rateLimitStore = new Map<string, number[]>();
+const RATE_LIMIT_MAX_KEYS = 10_000;
+
+function getClientIp(req: NextRequest): string {
+  /* Cloudflare → cf-connecting-ip > x-forwarded-for[0] > x-real-ip.
+   * Falls back to 'unknown' which buckets all anonymous traffic
+   * together — intentionally aggressive for safety. */
+  const cf = req.headers.get('cf-connecting-ip');
+  if (cf) return cf;
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) {
+    const first = xff.split(',')[0];
+    if (first) return first.trim();
+  }
+  const real = req.headers.get('x-real-ip');
+  if (real) return real;
+  return 'unknown';
+}
+
+function checkRateLimit(
+  path: string,
+  ip: string,
+): { allowed: true } | { allowed: false; retryAfterSec: number } {
+  const config = RATE_LIMITS[path];
+  if (!config) return { allowed: true };
+  const key = `${ip}:${path}`;
+  const now = Date.now();
+  const windowStart = now - config.windowMs;
+  const prev = rateLimitStore.get(key) ?? [];
+  /* Drop expired timestamps so the bucket only counts current-window hits. */
+  const timestamps = prev.filter((t) => t > windowStart);
+  if (timestamps.length >= config.limit) {
+    /* timestamps[0] is the oldest in-window hit. Retry-After is the
+     * time until that hit falls out of the window. */
+    const oldest = timestamps[0]!;
+    const retryAfter = Math.ceil((oldest + config.windowMs - now) / 1000);
+    return { allowed: false, retryAfterSec: Math.max(retryAfter, 1) };
+  }
+  timestamps.push(now);
+  rateLimitStore.set(key, timestamps);
+  /* LRU-style eviction: when the map exceeds the cap, drop the
+   * oldest-inserted key. Map preserves insertion order in JS, so
+   * `keys().next().value` is the oldest. */
+  if (rateLimitStore.size > RATE_LIMIT_MAX_KEYS) {
+    const firstKey = rateLimitStore.keys().next().value;
+    if (firstKey !== undefined) rateLimitStore.delete(firstKey);
+  }
+  return { allowed: true };
+}
 
 function isTradePath(path: string): boolean {
   return TRADE_PREFIXES.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p + '?'));
@@ -35,6 +113,30 @@ function isNeutral(path: string): boolean {
 }
 
 export function middleware(req: NextRequest) {
+  /* Rate-limit auth endpoints FIRST — before the host-routing logic
+   * below. This applies whether the host split is configured or not
+   * (local dev gets protection too). */
+  const path = req.nextUrl.pathname;
+  if (RATE_LIMITS[path]) {
+    const ip = getClientIp(req);
+    const check = checkRateLimit(path, ip);
+    if (!check.allowed) {
+      return new NextResponse(
+        JSON.stringify({ detail: 'Too many requests. Please wait before retrying.' }),
+        {
+          status: 429,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': String(check.retryAfterSec),
+            /* Match the proxy's standard cache directive so 429s aren't
+             * cached by an intermediate proxy and replayed at the user. */
+            'cache-control': 'no-store, no-cache, must-revalidate, max-age=0',
+          },
+        },
+      );
+    }
+  }
+
   const marketingHost = process.env.NEXT_PUBLIC_MARKETING_HOST;
   const tradeHost = process.env.NEXT_PUBLIC_TRADE_HOST;
   if (!marketingHost || !tradeHost) return NextResponse.next();
@@ -87,5 +189,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|images/|frames/|charting_library/|datafeeds/).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|images/|charting_library/|datafeeds/).*)'],
 };

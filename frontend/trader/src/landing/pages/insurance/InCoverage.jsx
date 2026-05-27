@@ -28,7 +28,7 @@ const tiers = [
     icon: Crown,
     name: 'Pro',
     cover: 50,
-    accent: '#ecc657',
+    accent: '#818CF8',
     desc: 'Maximum coverage for serious participants.',
     highlight: true,
   },
@@ -54,10 +54,10 @@ export default function InCoverage() {
                   className="relative h-full rounded-2xl p-6 md:p-7 overflow-hidden flex flex-col"
                   style={{
                     background: t.highlight
-                      ? 'linear-gradient(180deg, rgba(214,169,61,0.14) 0%, rgba(214,169,61,0.03) 60%), var(--fx-bg-elev)'
+                      ? 'linear-gradient(180deg, rgba(99,102,241,0.14) 0%, rgba(99,102,241,0.03) 60%), var(--fx-bg-elev)'
                       : 'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
                     border: `1px solid ${t.accent}55`,
-                    boxShadow: t.highlight ? '0 30px 70px -28px rgba(214,169,61,0.45)' : 'none',
+                    boxShadow: t.highlight ? '0 30px 70px -28px rgba(99,102,241,0.45)' : 'none',
                   }}
                 >
                   <div
@@ -108,8 +108,8 @@ export default function InCoverage() {
           <div
             className="mt-8 mx-auto max-w-3xl rounded-xl px-4 py-3 text-sm flex items-center gap-3"
             style={{
-              background: 'rgba(214,169,61,0.05)',
-              border: '1px solid rgba(214,169,61,0.22)',
+              background: 'rgba(99,102,241,0.05)',
+              border: '1px solid rgba(99,102,241,0.22)',
               color: 'var(--fx-text-2)',
             }}
           >

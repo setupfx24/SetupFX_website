@@ -13,8 +13,8 @@ COPY backend/services/b-book-engine /app/services/b_book_engine
 ENV PYTHONPATH=/app
 
 # H8 — drop root.
-RUN groupadd --system --gid 1001 fxartha \
- && useradd  --system --uid 1001 --gid fxartha --shell /usr/sbin/nologin fxartha
-USER fxartha
+RUN groupadd --system --gid 1001 swisscresta \
+ && useradd  --system --uid 1001 --gid swisscresta --shell /usr/sbin/nologin swisscresta
+USER swisscresta
 
 CMD ["python", "-m", "services.b_book_engine.src.main"]

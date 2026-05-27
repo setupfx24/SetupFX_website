@@ -330,11 +330,11 @@ export default function AccountsPage() {
   useEffect(() => {
     if (uniInitialized || loading) return;
     if (liveAccounts.length >= 2) {
-      setUniFrom(liveAccounts[0].id);
-      setUniTo(liveAccounts[1].id);
+      setUniFrom(liveAccounts[0]!.id);
+      setUniTo(liveAccounts[1]!.id);
     } else if (liveAccounts.length === 1) {
       setUniFrom('wallet');
-      setUniTo(liveAccounts[0].id);
+      setUniTo(liveAccounts[0]!.id);
     }
     setUniInitialized(true);
   }, [loading, liveAccounts, uniInitialized]);
@@ -483,7 +483,7 @@ export default function AccountsPage() {
   };
 
   const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#d6a93d] text-[#d6a93d] text-sm font-bold hover:bg-[#d6a93d]/10 transition-colors shrink-0';
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#6366F1] text-[#6366F1] text-sm font-bold hover:bg-[#6366F1]/10 transition-colors shrink-0';
 
   /** Open the live account picker only if KYC is approved; otherwise show the KYC gate modal. */
   const handleOpenNewAccount = () => {
@@ -547,7 +547,7 @@ export default function AccountsPage() {
             <Link
               href="/kyc"
               onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-bold hover:bg-[#4F46E5] transition-colors text-center"
             >
               Complete KYC
             </Link>
@@ -576,7 +576,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-bold hover:bg-[#4F46E5] transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -631,7 +631,7 @@ export default function AccountsPage() {
                     {active ? (
                       <span
                         key={tab}
-                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(214,169,61,0.7)]"
+                        className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(99,102,241,0.7)]"
                       >
                         {t.label}
                       </span>
@@ -755,7 +755,7 @@ export default function AccountsPage() {
                         setTab('accounts');
                         handleOpenNewAccount();
                       }}
-                      className="text-sm font-bold text-[#d6a93d] hover:underline"
+                      className="text-sm font-bold text-[#6366F1] hover:underline"
                     >
                       Open live account
                     </button>
@@ -791,7 +791,7 @@ export default function AccountsPage() {
                       const isWallet = uniFrom === 'wallet';
                       return (
                         <div className="rounded-xl border border-accent/35 bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#d6a93d]/12 flex items-center justify-center text-[#d6a93d] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#6366F1]/12 flex items-center justify-center text-[#6366F1] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -850,7 +850,7 @@ export default function AccountsPage() {
                       const isWallet = uniTo === 'wallet';
                       return (
                         <div className="rounded-xl border border-border-primary bg-bg-base p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#d6a93d]/12 flex items-center justify-center text-[#d6a93d] shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[#6366F1]/12 flex items-center justify-center text-[#6366F1] shrink-0">
                             {isWallet ? <Wallet size={20} strokeWidth={2} /> : <Landmark size={20} strokeWidth={2} />}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -877,7 +877,7 @@ export default function AccountsPage() {
                           setTransferAmount(uniFromBalance > 0 ? uniFromBalance.toFixed(2) : '')
                         }
                         disabled={uniFromBalance <= 0}
-                        className="text-sm font-bold text-[#d6a93d] hover:underline disabled:opacity-40 disabled:pointer-events-none"
+                        className="text-sm font-bold text-[#6366F1] hover:underline disabled:opacity-40 disabled:pointer-events-none"
                       >
                         Max: {fmt(uniFromBalance)}
                       </button>
@@ -904,7 +904,7 @@ export default function AccountsPage() {
                       uniFromBalance <= 0 ||
                       uniFrom === uniTo
                     }
-                    className="w-full py-3.5 rounded-xl bg-[#d6a93d] text-white text-base font-bold hover:bg-[#9b7d3a] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-[#6366F1] text-white text-base font-bold hover:bg-[#4F46E5] disabled:opacity-45 disabled:pointer-events-none transition-colors flex items-center justify-center gap-2"
                   >
                     <ArrowLeftRight size={20} />
                     {transferSubmitting ? 'Transferring…' : 'Transfer'}
@@ -982,13 +982,14 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
       labelFn = (d) => `${d.getHours().toString().padStart(2, '0')}:00`;
     } else if (tab === '7D' || tab === '30D') {
       intervalMs = 864e5; // 1 day
-      labelFn = (d) => DAY_NAMES[d.getDay()];
+      // getDay() returns 0-6, DAY_NAMES has 7 entries — bounded by construction.
+      labelFn = (d) => DAY_NAMES[d.getDay()]!;
     } else if (tab === '90D') {
       intervalMs = 864e5 * 7; // 1 week
-      labelFn = (d) => `${MONTH_SHORT[d.getMonth()]} ${d.getDate()}`;
+      labelFn = (d) => `${MONTH_SHORT[d.getMonth()]!} ${d.getDate()}`;
     } else {
       intervalMs = 864e5 * 30; // ~1 month
-      labelFn = (d) => MONTH_SHORT[d.getMonth()];
+      labelFn = (d) => MONTH_SHORT[d.getMonth()]!;
     }
 
     /* Build time slots from start to now */
@@ -998,7 +999,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
       slots.push(t);
       t += intervalMs;
     }
-    if (slots[slots.length - 1] < now.getTime()) slots.push(now.getTime());
+    if (slots[slots.length - 1]! < now.getTime()) slots.push(now.getTime());
 
     /* Sort trades by close_time ascending */
     const sorted = [...trades]
@@ -1039,8 +1040,9 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
     const yLo = yMin - yPad;
     const yHi = yMax + yPad;
     const yRange = yHi - yLo || 1;
-    const xMin = dailyPoints[0].x;
-    const xMax = dailyPoints[dailyPoints.length - 1].x;
+    /* dailyPoints.length >= 2 was already checked above. */
+    const xMin = dailyPoints[0]!.x;
+    const xMax = dailyPoints[dailyPoints.length - 1]!.x;
     const xRange = xMax - xMin || 1;
 
     const chartW = W - ML - MR;
@@ -1052,10 +1054,10 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
     }));
 
     const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(' ');
-    const area = `${linePath} L${pts[pts.length - 1].sx.toFixed(1)},${H - MB} L${pts[0].sx.toFixed(1)},${H - MB} Z`;
+    const area = `${linePath} L${pts[pts.length - 1]!.sx.toFixed(1)},${H - MB} L${pts[0]!.sx.toFixed(1)},${H - MB} Z`;
 
-    const first = dailyPoints[0].y;
-    const last = dailyPoints[dailyPoints.length - 1].y;
+    const first = dailyPoints[0]!.y;
+    const last = dailyPoints[dailyPoints.length - 1]!.y;
     const diff = last - first;
     const pct = first > 0 ? (diff / first) * 100 : 0;
 
@@ -1101,7 +1103,7 @@ function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance:
       <div className="rounded-xl bg-bg-base border border-border-primary relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-5 w-5 border-2 border-[#d6a93d] border-t-transparent rounded-full animate-spin" />
+            <div className="h-5 w-5 border-2 border-[#6366F1] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
@@ -1247,7 +1249,7 @@ function AccountCard({
         <span
           className={clsx(
             'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
-            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#d6a93d] shadow-[0_0_6px_rgba(214,169,61,0.7)]',
+            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#6366F1] shadow-[0_0_6px_rgba(99,102,241,0.7)]',
           )}
           aria-hidden
         />
@@ -1258,7 +1260,7 @@ function AccountCard({
             <span className="text-xs sm:text-sm text-text-tertiary font-mono">{idLabel}</span>
             {row.is_wallet_account && (
               <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#d6a93d]/15 text-[#d6a93d] border border-[#d6a93d]/35"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#6366F1]/15 text-[#6366F1] border border-[#6366F1]/35"
                 title="Wallet-bound account — deposits land here and withdrawals return to your linked wallet"
               >
                 <Wallet size={10} /> Wallet
@@ -1296,11 +1298,11 @@ function AccountCard({
             <div className="min-w-0">
               <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
               <div className="flex items-center gap-1">
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#d6a93d]' : 'text-red-400')}>
+                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#6366F1]' : 'text-red-400')}>
                   ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
                 </span>
               </div>
-              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#d6a93d]/70' : 'text-red-400/70')}>
+              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#6366F1]/70' : 'text-red-400/70')}>
                 ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
               </p>
             </div>
@@ -1366,7 +1368,7 @@ function AccountCard({
                 <Link
                   href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-bold hover:bg-[#4F46E5] transition-colors"
                 >
                   <BookOpen size={16} />
                   View Trades
@@ -1391,7 +1393,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#d6a93d] text-white text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#6366F1] text-white text-sm font-bold hover:bg-[#4F46E5] transition-colors"
                 >
                   Trade
                   <ExternalLink size={14} />
@@ -1419,7 +1421,7 @@ function AccountCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#d6a93d] text-white text-xs sm:text-sm font-bold hover:bg-[#9b7d3a] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#6366F1] text-white text-xs sm:text-sm font-bold hover:bg-[#4F46E5] transition-colors"
                 >
                   Trade
                   <ExternalLink size={13} />

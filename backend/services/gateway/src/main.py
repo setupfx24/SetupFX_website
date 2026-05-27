@@ -1,4 +1,4 @@
-"""FXArtha Gateway — REST + WebSocket API Server."""
+"""SwissCresta Gateway — REST + WebSocket API Server."""
 import asyncio
 import json
 import logging
@@ -192,7 +192,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="FXArtha Gateway",
+    title="SwissCresta Gateway",
     version="1.0.0",
     description="Forex CFD B-Book Trading Platform API",
     lifespan=lifespan,

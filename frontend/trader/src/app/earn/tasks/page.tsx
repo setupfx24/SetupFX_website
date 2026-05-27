@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import StreakStrip from '@/components/earn/StreakStrip';
 import api from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 
 type Period = 'daily' | 'weekly' | 'bonus' | 'achievement';
 
@@ -50,8 +51,8 @@ function Inner() {
     try {
       const m = await api.get<Mission[]>(`/rewards/missions?period=${tab}`);
       setMissions(m);
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not load tasks');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not load tasks'));
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,8 @@ function Inner() {
       const res = await api.post<{ xp_earned: number; ac_earned: number }>(`/rewards/missions/${m.id}/claim`, {});
       toast.success(`+${res.xp_earned} XP · +${res.ac_earned} AC`);
       await load();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Could not claim');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not claim'));
     } finally {
       setBusyId(null);
     }
@@ -76,7 +77,7 @@ function Inner() {
     <div className="space-y-5 pb-8">
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-          Tasks <Sparkles size={22} className="text-[#d6a93d]" />
+          Tasks <Sparkles size={22} className="text-[#6366F1]" />
         </h1>
         <p className="text-sm text-text-secondary mt-1">Complete tasks, earn XP and Coins, unlock rewards.</p>
       </header>
@@ -93,7 +94,7 @@ function Inner() {
               className={
                 'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ' +
                 (tab === p
-                  ? 'bg-[#d6a93d]/15 text-text-primary border border-[#d6a93d]/40'
+                  ? 'bg-[#6366F1]/15 text-text-primary border border-[#6366F1]/40'
                   : 'text-text-secondary hover:text-text-primary border border-transparent')
               }
             >
@@ -129,11 +130,11 @@ function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null;
 
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg border border-border-primary bg-bg-base">
-      <div className="w-10 h-10 rounded-lg bg-[#d6a93d]/12 border border-[#d6a93d]/25 flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-lg bg-[#6366F1]/12 border border-[#6366F1]/25 flex items-center justify-center shrink-0">
         {m.claimed ? (
           <Check size={18} className="text-emerald-400" />
         ) : (
-          <Trophy size={18} className="text-[#d6a93d]" />
+          <Trophy size={18} className="text-[#6366F1]" />
         )}
       </div>
       <div className="min-w-0 flex-1">
@@ -148,7 +149,7 @@ function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null;
         <p className="text-xs text-text-secondary mt-0.5">{m.description}</p>
         <div className="flex items-center gap-3 mt-2">
           <div className="flex-1 h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-[#d6a93d]" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-[#6366F1]" style={{ width: `${pct}%` }} />
           </div>
           <span className="text-[11px] text-text-tertiary tabular-nums shrink-0">
             {m.progress} / {m.target}
@@ -170,7 +171,7 @@ function MissionRow({ m, busyId, onClaim }: { m: Mission; busyId: string | null;
             type="button"
             onClick={onClaim}
             disabled={isBusy}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#6366F1] text-bg-base hover:brightness-110 disabled:opacity-60"
           >
             {isBusy ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
             Claim

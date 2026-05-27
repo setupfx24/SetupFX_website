@@ -30,10 +30,11 @@ import {
   Sparkles,
   ShoppingBag,
   Coins,
+  type LucideIcon,
 } from 'lucide-react';
 
-type LeafItem = { label: string; href: string; icon: any };
-type GroupItem = { label: string; icon: any; key: string; children: LeafItem[] };
+type LeafItem = { label: string; href: string; icon: LucideIcon };
+type GroupItem = { label: string; icon: LucideIcon; key: string; children: LeafItem[] };
 type NavEntry = LeafItem | GroupItem;
 
 const NAV_ITEMS: NavEntry[] = [
@@ -58,7 +59,7 @@ const NAV_ITEMS: NavEntry[] = [
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
   { label: 'Copy Trading', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
-  { label: 'FXArtha Academy', href: '/academy', icon: GraduationCap },
+  { label: 'SwissCresta Academy', href: '/academy', icon: GraduationCap },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: Calculator },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
@@ -114,8 +115,8 @@ export default function AppSidebar() {
         <div className="flex items-center justify-between px-4 pt-4 pb-3 gap-2">
           <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
             <span className="inline-flex items-baseline font-bold italic tracking-tight text-xl select-none">
-              <span className="text-text-primary">FX</span>
-              <span className="text-[#d6a93d]">Artha</span>
+              <span className="text-text-primary">Swiss</span>
+              <span className="text-[#6366F1]">Cresta</span>
             </span>
           </Link>
           <button
@@ -149,10 +150,10 @@ export default function AppSidebar() {
                       size={17}
                       strokeWidth={1.85}
                       className={cn(
-                        'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#d6a93d]',
+                        'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#6366F1]',
                         groupActive
-                          ? 'drop-shadow-[0_0_8px_rgba(214,169,61,0.55)]'
-                          : 'drop-shadow-[0_0_6px_rgba(214,169,61,0.35)]',
+                          ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.55)]'
+                          : 'drop-shadow-[0_0_6px_rgba(99,102,241,0.35)]',
                       )}
                     />
                     <span className="truncate flex-1 text-left">{entry.label}</span>
@@ -180,7 +181,7 @@ export default function AppSidebar() {
                                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-transparent',
                             )}
                           >
-                            <child.icon size={14} strokeWidth={1.85} className="shrink-0 text-[#d6a93d]/85" />
+                            <child.icon size={14} strokeWidth={1.85} className="shrink-0 text-[#6366F1]/85" />
                             <span className="truncate">{child.label}</span>
                           </Link>
                         );
@@ -212,10 +213,10 @@ export default function AppSidebar() {
                   size={17}
                   strokeWidth={1.85}
                   className={cn(
-                    'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#d6a93d]',
+                    'shrink-0 transition-[filter,color] sidebar-icon-glow text-[#6366F1]',
                     isActive
-                      ? 'drop-shadow-[0_0_8px_rgba(214,169,61,0.55)]'
-                      : 'drop-shadow-[0_0_6px_rgba(214,169,61,0.35)]',
+                      ? 'drop-shadow-[0_0_8px_rgba(99,102,241,0.55)]'
+                      : 'drop-shadow-[0_0_6px_rgba(99,102,241,0.35)]',
                   )}
                 />
                 <span className="truncate">{entry.label}</span>

@@ -84,10 +84,10 @@ const IconMore = ({ active }: { active: boolean }) => (
    users can land on the section they want in one tap. Desktop
    sidebar still shows them under the collapsed Earn group. */
 const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon }[] = [
-  { name: 'Deposit', path: '/wallet', color: '#d6a93d', icon: ArrowDownToLine },
+  { name: 'Deposit', path: '/wallet', color: '#6366F1', icon: ArrowDownToLine },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
-  { name: 'Rewards', path: '/earn/store', color: '#d6a93d', icon: ShoppingBag },
+  { name: 'Rewards', path: '/earn/store', color: '#6366F1', icon: ShoppingBag },
   { name: 'Tasks', path: '/earn/tasks', color: '#10b981', icon: CheckSquare },
   { name: 'Leaderboard', path: '/earn/leaderboard', color: '#f59e0b', icon: Trophy },
   { name: 'Play Zone', path: '/earn/play-zone', color: '#ec4899', icon: Sparkles },
@@ -128,7 +128,7 @@ export default function MobileBottomNav() {
       return activeAccount.id;
     }
     if (accounts.length > 0) {
-      const first = accounts[0];
+      const first = accounts[0]!;
       setActiveAccount(first);
       setPersistedTradingAccountId(first.id);
       return first.id;
@@ -187,7 +187,7 @@ export default function MobileBottomNav() {
       >
         <div className="relative bg-bg-base">
           {/* Top border glow */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#d6a93d]/20 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#6366F1]/20 to-transparent" />
 
           <div className="flex items-end justify-around h-[62px] px-1">
             {/* Home */}
@@ -219,7 +219,7 @@ export default function MobileBottomNav() {
               <div className={clsx(
                 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all',
                 isChart
-                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(214,169,61,0.4)]'
+                  ? 'bg-accent text-text-inverse shadow-[0_4px_20px_rgba(99,102,241,0.4)]'
                   : 'bg-bg-secondary text-text-secondary border border-border-primary',
               )}>
                 <IconChart />

@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
-    DATABASE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5432/fxartha"
-    TIMESCALE_URL: str = "postgresql+asyncpg://fxartha:fxartha_dev@localhost:5433/marketdata"
+    DATABASE_URL: str = "postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5432/swisscresta"
+    TIMESCALE_URL: str = "postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5433/marketdata"
     REDIS_URL: str = "redis://localhost:6379/0"
     # KAFKA_BOOTSTRAP_SERVERS retained as a settings field for now so any
     # downstream IaC / .env that still defines it doesn't fail validation
@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "strict"  # lax | strict | none
     # If None, Secure flag follows the incoming request (HTTPS / X-Forwarded-Proto).
     COOKIE_SECURE: bool | None = None
-    # Cookie Domain attribute. Set to a parent domain (e.g. ".fxartha.com") to share
+    # Cookie Domain attribute. Set to a parent domain (e.g. ".swisscresta.com") to share
     # the auth session across the apex and subdomains (trade.*, etc.). Leave empty to
     # let the browser set a host-only cookie (works for single-host dev/local setups).
     COOKIE_DOMAIN: str = ""
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     ADMIN_JWT_ALGORITHM: str = "HS256"
     ADMIN_JWT_EXPIRY_HOURS: int = 8
 
-    ADMIN_EMAIL: str = "admin@fxartha.com"
+    ADMIN_EMAIL: str = "admin@swisscresta.com"
     # Initial seed password for the super-admin row created by the
     # `migrate` profile. Empty by default so prod operators are forced
     # to set a strong value in their .env before the first migration —
@@ -84,16 +84,16 @@ class Settings(BaseSettings):
     # market-data service stops running its own Infoway / simulator feed and
     # consumes ticks pushed from Corecen via POST /api/lp/prices/batch (HMAC).
     CORECEN_LP_ENABLED: bool = False
-    # HMAC credentials — must match FXARTHA_API_KEY / FXARTHA_API_SECRET in the Corecen .env.
+    # HMAC credentials — must match SWISSCRESTA_API_KEY / SWISSCRESTA_API_SECRET in the Corecen .env.
     CORECEN_LP_API_KEY: str = ""
     CORECEN_LP_API_SECRET: str = ""
     # Reject pushes older than this many ms (same tolerance as Corecen's HMAC middleware).
     CORECEN_LP_TIMESTAMP_TOLERANCE_MS: int = 60_000
 
     # Corecen Broker API (A-Book trade forwarding). When an A-Book user opens/closes
-    # a position, FXArtha pushes the trade to Corecen's broker API for LP routing.
+    # a position, SwissCresta pushes the trade to Corecen's broker API for LP routing.
     # These credentials are the API key/secret registered in Corecen's admin panel
-    # for the FXArtha broker account.
+    # for the SwissCresta broker account.
     CORECEN_BROKER_API_URL: str = ""       # e.g. https://api.corecen.com
     CORECEN_BROKER_API_KEY: str = ""       # ck_... from Corecen broker API keys
     CORECEN_BROKER_API_SECRET: str = ""    # cs_... from Corecen broker API keys
@@ -126,7 +126,7 @@ class Settings(BaseSettings):
     NOWPAYMENTS_API_KEY: str = ""
     NOWPAYMENTS_IPN_SECRET: str = ""    # IPN HMAC secret from dashboard
     NOWPAYMENTS_SANDBOX: bool = False
-    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.fxartha.com"
+    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.swisscresta.com"
 
     # Decentralized USDT deposit flow — per-chain explorer + RPC config.
     # All optional: with no keys the chain_verifier_engine falls back to
@@ -136,7 +136,7 @@ class Settings(BaseSettings):
     TRONGRID_API_KEY: str = ""         # https://www.trongrid.io
     ALCHEMY_API_URL: str = ""          # full URL incl key, e.g. https://eth-mainnet.g.alchemy.com/v2/<KEY>
     BSC_RPC_URL: str = ""              # public default fallback used if blank
-    # BSC testnet RPC for the FXArthaVaultV1 testnet deploy. Falls back
+    # BSC testnet RPC for the SwissCrestaVaultV1 testnet deploy. Falls back
     # to the public binance.org seed if blank. Used by the bscscan vault
     # event verifier to fetch eth_blockNumber for confirmations.
     BSC_TESTNET_RPC_URL: str = ""
@@ -159,9 +159,15 @@ _DEFAULT_JWT_SECRETS = {
 }
 
 _KNOWN_WEAK_ADMIN_PASSWORDS = {
-    # Historical default that shipped with .env.example for a while.
-    # Any deployment still using this in 2026+ is effectively unpassworded.
-    "FXArthaAdmin2025!",
+    # Every value that has ever shipped in .env.example as a default.
+    # Any deployment running with one of these is effectively unpassworded —
+    # an attacker who knows the project can guess it on day one. Keep ALL
+    # historical values forever; never delete, only append.
+    "SwissCrestaAdmin2026!",  # current .env.example default
+    "SwissCrestaAdmin2025!",  # earlier SwissCresta-era default
+    "NovaFxAdmin2026!",       # NovaFX-era default
+    "NovaFXAdmin2025!",       # earlier NovaFX-era default
+    "FXArthaAdmin2025!",      # pre-rebrand default
     "admin",
     "password",
     "changeme",
@@ -180,7 +186,7 @@ def _assert_production_secrets(s: Settings) -> None:
         # Dev hygiene: warn but don't refuse to boot — local devs need
         # the convenience of running with no env file at all.
         import logging
-        log = logging.getLogger("fxartha.config")
+        log = logging.getLogger("swisscresta.config")
         weak_jwt = [
             n for n in ("JWT_SECRET", "ADMIN_JWT_SECRET", "USER_JWT_SECRET")
             if getattr(s, n, "") in _DEFAULT_JWT_SECRETS
@@ -212,7 +218,7 @@ def _assert_production_secrets(s: Settings) -> None:
             + ", ".join(bad)
             + ". Generate strong JWT secrets with `openssl rand -hex 32` and "
             "a strong ADMIN_PASSWORD with `openssl rand -base64 24`, then "
-            "set them in /opt/fxartha/.env before deploying."
+            "set them in /opt/swisscresta/.env before deploying."
         )
 
 

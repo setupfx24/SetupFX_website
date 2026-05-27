@@ -43,9 +43,9 @@ export const ROUTES = {
 
   // ── Landing ──
   HOME: '/',
-  ABOUT: '/company/about',
-  WHY_FXARTHA: '/company/why-fxartha',
-  CONTACT: '/company/contact',
+  ABOUT: '/about',
+  WHY_SWISSCRESTA: '/company/why-swisscresta',
+  CONTACT: '/contact',
   PLATFORMS: '/platforms',
 
   // ── Legal ──

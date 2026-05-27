@@ -3,15 +3,18 @@
 /**
  * Multi-step onboarding gate that runs AFTER ProfileCompleteGate.
  *
- * Sequence the gate enforces (per platform policy):
- *   1. profile_complete  →  ProfileCompleteGate handles this. If it's
- *      still false we render nothing here and let that other gate own
- *      the screen.
- *   2. wallet_linked     →  user must connect a wallet via SIWE.
- *   3. email_verified    →  if the user signed in with a wallet they have
- *      a placeholder @wallet.fxartha.local email; they must add a real
- *      email and verify via OTP. Same applies to email/password users
- *      who never went through OTP.
+ * Current sequence (post wallet-integration purge):
+ *   1. profile_complete  →  ProfileCompleteGate handles this. If still
+ *      false we render nothing here and let that gate own the screen.
+ *   2. email_verified    →  email/password users who never went through
+ *      the post-signup OTP must do so before they can use the platform.
+ *
+ * The wallet-link step is gone — `WalletLinkStep` was deleted with the
+ * rest of the SIWE / wallet-connect UX. Backend's
+ * `require_onboarded` still has a `WALLET_LINK_REQUIRED` flag (left at
+ * `False`), so the server agrees onboarding is complete without a
+ * wallet. If the wallet flow ever returns, restore the step here AND
+ * flip the backend flag at the same time.
  *
  * The modal is non-dismissible: there is no close button, the backdrop
  * doesn't dismiss, Escape doesn't dismiss. The user must finish the
@@ -21,23 +24,11 @@
  * Demo accounts and staff (admin / super_admin / employee) are exempt.
  */
 import { useMemo } from 'react';
-import { ShieldCheck, Wallet, Mail, LogOut } from 'lucide-react';
+import { ShieldCheck, Mail, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import EmailOtpStep from './EmailOtpStep';
-import WalletLinkStep from './WalletLinkStep';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee']);
-
-// Wallet linking gate — temporarily disabled while the wallet feature
-// is still being completed. New signups would otherwise be forced into
-// a non-dismissible "Connect a wallet" modal before they could use the
-// platform, which is a bad first-run experience while the SIWE/withdrawal
-// flow is still being polished. Users can still link a wallet later via
-// profile/security; per-action wallet checks (e.g. wallet required for
-// withdrawal) keep working independently of this flag.
-// Backend mirror: WALLET_LINK_REQUIRED in auth_service.get_me and
-// packages/common/src/auth.require_onboarded — keep all three in sync.
-const WALLET_LINK_REQUIRED = false;
 
 export default function OnboardingGate() {
   const user = useAuthStore((s) => s.user);
@@ -61,11 +52,7 @@ export default function OnboardingGate() {
     // Already onboarded — nothing to do.
     if (user.onboarding_complete) return 'hidden' as const;
 
-    if (WALLET_LINK_REQUIRED && !user.wallet_linked) return 'wallet' as const;
-    // Wallet-placeholder email check is also wallet-gated for now.
-    // When wallet linking comes back, drop the WALLET_LINK_REQUIRED
-    // guard so placeholder emails are forced to swap to a real one.
-    if (!user.email_verified || (WALLET_LINK_REQUIRED && user.is_wallet_placeholder)) return 'email' as const;
+    if (!user.email_verified) return 'email' as const;
 
     return 'hidden' as const;
   }, [isInitialized, isAuthenticated, user]);
@@ -81,45 +68,39 @@ export default function OnboardingGate() {
       aria-labelledby="onboarding-gate-title"
     >
       <div
-        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#d6a93d]/40 bg-bg-secondary shadow-2xl"
+        className="relative w-full max-w-lg my-auto rounded-2xl border border-[#6366F1]/40 bg-bg-secondary shadow-2xl"
         // Stop clicks inside the card from closing the page-level UI.
         onClick={(e) => e.stopPropagation()}
       >
         <header className="px-6 pt-6 pb-3 border-b border-border-primary">
-          <div className="flex items-center gap-2 text-[#d6a93d] mb-2">
+          <div className="flex items-center gap-2 text-[#6366F1] mb-2">
             <ShieldCheck size={16} />
             <span className="text-[10px] uppercase tracking-wider font-semibold">
               Account setup required
             </span>
           </div>
           <h2 id="onboarding-gate-title" className="text-base font-bold text-text-primary">
-            {decision === 'wallet' ? 'Connect a wallet' : 'Verify your email'}
+            Verify your email
           </h2>
           <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-            {decision === 'wallet'
-              ? "Every FXArtha account must have a verified wallet linked. We'll use it for withdrawals, so make sure you control it."
-              : "We need a verified email on file before you can use the platform. Enter the address you want to use and we'll send you a one-time code."}
+            We need a verified email on file before you can use the
+            platform. Enter the address you want to use and we&apos;ll
+            send you a one-time code.
           </p>
         </header>
 
         <div className="px-6 py-5">
-          {decision === 'wallet' && (
-            <WalletLinkStep onLinked={() => void refreshUser()} />
-          )}
-          {decision === 'email' && (
-            <EmailOtpStep
-              currentEmail={user?.email || ''}
-              isPlaceholder={Boolean(user?.is_wallet_placeholder)}
-              onVerified={() => void refreshUser()}
-            />
-          )}
+          <EmailOtpStep
+            currentEmail={user?.email || ''}
+            isPlaceholder={false}
+            onVerified={() => void refreshUser()}
+          />
         </div>
 
         <footer className="px-6 pb-5 pt-1 flex items-center justify-between gap-2 border-t border-border-primary">
           <div className="flex items-center gap-1.5 text-[10.5px] text-text-tertiary">
-            <Wallet size={11} />
             <Mail size={11} />
-            <span>1 wallet + 1 verified email per account</span>
+            <span>1 verified email per account</span>
           </div>
           <button
             type="button"

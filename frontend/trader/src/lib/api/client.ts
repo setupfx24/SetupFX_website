@@ -49,7 +49,7 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
-        localStorage.removeItem('fxartha-auth');
+        localStorage.removeItem('swisscresta-auth');
       } catch {
         /* ignore */
       }
@@ -158,8 +158,8 @@ class ApiClient {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ')
             : 'Session expired or invalid. Please sign in again.';
-      const err = new Error(msg);
-      (err as any).status = 401;
+      const err = new Error(msg) as Error & { status?: number };
+      err.status = 401;
       throw err;
     }
 
@@ -172,8 +172,8 @@ class ApiClient {
           : Array.isArray(detail)
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join(', ')
             : `HTTP ${res.status}`;
-      const err = new Error(msg || `HTTP ${res.status}`);
-      (err as any).status = res.status;
+      const err = new Error(msg || `HTTP ${res.status}`) as Error & { status?: number };
+      err.status = res.status;
       throw err;
     }
 

@@ -24,7 +24,7 @@ export class VolumeRenderer {
     const volumeTop = chartHeight;
 
     for (let i = 0; i < data.length; i++) {
-      const bar = data[i];
+      const bar = data[i]!;
       const x = i * (candleWidth + candleGap);
       const barH = (bar.volume / maxVolume) * volumeHeight;
       const y = volumeTop + volumeHeight - barH;

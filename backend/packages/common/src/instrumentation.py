@@ -34,16 +34,71 @@ def init_sentry(service_name: str) -> None:
         from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
+        # ── PII / secret redaction ───────────────────────────────────
+        # send_default_pii=False blocks Sentry's *automatic* PII pulls,
+        # but the FastAPI integration still ships request bodies +
+        # breadcrumbs that almost certainly contain sensitive data on a
+        # money-flow API: deposit amounts, tx hashes, raw webhook
+        # bodies, NOWPayments IPN secrets in error contexts, KYC field
+        # values, JWTs from headers, etc. We scrub them in before_send
+        # so an exception during webhook processing never accidentally
+        # leaks a webhook secret or a user's session cookie.
+        _REDACT = "[redacted]"
+        _SENSITIVE_HEADERS = {
+            "authorization", "cookie", "set-cookie", "x-api-key",
+            "x-api-secret", "x-nowpayments-sig", "hmac",
+        }
+        _SENSITIVE_URL_PREFIXES = (
+            "/api/v1/webhooks/",   # NOWPayments / OxaPay / on-chain IPNs
+            "/api/v1/auth/",       # passwords, OAuth tokens, 2FA codes
+            "/api/lp/",            # Corecen LP push (HMAC-signed prices)
+            "/api/v1/wallet/",     # deposit/withdraw bodies
+            "/api/v1/admin/",      # admin actions (login-as codes etc.)
+        )
+
+        def _scrub_headers(headers: dict | None) -> dict | None:
+            if not headers:
+                return headers
+            return {
+                k: (_REDACT if k.lower() in _SENSITIVE_HEADERS else v)
+                for k, v in headers.items()
+            }
+
+        def _before_send(event: dict, _hint: dict) -> dict | None:
+            try:
+                req = event.get("request") or {}
+                url = (req.get("url") or "")
+                req["headers"] = _scrub_headers(req.get("headers"))
+                # Drop request bodies wholesale on sensitive paths — much
+                # safer than trying to identify which field is a secret.
+                if any(p in url for p in _SENSITIVE_URL_PREFIXES):
+                    if "data" in req:
+                        req["data"] = _REDACT
+                # Always strip query strings on auth endpoints — legacy
+                # ?token=... fallbacks have ended up in URLs.
+                if "/auth" in url and "query_string" in req:
+                    req["query_string"] = _REDACT
+                event["request"] = req
+            except Exception:
+                # Never let a redaction bug drop a real exception report.
+                pass
+            return event
+
         sentry_sdk.init(
             dsn=dsn,
             traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
             environment=settings.ENVIRONMENT,
-            release=f"fxartha-{service_name}@1.0.0",
+            release=f"swisscresta-{service_name}@1.0.0",
             integrations=[
                 FastApiIntegration(transaction_style="endpoint"),
                 SqlalchemyIntegration(),
             ],
             send_default_pii=False,
+            before_send=_before_send,
+            # Don't include request bodies in event payloads by default;
+            # the before_send hook is a second layer of defence in case
+            # this is ignored on some SDK paths.
+            max_request_body_size="never",
         )
         logger.info("Sentry initialised for %s (env=%s)", service_name, settings.ENVIRONMENT)
     except Exception as exc:

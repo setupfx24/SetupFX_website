@@ -85,7 +85,11 @@ async def take_credit(
     user_id: uuid.UUID,
     body: CreditRequest,
     request: Request,
-    admin: User = Depends(require_permission("users.add_fund")),
+    # Removing credit is a *debit*-shaped action — gate with the deduct
+    # permission, not `users.add_fund`. Previously this endpoint was
+    # reachable by anyone with `users.add_fund`, violating separation-
+    # of-duty (a "credit-giver" analyst could also revoke credit).
+    admin: User = Depends(require_permission("users.deduct_fund")),
     db: AsyncSession = Depends(get_db),
 ):
     return await user_service.take_credit(
@@ -170,7 +174,13 @@ async def login_as_user(
 async def delete_user(
     user_id: uuid.UUID,
     request: Request,
-    admin: User = Depends(require_permission("users.add_fund")),
+    # Hard-delete of a user (closes positions, wipes deposits/withdrawals,
+    # destroys transaction history) is the single most destructive admin
+    # operation. It must NOT be reachable via the financial "add funds"
+    # permission. Restricted to super_admin only — `require_permission`
+    # already lets super_admin through; for every other role we require
+    # the explicit `users.delete` grant.
+    admin: User = Depends(require_permission("users.delete")),
     db: AsyncSession = Depends(get_db),
 ):
     """Permanently delete a user. Closes all open positions/orders, deletes

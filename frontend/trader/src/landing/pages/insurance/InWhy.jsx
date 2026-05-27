@@ -45,8 +45,8 @@ export default function InWhy() {
                     key={label}
                     className="flex items-center gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(214,169,61,0.05)',
-                      border: '1px solid rgba(214,169,61,0.22)',
+                      background: 'rgba(99,102,241,0.05)',
+                      border: '1px solid rgba(99,102,241,0.22)',
                     }}
                   >
                     <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />

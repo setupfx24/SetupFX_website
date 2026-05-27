@@ -79,7 +79,11 @@ async def demo_login(request: Request, db: AsyncSession = Depends(get_db)):
         return await _demo_login(request=request, db=db)
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
+        # Detail intentionally generic — exception type and message MUST
+        # NOT leak to clients (gives attackers free reconnaissance of
+        # backend internals). The full traceback is on the server via
+        # logger.exception; correlate via request timestamp.
         logger.exception("demo-login failed unexpectedly")
         try:
             await db.rollback()
@@ -87,7 +91,7 @@ async def demo_login(request: Request, db: AsyncSession = Depends(get_db)):
             pass
         raise HTTPException(
             status_code=500,
-            detail=f"Demo sign-in failed — {type(e).__name__}: {e}",
+            detail="Demo sign-in failed. Please try again or contact support.",
         )
 
 
@@ -102,7 +106,7 @@ async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
         logger.exception("google sign-in failed unexpectedly")
         try:
             await db.rollback()
@@ -110,7 +114,7 @@ async def google_auth(req: GoogleAuthRequest, request: Request, db: AsyncSession
             pass
         raise HTTPException(
             status_code=500,
-            detail=f"Google sign-in failed — {type(e).__name__}: {e}",
+            detail="Sign-in with Google failed. Please try again or contact support.",
         )
 
 
@@ -143,7 +147,7 @@ async def wallet_verify(
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
+    except Exception:
         logger.exception("wallet verify failed unexpectedly")
         try:
             await db.rollback()
@@ -151,7 +155,7 @@ async def wallet_verify(
             pass
         raise HTTPException(
             status_code=500,
-            detail=f"Wallet sign-in failed — {type(e).__name__}: {e}",
+            detail="Wallet sign-in failed. Please try again or contact support.",
         )
 
 

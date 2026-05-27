@@ -1,6 +1,6 @@
 import { getWebSocketBaseUrl } from './getWebSocketBaseUrl';
 
-type MessageHandler = (data: any) => void;
+type MessageHandler = (data: unknown) => void;
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected';
 
@@ -105,7 +105,7 @@ class WSManager {
     return () => this.statusCallbacks.delete(cb);
   }
 
-  send(data: any) {
+  send(data: unknown) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }

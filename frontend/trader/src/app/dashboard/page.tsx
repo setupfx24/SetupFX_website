@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
@@ -92,7 +93,7 @@ function BrokerHome() {
       const accs = await api.get<{ items: AccountRow[] } | AccountRow[]>('/accounts');
       const list: AccountRow[] = Array.isArray(accs) ? accs : (accs as { items: AccountRow[] }).items || [];
       setAccounts(list);
-      if (list.length > 0) setActiveId((cur) => cur ?? list[0].id);
+      if (list.length > 0) setActiveId((cur) => cur ?? list[0]!.id);
     } catch {
       // Silent polls swallow errors; initial-load surfacing is handled
       // by the bootstrap effect below.
@@ -107,8 +108,8 @@ function BrokerHome() {
     }
     const out = TOP_MOVER_SYMBOLS.map((sym, i) => {
       const bars = dayOpenBarsRef.current[i] || [];
-      const dayOpen = bars.length > 0 ? Number(bars[bars.length - 1].open) : NaN;
-      const price = tickMap.get(sym) ?? (bars.length > 0 ? Number(bars[bars.length - 1].close) : NaN);
+      const dayOpen = bars.length > 0 ? Number(bars[bars.length - 1]!.open) : NaN;
+      const price = tickMap.get(sym) ?? (bars.length > 0 ? Number(bars[bars.length - 1]!.close) : NaN);
       const pct = (Number.isFinite(dayOpen) && dayOpen > 0 && Number.isFinite(price))
         ? ((price - dayOpen) / dayOpen) * 100
         : 0;
@@ -137,7 +138,7 @@ function BrokerHome() {
         if (cancelled) return;
         const list: AccountRow[] = Array.isArray(accs) ? accs : (accs as { items: AccountRow[] }).items || [];
         setAccounts(list);
-        if (list.length > 0) setActiveId((cur) => cur ?? list[0].id);
+        if (list.length > 0) setActiveId((cur) => cur ?? list[0]!.id);
         setBanners(b.banners || []);
       } finally {
         if (!cancelled) setLoading(false);
@@ -334,7 +335,7 @@ function BrokerHome() {
               router.push('/trading/open-account');
               return;
             }
-            const id = activeId || accounts[0].id;
+            const id = activeId || accounts[0]!.id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
           className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
@@ -427,7 +428,7 @@ function AccountBalanceCard({
               className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
               style={a?.is_demo
                 ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }
-                : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)', border: '1px solid rgba(214,169,61,0.3)' }}
+                : { color: '#6366F1', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)' }}
             >
               {a?.is_demo ? 'Demo' : 'Real'}
             </span>
@@ -457,7 +458,7 @@ function AccountBalanceCard({
                     className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded"
                     style={acc.is_demo
                       ? { color: '#f59e0b', background: 'rgba(245,158,11,0.12)' }
-                      : { color: '#d6a93d', background: 'rgba(214,169,61,0.12)' }}
+                      : { color: '#6366F1', background: 'rgba(99,102,241,0.12)' }}
                   >
                     {acc.is_demo ? 'Demo' : 'Real'}
                   </span>
@@ -473,7 +474,7 @@ function AccountBalanceCard({
           <Link
             href="/wallet"
             className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
-            style={{ background: '#d6a93d', color: '#1a1408' }}
+            style={{ background: '#6366F1', color: '#1a1408' }}
           >
             <ArrowDownToLine size={14} /> Deposit
           </Link>
@@ -525,7 +526,7 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
       <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">{label}</p>
       <p
         className={clsx('mt-1 font-bold tabular-nums', highlight ? 'text-xl md:text-2xl' : 'text-base md:text-lg')}
-        style={{ color: highlight ? '#d6a93d' : 'var(--text-primary)' }}
+        style={{ color: highlight ? '#6366F1' : 'var(--text-primary)' }}
       >
         {value}
       </p>
@@ -572,13 +573,13 @@ function StatusProgramCard() {
       <div className="flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex-1 min-w-0">
           <h2 className="text-base font-bold text-text-primary mb-2 flex items-center gap-2">
-            <BadgeCheck size={18} className="text-[#d6a93d]" /> Status program
+            <BadgeCheck size={18} className="text-[#6366F1]" /> Status program
           </h2>
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/rewards"
               className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors"
-              style={{ background: 'rgba(214,169,61,0.14)', color: '#d6a93d', border: '1px solid rgba(214,169,61,0.35)' }}
+              style={{ background: 'rgba(99,102,241,0.14)', color: '#6366F1', border: '1px solid rgba(99,102,241,0.35)' }}
             >
               Challenges
             </Link>
@@ -594,11 +595,11 @@ function StatusProgramCard() {
         <div
           className="md:w-[420px] rounded-xl p-4 flex items-center gap-4"
           style={{
-            background: 'linear-gradient(135deg, rgba(214,169,61,0.12) 0%, rgba(155,125,58,0.06) 100%)',
-            border: '1px solid rgba(214,169,61,0.32)',
+            background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(155,125,58,0.06) 100%)',
+            border: '1px solid rgba(99,102,241,0.32)',
           }}
         >
-          <Gift size={28} className="text-[#d6a93d] shrink-0" />
+          <Gift size={28} className="text-[#6366F1] shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-text-primary leading-tight">Welcome cashback</p>
             <p className="text-xs text-text-secondary leading-tight mt-0.5">
@@ -609,7 +610,7 @@ function StatusProgramCard() {
             <Link
               href="/rewards"
               className="px-3 py-1.5 text-xs font-bold rounded-md"
-              style={{ background: '#d6a93d', color: '#1a1408' }}
+              style={{ background: '#6366F1', color: '#1a1408' }}
             >
               Activate
             </Link>
@@ -644,7 +645,7 @@ function InviteFriendsCard() {
           </p>
           <Link
             href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#d6a93d] hover:underline"
+            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#6366F1] hover:underline"
           >
             Learn details <ArrowRight size={12} />
           </Link>
@@ -660,9 +661,9 @@ function BonusCard() {
       <div className="flex items-center gap-4">
         <div
           className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(214,169,61,0.14)', border: '1px solid rgba(214,169,61,0.32)' }}
+          style={{ background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.32)' }}
         >
-          <Gift size={26} className="text-[#d6a93d]" />
+          <Gift size={26} className="text-[#6366F1]" />
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-bold text-text-primary">50% deposit bonus</h3>
@@ -672,7 +673,7 @@ function BonusCard() {
           <Link
             href="/wallet"
             className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-bold rounded-md"
-            style={{ background: '#d6a93d', color: '#1a1408' }}
+            style={{ background: '#6366F1', color: '#1a1408' }}
           >
             Get bonus <ArrowRight size={12} />
           </Link>
@@ -690,16 +691,31 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
     return () => clearInterval(t);
   }, [banners.length]);
   if (banners.length === 0) return null;
+  // banners[index] is always in range thanks to the modulo in the setInterval,
+  // but TypeScript can't prove that — guard explicitly.
   const b = banners[index];
+  if (!b) return null;
   return (
     <div className="relative w-full rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-primary)' }}>
       <div className="relative w-full h-44 sm:h-52 md:h-60 bg-bg-secondary">
         {b.link_url ? (
           <a href={b.link_url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 block">
-            <img src={b.image_url} alt={b.title || 'Banner'} className="w-full h-full object-cover" />
+            <Image
+              src={b.image_url}
+              alt={b.title || 'Banner'}
+              fill
+              sizes="(max-width: 768px) 100vw, 720px"
+              className="object-cover"
+            />
           </a>
         ) : (
-          <img src={b.image_url} alt={b.title || 'Banner'} className="w-full h-full object-cover" />
+          <Image
+            src={b.image_url}
+            alt={b.title || 'Banner'}
+            fill
+            sizes="(max-width: 768px) 100vw, 720px"
+            className="object-cover"
+          />
         )}
       </div>
       {banners.length > 1 && (
@@ -708,7 +724,7 @@ function BannerStrip({ banners }: { banners: Banner[] }) {
             <span
               key={i}
               className="w-1.5 h-1.5 rounded-full transition-colors"
-              style={{ background: i === index ? '#d6a93d' : 'rgba(255,255,255,0.4)' }}
+              style={{ background: i === index ? '#6366F1' : 'rgba(255,255,255,0.4)' }}
             />
           ))}
         </div>

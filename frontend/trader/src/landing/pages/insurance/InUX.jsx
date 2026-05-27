@@ -49,8 +49,8 @@ export default function InUX() {
                     key={label}
                     className="flex items-center gap-3 rounded-xl px-4 py-3"
                     style={{
-                      background: 'rgba(214,169,61,0.05)',
-                      border: '1px solid rgba(214,169,61,0.22)',
+                      background: 'rgba(99,102,241,0.05)',
+                      border: '1px solid rgba(99,102,241,0.22)',
                     }}
                   >
                     <Icon size={16} style={{ color: 'var(--fx-gold-light)' }} />
@@ -68,15 +68,15 @@ export default function InUX() {
               style={{
                 background:
                   'linear-gradient(180deg, var(--fx-bg-elev) 0%, var(--fx-bg-elev-2) 100%)',
-                border: '1px solid rgba(214,169,61,0.30)',
-                boxShadow: '0 30px 70px -30px rgba(214,169,61,0.30)',
+                border: '1px solid rgba(99,102,241,0.30)',
+                boxShadow: '0 30px 70px -30px rgba(99,102,241,0.30)',
               }}
             >
               {/* Mock header */}
               <div
                 className="flex items-center justify-between px-5 md:px-6 py-3.5"
                 style={{
-                  background: 'rgba(214,169,61,0.04)',
+                  background: 'rgba(99,102,241,0.04)',
                   borderBottom: '1px solid var(--fx-line)',
                 }}
               >
@@ -112,10 +112,10 @@ export default function InUX() {
                           key={p}
                           className="rounded-lg px-3 py-2.5 text-center text-sm font-semibold"
                           style={{
-                            background: active ? 'rgba(214,169,61,0.18)' : 'rgba(255,255,255,0.03)',
+                            background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
                             color: active ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                             border: active
-                              ? '1px solid rgba(214,169,61,0.55)'
+                              ? '1px solid rgba(99,102,241,0.55)'
                               : '1px solid var(--fx-line-strong)',
                           }}
                         >
@@ -147,10 +147,10 @@ export default function InUX() {
                           key={c.name}
                           className="rounded-lg px-2 py-2 text-center"
                           style={{
-                            background: active ? 'rgba(214,169,61,0.18)' : 'rgba(255,255,255,0.03)',
+                            background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
                             color: active ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                             border: active
-                              ? '1px solid rgba(214,169,61,0.55)'
+                              ? '1px solid rgba(99,102,241,0.55)'
                               : '1px solid var(--fx-line-strong)',
                           }}
                         >
@@ -175,7 +175,7 @@ export default function InUX() {
                         width: '60%',
                         background:
                           'linear-gradient(90deg, var(--fx-gold-light), var(--fx-gold))',
-                        boxShadow: '0 0 12px rgba(214,169,61,0.55)',
+                        boxShadow: '0 0 12px rgba(99,102,241,0.55)',
                       }}
                     />
                   </div>

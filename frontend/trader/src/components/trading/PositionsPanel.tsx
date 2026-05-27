@@ -219,7 +219,7 @@ function TerminalPositionStaticCard({
             className={clsx(
               'inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold tabular-nums border',
               pnl >= 0
-                ? 'bg-green-500/10 border-green-500/20 text-[#d6a93d]'
+                ? 'bg-green-500/10 border-green-500/20 text-[#6366F1]'
                 : 'bg-red-500/10 border-red-500/20 text-[#ff5252]',
             )}
           >
@@ -253,7 +253,7 @@ function TerminalPositionStaticCard({
               (priceDown ? (
                 <TrendingDown className="w-3 h-3 text-[#ff5252]" aria-hidden />
               ) : (
-                <TrendingUp className="w-3 h-3 text-[#d6a93d]" aria-hidden />
+                <TrendingUp className="w-3 h-3 text-[#6366F1]" aria-hidden />
               ))}
           </div>
         </div>
@@ -802,7 +802,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       <span
                         className={clsx(
                           'text-xs font-mono font-semibold tabular-nums leading-tight',
-                          totalPnl >= 0 ? 'text-[#d6a93d]' : 'text-[#ef5350]',
+                          totalPnl >= 0 ? 'text-[#6366F1]' : 'text-[#ef5350]',
                         )}
                       >
                         {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
@@ -954,7 +954,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     className={clsx(
                       'flex-1 min-w-0 py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-bold transition-colors border-b-2 -mb-px',
                       activeTab === tab.id
-                        ? clsx('text-text-primary border-[#d6a93d]', 'bg-bg-secondary/70')
+                        ? clsx('text-text-primary border-[#6366F1]', 'bg-bg-secondary/70')
                         : clsx(
                             'text-text-tertiary border-transparent hover:text-text-secondary',
                             'hover:bg-bg-hover/40',
@@ -1081,14 +1081,18 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
                                 {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                               </span>
-                              {insurancePolicies[pos.id] && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-primary-accent/15 text-primary-accent border border-primary-accent/30"
-                                  title={`Insured · ${insurancePolicies[pos.id].tier} · cover ${(insurancePolicies[pos.id].coverage_pct * 100).toFixed(0)}% up to $${insurancePolicies[pos.id].max_cap.toFixed(0)}`}
-                                >
-                                  <ShieldCheck className="w-3 h-3" aria-hidden />
-                                </span>
-                              )}
+                              {insurancePolicies[pos.id] && (() => {
+                                /* Extract once so TS narrows the Record access. */
+                                const ip = insurancePolicies[pos.id]!;
+                                return (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-primary-accent/15 text-primary-accent border border-primary-accent/30"
+                                    title={`Insured · ${ip.tier} · cover ${(ip.coverage_pct * 100).toFixed(0)}% up to $${ip.max_cap.toFixed(0)}`}
+                                  >
+                                    <ShieldCheck className="w-3 h-3" aria-hidden />
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
@@ -1178,14 +1182,17 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>
                               <span className="inline-flex items-center gap-1.5">
                                 {pos.symbol}
-                                {insurancePolicies[pos.id] && (
-                                  <span
-                                    className="inline-flex items-center text-primary-accent"
-                                    title={`Insured · ${insurancePolicies[pos.id].tier} · cover ${(insurancePolicies[pos.id].coverage_pct * 100).toFixed(0)}% up to $${insurancePolicies[pos.id].max_cap.toFixed(0)}`}
-                                  >
-                                    <ShieldCheck className="w-3.5 h-3.5" aria-hidden />
-                                  </span>
-                                )}
+                                {insurancePolicies[pos.id] && (() => {
+                                  const ip = insurancePolicies[pos.id]!;
+                                  return (
+                                    <span
+                                      className="inline-flex items-center text-primary-accent"
+                                      title={`Insured · ${ip.tier} · cover ${(ip.coverage_pct * 100).toFixed(0)}% up to $${ip.max_cap.toFixed(0)}`}
+                                    >
+                                      <ShieldCheck className="w-3.5 h-3.5" aria-hidden />
+                                    </span>
+                                  );
+                                })()}
                               </span>
                             </td>
                             <td className={td}>

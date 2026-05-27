@@ -114,8 +114,9 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
         dayLowRef.current[symbol] = tick.bid;
         dayHighRef.current[symbol] = tick.bid;
       } else {
-        if (tick.bid < dayLowRef.current[symbol]) dayLowRef.current[symbol] = tick.bid;
-        if (tick.bid > dayHighRef.current[symbol]) dayHighRef.current[symbol] = tick.bid;
+        /* `symbol in dayLowRef.current` check above guarantees the entry exists. */
+        if (tick.bid < dayLowRef.current[symbol]!) dayLowRef.current[symbol] = tick.bid;
+        if (tick.bid > dayHighRef.current[symbol]!) dayHighRef.current[symbol] = tick.bid;
       }
     }
   }, [prices, watchlist]);
@@ -374,10 +375,10 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
                     bFlash === 'up'
-                      ? 'text-[#d6a93d]'
+                      ? 'text-[#6366F1]'
                       : bFlash === 'down'
                         ? 'text-[#ef5350]'
-                        : 'text-[#d6a93d]',
+                        : 'text-[#6366F1]',
                   )}
                 >
                   {tick ? tick.bid.toFixed(digits) : '—'}
@@ -388,10 +389,10 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
                   className={clsx(
                     'text-right text-[13px] font-mono font-semibold tabular-nums tracking-tight',
                     aFlash === 'up'
-                      ? 'text-[#d6a93d]'
+                      ? 'text-[#6366F1]'
                       : aFlash === 'down'
                         ? 'text-[#ef5350]'
-                        : 'text-[#d6a93d]',
+                        : 'text-[#6366F1]',
                   )}
                 >
                   {tick ? tick.ask.toFixed(digits) : '—'}

@@ -150,7 +150,7 @@ export default function TradesSection() {
       await api.post(`/positions/${posId}/close`, {});
       toast.success(`${symbol} position closed`);
       void fetchAll(true);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Close failed');
     } finally {
       setClosingId(null);
@@ -163,7 +163,7 @@ export default function TradesSection() {
       await api.delete(`/orders/${orderId}`);
       toast.success(`${symbol} order cancelled`);
       void fetchAll(true);
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Cancel failed');
     } finally {
       setClosingId(null);

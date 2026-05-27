@@ -25,7 +25,7 @@ export class AreaRenderer {
 
     for (let i = 0; i < data.length; i++) {
       const x = i * (candleWidth + candleGap) + candleWidth / 2;
-      const y = priceToY(data[i].close);
+      const y = priceToY(data[i]!.close);
       ctx.lineTo(x, y);
     }
 
@@ -47,7 +47,7 @@ export class AreaRenderer {
 
     for (let i = 0; i < data.length; i++) {
       const x = i * (candleWidth + candleGap) + candleWidth / 2;
-      const y = priceToY(data[i].close);
+      const y = priceToY(data[i]!.close);
 
       if (i === 0) {
         ctx.moveTo(x, y);

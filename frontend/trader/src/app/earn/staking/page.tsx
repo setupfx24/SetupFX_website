@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import DashboardShell from '@/components/layout/DashboardShell';
 import StakingPlanCard, { StakingPlan } from '@/components/earn/StakingPlanCard';
 import api from '@/lib/api/client';
+import { getErrorMessage, getErrorDetail } from '@/lib/errors';
 
 type Position = {
   id: string;
@@ -79,11 +80,12 @@ function Inner() {
       setReferralSummary(referralR);
       if (plansR.length > 0 && !selectedPlanId) {
         // Default to the first locked plan if any, else the flexible one.
-        const def = plansR.find((p) => p.mode === 'locked') || plansR[0];
+        // `plansR[0]` is safe inside the length>0 guard.
+        const def = plansR.find((p) => p.mode === 'locked') || plansR[0]!;
         setSelectedPlanId(def.id);
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not load staking');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not load staking'));
     } finally {
       setLoading(false);
     }
@@ -116,11 +118,11 @@ function Inner() {
       toast.success(`Staked ${fmtUsd(amt)} into ${selectedPlan.label}`);
       setAmount('');
       await loadAll();
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err: unknown) {
+      const detail = getErrorDetail(err);
       if (detail === 'insufficient_wallet_balance') toast.error('Not enough in your main wallet');
-      else if (typeof detail === 'string' && detail.startsWith('min_amount')) toast.error('Below the plan minimum');
-      else toast.error(detail || err?.message || 'Could not open stake');
+      else if (detail && detail.startsWith('min_amount')) toast.error('Below the plan minimum');
+      else toast.error(getErrorMessage(err, 'Could not open stake'));
     } finally {
       setBusy(false);
     }
@@ -132,10 +134,10 @@ function Inner() {
       await api.post(`/staking/positions/${p.id}/withdraw`, {});
       toast.success('Principal returned to your wallet');
       await loadAll();
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err: unknown) {
+      const detail = getErrorDetail(err);
       if (detail === 'position_locked') toast.error('Locked plans can only be withdrawn after the term ends');
-      else toast.error(detail || err?.message || 'Could not withdraw');
+      else toast.error(getErrorMessage(err, 'Could not withdraw'));
     } finally {
       setBusyPosId(null);
     }
@@ -148,8 +150,8 @@ function Inner() {
       if (res.claimed > 0) toast.success(`Claimed ${fmtUsd(res.claimed)} in rewards`);
       else toast(`No rewards available yet`, { icon: 'i' });
       await loadAll();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Could not claim');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Could not claim'));
     } finally {
       setBusyPosId(null);
     }
@@ -285,7 +287,7 @@ function Inner() {
         <div className="rounded-xl border border-border-primary bg-bg-secondary p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-3">
             <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
-              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#d6a93d]" /> : <Sparkles size={16} className="text-[#d6a93d]" />}
+              {selectedPlan.mode === 'locked' ? <Lock size={16} className="text-[#6366F1]" /> : <Sparkles size={16} className="text-[#6366F1]" />}
               Open a {selectedPlan.label} stake
             </h2>
             <div className="flex flex-col sm:flex-row sm:items-end gap-3">
@@ -298,14 +300,14 @@ function Inner() {
                   placeholder={`Min ${fmtUsd(selectedPlan.min_amount)}`}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#d6a93d] focus:outline-none"
+                  className="w-full px-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary tabular-nums focus:border-[#6366F1] focus:outline-none"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleOpen}
                 disabled={busy || !amount}
-                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 rounded-lg text-sm font-bold bg-[#6366F1] text-bg-base hover:brightness-110 disabled:opacity-60 transition-colors"
               >
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                 Stake
@@ -318,7 +320,7 @@ function Inner() {
                   type="checkbox"
                   checked={useTradingBonus}
                   onChange={(e) => setUseTradingBonus(e.target.checked)}
-                  className="mt-0.5 accent-[#d6a93d]"
+                  className="mt-0.5 accent-[#6366F1]"
                 />
                 <span>
                   Activate {selectedPlan.trading_bonus_pct.toFixed(0)}% trading bonus
@@ -374,7 +376,7 @@ function Inner() {
                       type="button"
                       onClick={() => handleClaim(p)}
                       disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-[#6366F1] text-bg-base hover:brightness-110 disabled:opacity-60"
                     >
                       {busyPosId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                       Claim
@@ -385,7 +387,7 @@ function Inner() {
                       type="button"
                       onClick={() => handleWithdraw(p)}
                       disabled={busyPosId === p.id}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#d6a93d]/45 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-border-primary text-text-secondary hover:text-text-primary hover:border-[#6366F1]/45 disabled:opacity-60"
                     >
                       {p.plan.mode === 'flexible' ? 'Withdraw' : 'Withdraw at unlock'}
                     </button>
@@ -470,7 +472,7 @@ function Inner() {
                   </td>
                   <td className={clsx(
                     'px-4 py-2.5 text-right font-mono tabular-nums',
-                    lvl.earnings > 0 ? 'text-[#d6a93d] font-semibold' : 'text-text-tertiary',
+                    lvl.earnings > 0 ? 'text-[#6366F1] font-semibold' : 'text-text-tertiary',
                   )}>
                     {fmt(lvl.earnings)}
                   </td>
@@ -483,7 +485,7 @@ function Inner() {
                 <tr className="border-t border-border-primary bg-bg-base/30 font-semibold">
                   <td className="px-4 py-2.5 text-text-primary">Total</td>
                   <td className="px-4 py-2.5 text-right text-text-tertiary font-mono">30%</td>
-                  <td className="px-4 py-2.5 text-right text-[#d6a93d] font-mono tabular-nums">
+                  <td className="px-4 py-2.5 text-right text-[#6366F1] font-mono tabular-nums">
                     {fmt(referralSummary.total_referral_earnings)}
                   </td>
                   <td className="px-4 py-2.5 text-right text-text-primary font-mono tabular-nums">
@@ -518,7 +520,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div>
       <p className="text-[10.5px] uppercase tracking-wider text-text-tertiary">{label}</p>
-      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#d6a93d]' : 'text-text-primary')}>
+      <p className={'text-sm font-semibold tabular-nums ' + (accent ? 'text-[#6366F1]' : 'text-text-primary')}>
         {value}
       </p>
     </div>

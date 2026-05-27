@@ -138,6 +138,33 @@ async def place_order(
     # --- Sequential DB queries (AsyncSession doesn't support concurrent queries) ---
     account = await validate_account(req.account_id, user_id, db)
 
+    # Re-acquire the account row WITH a lock for the margin check +
+    # margin-used write below. validate_account() does the visibility
+    # check (does this account exist and belong to this user) but
+    # intentionally doesn't lock — it's also called from read-only
+    # paths like list_positions. Without the lock here, two concurrent
+    # market orders both read the same free_margin, both pass the
+    # sufficiency check at `required_margin > real_free_margin`
+    # further down, and both fill — over-leveraging the account
+    # beyond its actual balance. The lock is released on commit at
+    # the end of place_order(), so SL/TP / risk-engine ticks block
+    # briefly rather than racing on the same margin pool.
+    locked_q = await db.execute(
+        select(TradingAccount)
+        .options(selectinload(TradingAccount.account_group))
+        .where(TradingAccount.id == account.id)
+        .with_for_update()
+    )
+    locked = locked_q.scalar_one_or_none()
+    if locked is not None:
+        # Replace the read-only `account` with the locked row so the
+        # rest of place_order() reads + writes against the locked
+        # version (and the lock is actually held). We re-eager-load
+        # `account_group` to match validate_account()'s selectinload
+        # — otherwise the very next line (account.account_group
+        # access) triggers an async lazy-load and raises MissingGreenlet.
+        account = locked
+
     if not account.is_demo and account.account_group:
         min_bal = account.account_group.minimum_deposit or Decimal("0")
         if min_bal > 0 and (account.balance or Decimal("0")) < min_bal:
@@ -436,7 +463,7 @@ async def place_order(
                 )).scalar_one_or_none()
             if not u or not u.email:
                 return
-            if u.email.lower().endswith("@wallet.fxartha.local"):
+            if u.email.lower().endswith("@wallet.swisscresta.local"):
                 return
             st = get_settings()
             subject, html, text = render_trade_placed(
@@ -451,7 +478,7 @@ async def place_order(
                 stop_loss=_email_payload["stop_loss"],
                 take_profit=_email_payload["take_profit"],
                 when_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-                trader_app_url=st.TRADER_APP_URL or "https://trade.fxartha.com",
+                trader_app_url=st.TRADER_APP_URL or "https://trade.swisscresta.com",
             )
             await send_email(u.email, subject, html, text=text)
         except Exception as e:

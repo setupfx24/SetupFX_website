@@ -34,7 +34,7 @@ export default function PrSecurity() {
           badge="Security & Trust"
           title="Built for Transparency and Control"
           highlight="Transparency and Control"
-          subtitle="FX Artha is designed to minimize trust dependency and maximize system-based execution."
+          subtitle="SwissCresta is designed to minimize trust dependency and maximize system-based execution."
         />
         <div className="mt-12 md:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {cards.map((c, i) => {
@@ -45,8 +45,8 @@ export default function PrSecurity() {
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
                     style={{
-                      background: 'rgba(214,169,61,0.08)',
-                      border: '1px solid rgba(214,169,61,0.28)',
+                      background: 'rgba(99,102,241,0.08)',
+                      border: '1px solid rgba(99,102,241,0.28)',
                     }}
                   >
                     <Icon size={20} style={{ color: 'var(--fx-gold-light)' }} />

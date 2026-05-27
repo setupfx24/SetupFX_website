@@ -19,8 +19,7 @@ export default function InsuranceOverviewPage() {
       <InWhy />
       <InHow />
       <FxPageBanner
-        image="/images/Insurance_banner1.png"
-        alt="FX Artha Trade Insurance"
+        alt="SwissCresta Trade Insurance"
         tagline="Protection that works in the background."
         taglineSub="Activate a plan, then trade — coverage applies automatically on eligible losses."
       />
@@ -28,8 +27,7 @@ export default function InsuranceOverviewPage() {
       <InDuration />
       <InLogic />
       <FxPageBanner
-        image="/images/Insurance_banner2.png"
-        alt="FX Artha Trade Insurance"
+        alt="SwissCresta Trade Insurance"
         tone="elev"
         tagline="One pool. Continuous cover."
         taglineSub="Coverage spans your whole plan duration — not single trades."

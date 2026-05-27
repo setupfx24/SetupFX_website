@@ -49,8 +49,8 @@ export default function CtWhat() {
               className="h-full rounded-2xl p-7 md:p-8 relative overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(160deg, rgba(214,169,61,0.06) 0%, var(--fx-bg-elev-2) 60%)',
-                border: '1px solid rgba(214,169,61,0.22)',
+                  'linear-gradient(160deg, rgba(99,102,241,0.06) 0%, var(--fx-bg-elev-2) 60%)',
+                border: '1px solid rgba(99,102,241,0.22)',
               }}
             >
               <div className="absolute inset-0 fx-grid-bg" />
@@ -61,7 +61,7 @@ export default function CtWhat() {
                     className="rounded-xl p-4 text-center"
                     style={{
                       background: 'var(--fx-bg-elev)',
-                      border: '1px solid rgba(214,169,61,0.35)',
+                      border: '1px solid rgba(99,102,241,0.35)',
                     }}
                   >
                     <div className="feature-icon mx-auto mb-2" style={{ width: 36, height: 36 }}>

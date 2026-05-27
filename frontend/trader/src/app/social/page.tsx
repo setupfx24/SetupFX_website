@@ -9,6 +9,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/errors';
 import MasterEligibilityBanner from '@/components/social/MasterEligibilityBanner';
 import {
   DollarSign,
@@ -405,7 +406,7 @@ function CopyModal({
         if (cancelled) return;
         const items = accRes.items ?? [];
         setAccounts(items);
-        if (items.length > 0) setAccountId(items[0].id);
+        if (items.length > 0) setAccountId(items[0]!.id);
         setWalletBalance(Number(walRes.main_wallet_balance) || 0);
       } catch {
         // non-critical
@@ -423,7 +424,7 @@ function CopyModal({
     setSubmitting(true);
     try {
       // account_id is sent for API compat but backend auto-creates a dedicated account
-      const acctId = accounts.length > 0 ? accounts[0].id : '00000000-0000-0000-0000-000000000000';
+      const acctId = accounts.length > 0 ? accounts[0]!.id : '00000000-0000-0000-0000-000000000000';
       await api.post(`/social/copy?master_id=${provider.id}&account_id=${acctId}&amount=${amt}`, {});
       toast.success(`Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
       onSuccess();
@@ -514,8 +515,8 @@ function LeaderboardTab() {
       const res = await api.get<any>(endpoint);
       setFollowers(res.followers || []);
       setShowFollowers(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to load followers');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load followers'));
     } finally {
       setFollowersLoading(false);
     }
@@ -1198,7 +1199,7 @@ function StrategyInfoCard({ info }: { info: Record<string, string> }) {
           <div key={f.key} className="p-2 rounded-lg bg-bg-base/60 border border-border-glass">
             <p className="text-[10px] text-text-tertiary mb-0.5">{f.label}</p>
             {f.key === 'risk_profile' ? (
-              <span className={clsx('inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold', riskColor(info[f.key]))}>{info[f.key]}</span>
+              <span className={clsx('inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold', riskColor(String(info[f.key] ?? '')))}>{info[f.key]}</span>
             ) : (
               <p className="text-xs font-medium text-text-primary">{info[f.key]}</p>
             )}
@@ -1274,7 +1275,7 @@ function BecomeProviderTab() {
       let refreshed = null;
       try { refreshed = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
       if (refreshed) setExisting(refreshed);
-    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setSubmitting(false); }
+    } catch (e: unknown) { toast.error(getErrorMessage(e, 'Failed')); } finally { setSubmitting(false); }
   };
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
@@ -1428,8 +1429,8 @@ function MyDashboardTab() {
     try {
       const res = await api.get<any>('/followers/my-followers');
       setFollowers(res.followers || []);
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load followers');
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load followers'));
     } finally {
       setFollowersLoading(false);
     }

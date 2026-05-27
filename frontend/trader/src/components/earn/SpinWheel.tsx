@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Coins, Loader2, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
+import { getErrorMessage, getErrorDetail } from '@/lib/errors';
 
 type Prize = {
   id: string;
@@ -29,7 +30,7 @@ type SpinResult = {
 // Alternating bright gold / deep walnut so each wedge reads as a distinct
 // slice. Earlier we used 7 near-identical gold tones and the wheel looked
 // like a flat disc.
-const SLICE_COLOURS = ['#d6a93d', '#3a2a10'];
+const SLICE_COLOURS = ['#6366F1', '#3a2a10'];
 
 export default function SpinWheel({
   onResult,
@@ -56,8 +57,8 @@ export default function SpinWheel({
         if (cancelled) return;
         setPrizes(r.prizes);
         setCostAc(r.cost_ac);
-      } catch (err: any) {
-        toast.error(err?.message || 'Could not load wheel');
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err, 'Could not load wheel'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -119,11 +120,11 @@ export default function SpinWheel({
         onAcChange?.(res.new_ac_balance);
         setSpinning(false);
       }, 3500);
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err: unknown) {
+      const detail = getErrorDetail(err);
       if (detail === 'insufficient_ac') toast.error('Not enough Artha Coins');
       else if (detail === 'spin_unavailable') toast.error('Spin is temporarily unavailable');
-      else toast.error(detail || err?.message || 'Spin failed');
+      else toast.error(getErrorMessage(err, 'Spin failed'));
       setSpinning(false);
     }
   };
@@ -146,19 +147,19 @@ export default function SpinWheel({
           style={{
             borderLeft: '14px solid transparent',
             borderRight: '14px solid transparent',
-            borderTop: '22px solid #d6a93d',
+            borderTop: '22px solid #6366F1',
             filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
           }}
         />
         {/* Wheel */}
         <div
           ref={wheelRef}
-          className="absolute inset-0 rounded-full border-4 border-[#d6a93d]/45 overflow-hidden"
+          className="absolute inset-0 rounded-full border-4 border-[#6366F1]/45 overflow-hidden"
           style={{
             background: conicGradient,
             transform: `rotate(${angle}deg)`,
             transition: spinning ? 'transform 3.4s cubic-bezier(0.17, 0.67, 0.30, 0.99)' : 'none',
-            boxShadow: '0 0 32px rgba(214,169,61,0.18), inset 0 0 32px rgba(0,0,0,0.4)',
+            boxShadow: '0 0 32px rgba(99,102,241,0.18), inset 0 0 32px rgba(0,0,0,0.4)',
           }}
         >
           {prizes.map((p, i) => {
@@ -194,10 +195,10 @@ export default function SpinWheel({
         {/* Center hub */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
-            className="w-16 h-16 rounded-full bg-bg-base border-2 border-[#d6a93d] flex items-center justify-center"
-            style={{ boxShadow: '0 0 18px rgba(214,169,61,0.5)' }}
+            className="w-16 h-16 rounded-full bg-bg-base border-2 border-[#6366F1] flex items-center justify-center"
+            style={{ boxShadow: '0 0 18px rgba(99,102,241,0.5)' }}
           >
-            <Sparkles size={22} className="text-[#d6a93d]" />
+            <Sparkles size={22} className="text-[#6366F1]" />
           </div>
         </div>
       </div>
@@ -206,7 +207,7 @@ export default function SpinWheel({
         type="button"
         onClick={handleSpin}
         disabled={spinning || acBalance < costAc}
-        className="inline-flex items-center gap-2 px-7 py-3 rounded-lg text-sm font-bold bg-[#d6a93d] text-bg-base hover:brightness-110 disabled:opacity-60 transition-all"
+        className="inline-flex items-center gap-2 px-7 py-3 rounded-lg text-sm font-bold bg-[#6366F1] text-bg-base hover:brightness-110 disabled:opacity-60 transition-all"
       >
         {spinning ? (
           <>

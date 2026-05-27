@@ -248,8 +248,9 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
         dayLowRef.current[symbol] = tick.bid;
         dayHighRef.current[symbol] = tick.bid;
       } else {
-        if (tick.bid < dayLowRef.current[symbol]) dayLowRef.current[symbol] = tick.bid;
-        if (tick.bid > dayHighRef.current[symbol]) dayHighRef.current[symbol] = tick.bid;
+        /* `symbol in dayLowRef.current` check above guarantees the entry exists. */
+        if (tick.bid < dayLowRef.current[symbol]!) dayLowRef.current[symbol] = tick.bid;
+        if (tick.bid > dayHighRef.current[symbol]!) dayHighRef.current[symbol] = tick.bid;
       }
       lastTimeRef.current[symbol] = new Date().toLocaleTimeString('en-GB', {
         hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -478,7 +479,7 @@ export default function Watchlist({ variant = 'default', onExitMarkets }: Watchl
                               </div>
                               <div className="flex flex-col items-end gap-0.5">
                                 {tick ? (
-                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#d6a93d]">
+                                  <span className="text-xs font-mono font-semibold tabular-nums text-[#6366F1]">
                                     {tick.ask.toFixed(digits)}
                                   </span>
                                 ) : (

@@ -1,4 +1,24 @@
-"""Wallet Service — Deposits, withdrawals, transfers, wallet summary."""
+"""Wallet Service — Deposits, withdrawals, transfers, wallet summary.
+
+Concurrency / lock-order rule
+-----------------------------
+Every balance-mutating path in this module MUST acquire row locks in
+this canonical order, ascending. Locks taken out of order will deadlock
+under concurrent traffic (process A waits for B's User row while B
+waits for A's TradingAccount row).
+
+    1. User                  (the higher-level row — holds main_wallet_balance)
+    2. TradingAccount        (when two are involved, by ascending UUID)
+    3. Deposit / Withdrawal  (the per-transaction row — innermost)
+
+If a path only mutates a TradingAccount (e.g. give_credit), still skip
+the User lock — the rule is "every lock you take, you take in this
+order", not "always lock every row". Skipping is fine; reordering is not.
+
+When in doubt, mirror
+`services/admin/services/deposit_service.approve_deposit` — the
+canonical reference (Deposit → User → tagged TradingAccount, all with
+`with_for_update()`)."""
 import logging
 import uuid as uuid_lib
 from pathlib import Path
@@ -170,7 +190,7 @@ async def send_withdrawal_requested_email(
             method=method_label or withdrawal.method or "manual",
             destination=destination_str,
             request_id=str(withdrawal.id),
-            trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+            trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
         )
         fire_and_forget(send_email(user_row.email, subject, html, text=text))
     except Exception as _e:
@@ -236,7 +256,7 @@ def _send_bonus_emails_for_user(
             return
         from packages.common.src.email_templates import render_bonus_credited
         st = get_settings()
-        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com")
+        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.swisscresta.com")
         for offer_name, bonus_amount in applied_bonuses:
             subject, html, text = render_bonus_credited(
                 first_name=user_row.first_name,
@@ -268,7 +288,7 @@ def _send_deposit_failed_email(
             return
         from packages.common.src.email_templates import render_deposit_failed
         st = get_settings()
-        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.fxartha.com")
+        app_url = (getattr(st, "TRADER_APP_URL", None) or "https://trade.swisscresta.com")
         subject, html, text = render_deposit_failed(
             first_name=user_row.first_name,
             amount=deposit.amount,
@@ -391,7 +411,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 amount=req.amount,
                 crypto_currency=crypto_currency,
                 order_id=str(deposit.id),
-                description=f"FXArtha deposit ${float(req.amount):,.2f}",
+                description=f"SwissCresta deposit ${float(req.amount):,.2f}",
             )
             deposit.transaction_id = ox["track_id"]
             payment_url = ox["payment_url"]
@@ -414,7 +434,7 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
                 amount=req.amount,
                 crypto_currency=crypto_currency,
                 order_id=str(deposit.id),
-                description=f"FXArtha deposit ${float(req.amount):,.2f}",
+                description=f"SwissCresta deposit ${float(req.amount):,.2f}",
             )
             deposit.transaction_id = np["invoice_id"]
             payment_url = np["payment_url"]
@@ -574,7 +594,13 @@ async def handle_oxapay_webhook(
         logger.warning("OxaPay webhook: invalid order_id=%s", order_id)
         return
 
-    result = await db.execute(select(Deposit).where(Deposit.id == deposit_uuid))
+    # Lock the Deposit row so a concurrent admin "approve" (or a
+    # re-delivered IPN — payment providers retry routinely) can't both
+    # flip pending → auto_approved and credit twice. The status guard
+    # below makes the second writer fail cleanly.
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_uuid).with_for_update()
+    )
     deposit = result.scalar_one_or_none()
     if not deposit:
         logger.warning("OxaPay webhook: deposit not found order_id=%s", order_id)
@@ -599,7 +625,12 @@ async def handle_oxapay_webhook(
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
 
-        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+        # Lock User row BEFORE crediting main_wallet_balance — see
+        # NOWPayments handler for full rationale. Lock order is Deposit
+        # (above) → User → tagged TradingAccount.
+        user_q = await db.execute(
+            select(User).where(User.id == deposit.user_id).with_for_update()
+        )
         user_row = user_q.scalar_one_or_none()
         if not user_row:
             logger.error("OxaPay webhook: user not found for deposit %s", order_id)
@@ -701,7 +732,7 @@ async def handle_oxapay_webhook(
                     method="Crypto (OxaPay)",
                     reference=str(deposit.id),
                     new_balance=user_row.main_wallet_balance,
-                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
                 )
                 fire_and_forget(send_email(user_row.email, subject, html, text=text))
                 _send_bonus_emails_for_user(user_row, applied_bonuses)
@@ -773,7 +804,7 @@ async def create_wallet_deposit(
             amount_usd=amount,
             crypto_currency=crypto_currency,
             order_id=str(deposit.id),
-            description=f"FXArtha deposit ${float(amount):,.2f}",
+            description=f"SwissCresta deposit ${float(amount):,.2f}",
         )
     except Exception as e:
         logger.exception("NOWPayments create_direct_payment failed for deposit %s", deposit.id)
@@ -853,7 +884,7 @@ async def create_hosted_invoice_deposit(
             amount=amount,
             crypto_currency=crypto_currency,
             order_id=str(deposit.id),
-            description=f"FXArtha deposit ${float(amount):,.2f}",
+            description=f"SwissCresta deposit ${float(amount):,.2f}",
         )
     except Exception as e:
         logger.exception(
@@ -1101,13 +1132,25 @@ async def handle_nowpayments_webhook(
         deposit.status = "auto_approved"
         deposit.approved_at = datetime.utcnow()
 
-        user_q = await db.execute(select(User).where(User.id == deposit.user_id))
+        # Lock User row BEFORE crediting main_wallet_balance. Without
+        # this lock a re-delivered IPN (routine for payment providers)
+        # racing a concurrent admin approval or a second webhook on the
+        # same user could lost-update the balance: both reads see the
+        # pre-credit value, both write pre + deposit.amount, second
+        # write overwrites first → one of the two deposits silently
+        # vanishes from the balance. Lock order: Deposit (above) →
+        # User → tagged TradingAccount (inside _credit_from_deposit_row).
+        user_q = await db.execute(
+            select(User).where(User.id == deposit.user_id).with_for_update()
+        )
         user_row = user_q.scalar_one_or_none()
         if not user_row:
             logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
             return
 
         # If the deposit row was tagged at submit time, honor it.
+        # `_credit_from_deposit_row` itself takes `with_for_update()`
+        # on the tagged TradingAccount, keeping the lock chain intact.
         target_kind, target_row = await _credit_from_deposit_row(
             db, deposit, user_row,
         )
@@ -1202,7 +1245,7 @@ async def handle_nowpayments_webhook(
                     method="Crypto (NOWPayments)",
                     reference=str(deposit.id),
                     new_balance=user_row.main_wallet_balance,
-                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.fxartha.com"),
+                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
                 )
                 fire_and_forget(send_email(user_row.email, subject, html, text=text))
                 _send_bonus_emails_for_user(user_row, applied_bonuses)
@@ -1434,26 +1477,30 @@ async def internal_wallet_transfer(req, user_id: UUID, db: AsyncSession) -> dict
     if req.from_account_id == req.to_account_id:
         raise HTTPException(status_code=400, detail="Choose two different accounts")
 
-    fq = await db.execute(
+    amt = Decimal(str(req.amount))
+
+    # ── Concurrency: lock BOTH accounts in ascending UUID order ──────
+    # Without the locks, two concurrent transfers from the same source
+    # account both read the pre-debit balance, both pass the free-margin
+    # check, and both deduct — the source overdraws into the negative.
+    # We acquire the locks in ascending UUID order regardless of which
+    # is the source / destination, so a second transfer in the opposite
+    # direction can never deadlock with us (both processes will request
+    # locks in the same canonical order).
+    id_a, id_b = sorted([req.from_account_id, req.to_account_id])
+    locked_q = await db.execute(
         select(TradingAccount).where(
-            TradingAccount.id == req.from_account_id,
+            TradingAccount.id.in_([id_a, id_b]),
             TradingAccount.user_id == user_id,
             TradingAccount.is_demo == False,
-        )
+        ).with_for_update().order_by(TradingAccount.id)
     )
-    from_a = fq.scalar_one_or_none()
-    tq = await db.execute(
-        select(TradingAccount).where(
-            TradingAccount.id == req.to_account_id,
-            TradingAccount.user_id == user_id,
-            TradingAccount.is_demo == False,
-        )
-    )
-    to_a = tq.scalar_one_or_none()
+    locked = {a.id: a for a in locked_q.scalars().all()}
+    from_a = locked.get(req.from_account_id)
+    to_a = locked.get(req.to_account_id)
     if not from_a or not to_a:
         raise HTTPException(status_code=404, detail="Account not found")
 
-    amt = Decimal(str(req.amount))
     free = (from_a.balance or Decimal("0")) - (from_a.margin_used or Decimal("0"))
     if free < amt:
         raise HTTPException(
@@ -1494,12 +1541,24 @@ async def internal_wallet_transfer(req, user_id: UUID, db: AsyncSession) -> dict
 async def transfer_trading_to_main(req, user_id: UUID, db: AsyncSession) -> dict:
     amt = Decimal(str(req.amount))
 
+    # ── Concurrency: lock User first, then TradingAccount ───────────
+    # Canonical order (User → TradingAccount). Without locks, two
+    # concurrent transfers from the same trading account both read the
+    # pre-debit balance, both pass the free-margin check, and both
+    # deduct — the trading account overdraws and main_wallet over-credits.
+    user_q = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
+    user_row = user_q.scalar_one_or_none()
+    if not user_row:
+        raise HTTPException(status_code=404, detail="User not found")
+
     acc_q = await db.execute(
         select(TradingAccount).where(
             TradingAccount.id == req.from_account_id,
             TradingAccount.user_id == user_id,
             TradingAccount.is_demo == False,
-        )
+        ).with_for_update()
     )
     account = acc_q.scalar_one_or_none()
     if not account:
@@ -1514,11 +1573,6 @@ async def transfer_trading_to_main(req, user_id: UUID, db: AsyncSession) -> dict
                 f"Available: ${float(free):.2f} (${float(account.margin_used or 0):.2f} locked in open trades)."
             ),
         )
-
-    user_q = await db.execute(select(User).where(User.id == user_id))
-    user_row = user_q.scalar_one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail="User not found")
 
     account.balance = (account.balance or Decimal("0")) - amt
     account.equity = account.balance + (account.credit or Decimal("0"))
@@ -1548,7 +1602,13 @@ async def transfer_trading_to_main(req, user_id: UUID, db: AsyncSession) -> dict
 async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict:
     amt = Decimal(str(req.amount))
 
-    user_q = await db.execute(select(User).where(User.id == user_id))
+    # ── Concurrency: lock User first (canonical order), then TradingAccount.
+    # Without the User lock, two concurrent transfers of the available
+    # main_wallet balance both read the pre-debit value and both deduct,
+    # overdrawing main_wallet into the negative.
+    user_q = await db.execute(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     user_row = user_q.scalar_one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1565,7 +1625,7 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
             TradingAccount.id == req.to_account_id,
             TradingAccount.user_id == user_id,
             TradingAccount.is_demo == False,
-        )
+        ).with_for_update()
     )
     account = acc_q.scalar_one_or_none()
     if not account:
