@@ -107,7 +107,6 @@ const LIGHT_MARKETING_PATHS = new Set<string>([
   '/contact',
   '/how-it-works',
   '/platforms',
-  '/platforms/insurance',
   '/privacy',
   '/risk',
   '/terms',

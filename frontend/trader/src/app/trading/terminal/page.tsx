@@ -22,7 +22,6 @@ import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 import TerminalTicker from '@/components/trading/TerminalTicker';
-import TradingViewTechnicalAnalysis from '@/components/charts/TradingViewTechnicalAnalysis';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
@@ -748,16 +747,6 @@ export default function TradingTerminalPage() {
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
             <PositionsPanel variant="terminal" />
           </div>
-          {/* Right rail in the bottom row: TradingView Technical
-              Analysis (TA-indicator consensus). Fixed height matches
-              the widget's natural size so no scrollbar appears.
-              Hidden on narrow terminals so the positions table stays
-              readable. */}
-          {selectedSymbol ? (
-            <div className="hidden xl:flex shrink-0 w-[340px] border-l border-border-primary p-2 overflow-hidden">
-              <TradingViewTechnicalAnalysis className="w-full" />
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

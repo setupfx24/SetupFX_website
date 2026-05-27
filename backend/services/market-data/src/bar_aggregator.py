@@ -92,8 +92,8 @@ class BarAggregator:
         await redis_client.lpush(list_key, json.dumps(bar_data))
         await redis_client.ltrim(list_key, 0, 999)
 
-        # ATR(14) — used by trade insurance pricing. Computed only on 1m bars
-        # because that's the timeframe insurance quotes care about.
+        # ATR(14) — volatility metric cached for downstream consumers.
+        # Computed only on 1m bars.
         if timeframe == "1m":
             await self._update_atr14(symbol)
 

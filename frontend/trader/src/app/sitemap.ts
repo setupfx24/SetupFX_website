@@ -18,9 +18,9 @@ const MARKETING_ROUTES = [
   '/trading/overview', '/trading/forex', '/trading/crypto',
   '/trading/indices', '/trading/commodities',
   // Product pages
-  '/insurance/overview', '/protocol', '/how-it-works',
+  '/protocol', '/how-it-works',
   '/platforms/copy-trading', '/platforms/web', '/platforms/prop-trading',
-  '/platforms/ib-management', '/platforms/super-admin', '/platforms/insurance',
+  '/platforms/ib-management', '/platforms/super-admin',
   // Account tiers
   '/accounts/standard', '/accounts/pro', '/accounts/demo',
   // Company

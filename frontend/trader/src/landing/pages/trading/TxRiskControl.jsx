@@ -1,4 +1,4 @@
-﻿import { Gauge, ShieldCheck, Activity, Eye } from 'lucide-react'
+﻿import { Gauge, Activity, Eye } from 'lucide-react'
 import SectionHeader from '@/landing/components/SectionHeader'
 import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 
@@ -8,12 +8,6 @@ const items = [
     accent: '#60a5fa',
     title: 'Adjustable Leverage',
     desc: 'Tune leverage to match the trade â€” never one-size-fits-all.',
-  },
-  {
-    icon: ShieldCheck,
-    accent: '#F58A60',
-    title: 'Trade Insurance (optional)',
-    desc: 'Activate partial loss cover on eligible trades, before execution.',
   },
   {
     icon: Activity,

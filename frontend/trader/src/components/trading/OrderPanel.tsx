@@ -8,14 +8,11 @@ import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap, Sun, Moon } 
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
-import { getErrorMessage, getErrorDetail } from '@/lib/errors';
 import { sounds, unlockAudio } from '@/lib/sounds';
 import { getDigits } from '@/lib/utils';
 import { getMarketStatus } from '@/lib/marketHours';
 import { wsManager } from '@/lib/ws/wsManager';
 import OrderPanelSymbolPicker from '@/components/trading/OrderPanelSymbolPicker';
-import InsuranceTierPicker from '@/components/trading/InsuranceTierPicker';
-import { insuranceApi, type InsuranceTier } from '@/lib/api/insurance';
 
 type OrderSide = 'buy' | 'sell';
 type OrderType = 'market' | 'pending';
@@ -65,7 +62,6 @@ export default function OrderPanel() {
   const [takeProfit, setTakeProfit] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [symbolPickerOpen, setSymbolPickerOpen] = useState(false);
-  const [insuranceSelection, setInsuranceSelection] = useState<{ tier: InsuranceTier; fee: number } | null>(null);
   const [wsStatus, setWsStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -297,8 +293,6 @@ export default function OrderPanel() {
       rollback = () => setPositions(prev);
     }
 
-    const insuranceChoice = insuranceSelection;
-
     api.post<{ id: string; position_id: string | null }>('/orders/', {
       account_id: activeAccount.id,
       symbol: selectedSymbol,
@@ -313,7 +307,7 @@ export default function OrderPanel() {
       stop_loss: slEnabled && stopLoss ? parseFloat(stopLoss) : undefined,
       take_profit: tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined,
       fully_funded: fullyFunded,
-    }).then(async (resp) => {
+    }).then(async () => {
       // Confirm success only now — the request actually went through.
       toast.success(`${side.toUpperCase()} ${lotsNum} ${selectedSymbol}`);
 
@@ -324,18 +318,6 @@ export default function OrderPanel() {
       // unmount/remount flicker. Swapping the id here would just churn
       // the key between this microtask and the next poll.
 
-      // Insurance — only for market orders that immediately produced a position_id.
-      if (insuranceChoice && resp?.position_id) {
-        try {
-          await insuranceApi.activate(resp.position_id, insuranceChoice.tier);
-          toast.success(`Insured ($${insuranceChoice.fee.toFixed(2)} fee)`);
-        } catch (e: unknown) {
-          const detail = getErrorDetail(e) || getErrorMessage(e, 'insurance_failed');
-          toast.error(`Insurance not activated: ${detail}`);
-        }
-      }
-      // Reset the picker so the next order starts fresh.
-      setInsuranceSelection(null);
       // refreshAccount updates balance/margin numbers. refreshPositions
       // would tear down + rebuild the row we just swapped — skip it,
       // the periodic poll already syncs server-side fields without
@@ -351,7 +333,6 @@ export default function OrderPanel() {
 
   const pad = isTradingTerminal ? 'px-2 py-2 space-y-2' : 'p-4 space-y-4';
   const tabPad = isTradingTerminal ? 'py-1 text-[11px]' : 'py-1.5 text-xs';
-  const obPad = isTradingTerminal ? 'py-2' : 'py-3';
   const volBtn = isTradingTerminal ? 'w-8 h-8' : 'w-10 h-10';
   const volIn = isTradingTerminal ? 'py-1.5 text-sm' : 'py-2.5 text-base';
 
@@ -508,46 +489,61 @@ export default function OrderPanel() {
             ))}
           </div>
 
-          {/* Sell / Buy buttons */}
-          <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1.5' : 'gap-2')}>
-             <button
+          {/* Sell / Buy Vantage-style pills with center spread badge */}
+          <div className="relative">
+            <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1' : 'gap-1.5')}>
+              <button
                 type="button"
                 onClick={() => setSide('sell')}
-                className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
-                style={{
-                  background: side === 'sell' ? 'rgba(239,83,80,0.15)' : 'var(--bg-secondary)',
-                  border: side === 'sell' ? '1px solid #ef5350' : '1px solid var(--border-primary)',
-                  color: side === 'sell' ? '#ef5350' : 'var(--text-secondary)',
-                }}
-             >
-                <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Sell</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'sell' && 'text-red-400')}>{tick ? tick.bid.toFixed(digits) : '---'}</div>
-                <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Bid</div>
-             </button>
-             <button
+                className={clsx(
+                  'rounded-2xl flex flex-col items-start justify-center transition-all duration-150 active:scale-[0.98]',
+                  isTradingTerminal ? 'px-3 py-2' : 'px-4 py-3',
+                  side === 'sell'
+                    ? 'bg-[#DC2626] text-white shadow-sm'
+                    : 'bg-bg-secondary text-text-secondary border border-border-primary hover:bg-bg-hover',
+                )}
+                aria-pressed={side === 'sell'}
+              >
+                <div className={clsx('font-bold tracking-tight', isTradingTerminal ? 'text-xs' : 'text-sm')}>
+                  Sell
+                </div>
+                <div className={clsx('font-mono font-bold tabular-nums', isTradingTerminal ? 'text-base' : 'text-lg')}>
+                  {tick ? tick.bid.toFixed(digits) : '---'}
+                </div>
+              </button>
+              <button
                 type="button"
                 onClick={() => setSide('buy')}
-                className={clsx(obPad, 'rounded-lg flex flex-col items-center justify-center transition-all duration-150 active:scale-[0.98]')}
-                style={{
-                  background: side === 'buy' ? 'rgba(41,98,255,0.15)' : 'var(--bg-secondary)',
-                  border: side === 'buy' ? '1px solid #2962FF' : '1px solid var(--border-primary)',
-                  color: side === 'buy' ? '#2962FF' : 'var(--text-secondary)',
-                }}
-             >
-                <div className={clsx('font-bold uppercase tracking-wider', isTradingTerminal ? 'text-[10px] mb-0' : 'text-sm mb-0.5')}>Buy</div>
-                <div className={clsx('font-mono font-bold', isTradingTerminal ? 'text-[13px]' : 'text-[15px]', side === 'buy' && 'text-[#2962FF]')}>{tick ? tick.ask.toFixed(digits) : '---'}</div>
-                <div className={clsx('text-text-tertiary', isTradingTerminal ? 'text-[8px] mt-0.5' : 'text-[9px] mt-1')}>Ask</div>
-             </button>
-          </div>
+                className={clsx(
+                  'rounded-2xl flex flex-col items-end justify-center transition-all duration-150 active:scale-[0.98]',
+                  isTradingTerminal ? 'px-3 py-2' : 'px-4 py-3',
+                  side === 'buy'
+                    ? 'bg-[#1E66F5] text-white shadow-sm'
+                    : 'bg-bg-secondary text-text-secondary border border-border-primary hover:bg-bg-hover',
+                )}
+                aria-pressed={side === 'buy'}
+              >
+                <div className={clsx('font-bold tracking-tight', isTradingTerminal ? 'text-xs' : 'text-sm')}>
+                  Buy
+                </div>
+                <div className={clsx('font-mono font-bold tabular-nums', isTradingTerminal ? 'text-base' : 'text-lg')}>
+                  {tick ? tick.ask.toFixed(digits) : '---'}
+                </div>
+              </button>
+            </div>
 
-          {/* Spread */}
-          {tick && (
-             <div className={clsx('flex items-center justify-center', isTradingTerminal ? '-mt-1' : '-mt-2')}>
-                <span className={clsx('font-mono px-2 py-0.5 rounded-full bg-bg-secondary text-text-tertiary border border-border-primary', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}>
-                  Spread: {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(1)}
+            {/* Center spread badge — overlaps the gap between buttons */}
+            {tick && (
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                <span className={clsx(
+                  'inline-flex items-center font-mono font-semibold tabular-nums px-2 py-0.5 rounded-full bg-bg-card text-text-secondary border border-border-primary shadow-sm',
+                  isTradingTerminal ? 'text-[10px]' : 'text-xs',
+                )}>
+                  {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(0)}
                 </span>
-             </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* SL / TP toggles */}
           <div className={clsx('flex items-center', isTradingTerminal ? 'gap-3 pt-1' : 'gap-5 pt-2')}>
@@ -785,22 +781,6 @@ export default function OrderPanel() {
                 step={execPrice > 100 ? 0.01 : 0.00001}
                 placeholder={`e.g. ${(execPrice * (side === 'buy' ? 1.02 : 0.98)).toFixed(digits)}`}
                 className="w-full text-sm font-mono py-2.5 px-3 rounded-lg focus:outline-none bg-bg-secondary border border-[#6366F1]/30 text-[#6366F1]"
-              />
-            </div>
-          )}
-
-          {/* Trade Insurance — only on market orders */}
-          {orderTab === 'market' && activeAccount && (
-            <div className="pt-2">
-              <InsuranceTierPicker
-                accountId={activeAccount.id}
-                symbol={selectedSymbol}
-                side={side}
-                lots={lotsNum}
-                leverage={(activeAccount as any).leverage || 100}
-                stopLoss={slEnabled && stopLoss ? parseFloat(stopLoss) : undefined}
-                takeProfit={tpEnabled && takeProfit ? parseFloat(takeProfit) : undefined}
-                onSelect={setInsuranceSelection}
               />
             </div>
           )}

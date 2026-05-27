@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -58,6 +59,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
+  const demoLogin = useAuthStore((s) => s.demoLogin);
   const refreshUser = useAuthStore((s) => s.refreshUser);
 
   const [email, setEmail] = useState('');
@@ -134,6 +136,20 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     }
   };
 
+  const handleDemo = async () => {
+    try {
+      setSubmitting(true);
+      await demoLogin();
+      toast.success('Demo account ready. Welcome to SwissCresta.');
+      router.push('/dashboard');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not start a demo session.';
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const resendOtp = async () => {
     try {
       await api.post('/auth/email/start-verification', { email: email.trim().toLowerCase() });
@@ -157,16 +173,19 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[20rem] md:min-h-[36rem]">
-          <Link href="/" className="inline-flex items-center gap-2 self-start relative z-10">
-            <svg viewBox="0 0 32 32" className="w-7 h-7 shrink-0" aria-hidden>
-              <rect width="32" height="32" rx="4" fill="#DC2626" />
-              <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-              <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-            </svg>
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-white">Swiss</span>
-              <span className="text-[#E94E1B]">Cresta</span>
-            </span>
+          <Link
+            href="/"
+            aria-label="SwissCresta home"
+            className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5"
+          >
+            <Image
+              src="/marketing/swisscresta-logo.png"
+              alt="SwissCresta"
+              width={220}
+              height={48}
+              priority
+              className="h-8 w-auto"
+            />
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
             {copy.hero}
@@ -238,6 +257,21 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                 >
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {submitting ? 'Please wait…' : copy.cta}
+                </button>
+
+                <div className="flex items-center gap-3 my-1">
+                  <span className="flex-1 h-px bg-[#E5E5E5]" aria-hidden />
+                  <span className="text-xs uppercase tracking-wider text-[#9A9A9A]">or</span>
+                  <span className="flex-1 h-px bg-[#E5E5E5]" aria-hidden />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDemo}
+                  disabled={submitting}
+                  className="w-full bg-white hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed border border-[#E5E5E5] text-[#0A0A0A] font-medium py-2.5 px-4 rounded-lg transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  Try with demo
                 </button>
 
                 <div className="text-center text-[#5B5B5B] text-sm">

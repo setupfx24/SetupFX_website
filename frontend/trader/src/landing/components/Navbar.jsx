@@ -10,7 +10,6 @@ const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Trading', path: '/trading/overview' },
   { label: 'Copy Trading', path: '/platforms/copy-trading' },
-  { label: 'Insurance',  path: '/insurance/overview' },
   { label: 'Protocol',   path: '/protocol' },
   { label: 'About',      path: '/about' },
   { label: 'Contact',    path: '/contact' },

@@ -15,8 +15,8 @@ import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
-  TrendingUp, TrendingDown, ArrowRight, Gift,
-  ShieldCheck, ExternalLink, Loader2,
+  TrendingUp, TrendingDown, ArrowRight,
+  ExternalLink, Loader2,
   Wallet as WalletIcon, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -329,10 +329,6 @@ function BrokerHome() {
         loading={loading}
       />
       <TopMoversCard movers={movers} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <InviteFriendsCard />
-        <BonusCard />
-      </div>
       {banners.length > 0 && <BannerStrip banners={banners} />}
     </div>
   );
@@ -501,61 +497,6 @@ function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; pric
           );
         })}
       </ul>
-    </Card>
-  );
-}
-
-function InviteFriendsCard() {
-  return (
-    <Card>
-      <div className="flex items-center gap-4">
-        <div
-          className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)' }}
-        >
-          <ShieldCheck size={26} className="text-green-500" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-text-primary">Invite friends, earn together</h3>
-          <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-            Get a share of every trade your invitees make. Lifetime payouts straight to your main wallet.
-          </p>
-          <Link
-            href="/business"
-            className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-[#E94E1B] hover:underline"
-          >
-            Learn details <ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function BonusCard() {
-  return (
-    <Card>
-      <div className="flex items-center gap-4">
-        <div
-          className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(233,78,27,0.14)', border: '1px solid rgba(233,78,27,0.32)' }}
-        >
-          <Gift size={26} className="text-[#E94E1B]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-bold text-text-primary">50% deposit bonus</h3>
-          <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
-            Top up your account and we&apos;ll add 50% extra trading credit. No expiry, fully tradeable.
-          </p>
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 text-xs font-bold rounded-md"
-            style={{ background: '#E94E1B', color: '#ffffff' }}
-          >
-            Get bonus <ArrowRight size={12} />
-          </Link>
-        </div>
-      </div>
     </Card>
   );
 }

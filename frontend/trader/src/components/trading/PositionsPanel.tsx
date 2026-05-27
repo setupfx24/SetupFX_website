@@ -23,7 +23,6 @@ import {
   LayoutList,
   ArrowRight,
   Share2,
-  ShieldCheck,
 } from 'lucide-react';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import ShareTradeModal from '@/components/trading/ShareTradeModal';
@@ -170,7 +169,6 @@ function TerminalPositionStaticCard({
   digits,
   marginExposureLine,
   swapsFeeLine,
-  insurance,
   onCloseFull,
   onPartialClose,
 }: {
@@ -178,7 +176,6 @@ function TerminalPositionStaticCard({
   digits: number;
   marginExposureLine: string;
   swapsFeeLine: string;
-  insurance?: { tier: string; coverage_pct: number; max_cap: number; status: string };
   onCloseFull: () => void;
   onPartialClose: () => void;
 }) {
@@ -192,15 +189,6 @@ function TerminalPositionStaticCard({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-bold text-text-primary font-mono tracking-tight">{pos.symbol}</span>
-            {insurance && (
-              <span
-                className="inline-flex items-center gap-0.5 text-[8px] font-bold uppercase px-1 py-0.5 rounded bg-primary-accent/15 text-primary-accent border border-primary-accent/30"
-                title={`Insured · ${insurance.tier} · cover ${(insurance.coverage_pct * 100).toFixed(0)}% up to $${insurance.max_cap.toFixed(0)}`}
-              >
-                <ShieldCheck className="w-2.5 h-2.5" aria-hidden />
-                <span>Insured</span>
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <span
@@ -341,12 +329,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
-  /** position_id → policy summary. Populated by a side-fetch every time
-   *  the open positions list changes; lets us render a 🛡 badge on
-   *  insured rows + a tooltip with the tier + cover cap details. */
-  const [insurancePolicies, setInsurancePolicies] = useState<Record<string, {
-    tier: string; coverage_pct: number; max_cap: number; status: string;
-  }>>({});
 
   const totalPnl = positions.reduce((s, p) => s + (p.profit || 0), 0);
 
@@ -367,45 +349,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   useEffect(() => {
     if (activeTab !== 'open') setBulkMenuOpen(false);
   }, [activeTab]);
-
-  // Side-fetch active insurance policies so we can render a 🛡 badge
-  // on insured open positions. Refreshes whenever the position set
-  // changes; tolerates failure (just leaves the map empty).
-  useEffect(() => {
-    if (!positions.length) {
-      setInsurancePolicies({});
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const policies = await api.get<Array<{
-          id: string;
-          position_id: string | null;
-          tier: string;
-          coverage_pct: number;
-          max_cap: number;
-          status: string;
-        }>>('/insurance/active');
-        if (cancelled) return;
-        const next: Record<string, typeof insurancePolicies[string]> = {};
-        for (const p of policies || []) {
-          if (!p.position_id) continue;
-          next[p.position_id] = {
-            tier: p.tier,
-            coverage_pct: Number(p.coverage_pct) || 0,
-            max_cap: Number(p.max_cap) || 0,
-            status: p.status,
-          };
-        }
-        setInsurancePolicies(next);
-      } catch {
-        /* no-op — insurance is an enhancement, never block positions */
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- triggered on position-set changes only
-  }, [positions.map((p) => p.id).join('|')]);
 
   useEffect(() => {
     if (!closeModal && !bulkConfirm) return;
@@ -1030,7 +973,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               digits={d}
                               marginExposureLine={marginExposureLine}
                               swapsFeeLine={swapsFeeLine}
-                              insurance={insurancePolicies[pos.id]}
                               onCloseFull={() =>
                                 setCloseModal({
                                   id: pos.id,
@@ -1081,18 +1023,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                               <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-sm font-medium', pos.trade_type === 'copy_trade' ? 'bg-info/15 text-info' : 'bg-success/15 text-success')}>
                                 {pos.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                               </span>
-                              {insurancePolicies[pos.id] && (() => {
-                                /* Extract once so TS narrows the Record access. */
-                                const ip = insurancePolicies[pos.id]!;
-                                return (
-                                  <span
-                                    className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-sm bg-primary-accent/15 text-primary-accent border border-primary-accent/30"
-                                    title={`Insured · ${ip.tier} · cover ${(ip.coverage_pct * 100).toFixed(0)}% up to $${ip.max_cap.toFixed(0)}`}
-                                  >
-                                    <ShieldCheck className="w-3 h-3" aria-hidden />
-                                  </span>
-                                );
-                              })()}
                             </div>
                             <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
@@ -1182,17 +1112,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={clsx(td, 'font-bold')}>
                               <span className="inline-flex items-center gap-1.5">
                                 {pos.symbol}
-                                {insurancePolicies[pos.id] && (() => {
-                                  const ip = insurancePolicies[pos.id]!;
-                                  return (
-                                    <span
-                                      className="inline-flex items-center text-primary-accent"
-                                      title={`Insured · ${ip.tier} · cover ${(ip.coverage_pct * 100).toFixed(0)}% up to $${ip.max_cap.toFixed(0)}`}
-                                    >
-                                      <ShieldCheck className="w-3.5 h-3.5" aria-hidden />
-                                    </span>
-                                  );
-                                })()}
                               </span>
                             </td>
                             <td className={td}>

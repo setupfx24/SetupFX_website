@@ -185,7 +185,14 @@ export default function AdminLoginPage() {
             transition={{ duration: 0.45, ease: 'easeOut' }}
             className="w-full max-w-sm space-y-6 text-center"
           >
-            <motion.div {...fadeUp(0.1)} className="space-y-1">
+            <motion.div {...fadeUp(0.1)} className="space-y-3 flex flex-col items-center">
+              <div className="bg-white/95 rounded-lg px-3 py-2 inline-flex">
+                <img
+                  src="/logo.png"
+                  alt="SwissCresta"
+                  className="h-9 w-auto"
+                />
+              </div>
               <h1 className="text-[2.25rem] font-bold leading-[1.1] tracking-tight text-white">
                 Operator console
               </h1>
