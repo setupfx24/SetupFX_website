@@ -8,12 +8,12 @@ export default function PlatformsPage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <span className="inline-block bg-blue-50 text-blue-600 text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
+          <span className="inline-block bg-[#FCE6DD] text-[#E94E1B] text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
             Cross-Platform Trading
           </span>
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
             Professional Trading Terminals<br />
-            <span className="text-blue-600">for All Traders</span>
+            <span className="text-[#E94E1B]">for All Traders</span>
           </h1>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             Access institutional-grade platforms on desktop, web, and mobile. 100+ chart tools, 50+ indicators, and execution speeds under 40ms.
@@ -46,15 +46,15 @@ export default function PlatformsPage() {
               },
             ].map(({ icon: Icon, title, desc, features }) => (
               <div key={title} className="bg-gray-50 rounded-xl p-8 border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-                  <Icon className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-[#FCE6DD] rounded-xl flex items-center justify-center mb-6">
+                  <Icon className="w-8 h-8 text-[#E94E1B]" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">{title}</h3>
                 <p className="text-gray-600 mb-6">{desc}</p>
                 <ul className="space-y-2">
                   {features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />
+                      <div className="w-1.5 h-1.5 bg-[#E94E1B] rounded-full" />
                       {feature}
                     </li>
                   ))}
@@ -85,8 +85,8 @@ export default function PlatformsPage() {
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="bg-white rounded-xl p-6 border border-gray-200">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#FCE6DD] rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-6 h-6 text-[#E94E1B]" />
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
@@ -109,13 +109,13 @@ export default function PlatformsPage() {
           <div className="flex flex-wrap justify-center gap-4">
             <a
               href="/auth/register"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-lg transition-colors inline-flex items-center gap-2"
+              className="bg-[#E94E1B] hover:bg-[#C73E11] text-white font-semibold px-8 py-3.5 rounded-lg transition-colors inline-flex items-center gap-2"
             >
               Open Live Account
             </a>
             <a
               href="/auth/login"
-              className="border border-gray-300 hover:border-blue-600 text-gray-900 font-semibold px-8 py-3.5 rounded-lg transition-colors"
+              className="border border-gray-300 hover:border-[#E94E1B] text-gray-900 font-semibold px-8 py-3.5 rounded-lg transition-colors"
             >
               Try Demo
             </a>

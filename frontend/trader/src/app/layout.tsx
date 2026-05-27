@@ -11,25 +11,15 @@ import OnboardingGate from '@/components/auth/OnboardingGate';
 import TopLoader from '@/components/TopLoader';
 import { fontVariableClass } from '@/styles/fonts';
 
-/**
- * Favicon is an inline SVG data URI of the Swiss flag — same mark
- * used in the navbar / hero / footer wordmark lockups. Inline keeps
- * the favicon working even though the PNG was deleted in the page-
- * image purge; no /public asset dependency. Swap to a real PNG once
- * marketing ships the final icon by replacing this data URI with
- * `{ url: '/icon.png', type: 'image/png' }`.
- */
-const SWISS_FLAG_ICON =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>" +
-  "<rect width='32' height='32' rx='4' fill='%23DC2626'/>" +
-  "<rect x='13' y='6' width='6' height='20' fill='%23ffffff'/>" +
-  "<rect x='6' y='13' width='20' height='6' fill='%23ffffff'/></svg>";
+const FAVICON_URL = '/marketing/swisscresta_fevicon.png';
 
 export const metadata: Metadata = {
   title: 'SwissCresta',
   description: 'SwissCresta — professional forex and CFD trading platform',
   icons: {
-    icon: [{ url: SWISS_FLAG_ICON, type: 'image/svg+xml' }],
+    icon: [{ url: FAVICON_URL, type: 'image/png' }],
+    apple: [{ url: FAVICON_URL, type: 'image/png' }],
+    shortcut: [{ url: FAVICON_URL, type: 'image/png' }],
   },
 };
 
@@ -49,10 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     //  --font-mono = JetBrains Mono) globally. Tailwind picks them
     // up via the font-family extensions in tailwind.config.ts —
     // `font-display`, `font-body`, `font-mono`.
-    <html lang="en" suppressHydrationWarning className={fontVariableClass}>
+    <html lang="fr" suppressHydrationWarning className={fontVariableClass}>
       <head>
-        <link rel="icon" href={SWISS_FLAG_ICON} type="image/svg+xml" />
-        <link rel="apple-touch-icon" href={SWISS_FLAG_ICON} />
+        <link rel="icon" href={FAVICON_URL} type="image/png" />
+        <link rel="apple-touch-icon" href={FAVICON_URL} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var N='swisscresta-ui';var LEG=['novafx-ui','fxartha-ui'];if(!localStorage.getItem(N)){for(var i=0;i<LEG.length;i++){var v=localStorage.getItem(LEG[i]);if(v){localStorage.setItem(N,v);break;}}for(var j=0;j<LEG.length;j++){localStorage.removeItem(LEG[j]);}}var s=localStorage.getItem(N);var t='light';if(s){var j2=JSON.parse(s);t=(j2&&j2.state&&j2.state.theme)||(j2&&j2.theme)||'light';}var d=document.documentElement;d.setAttribute('data-theme',t);d.classList.add(t==='light'?'theme-light':'theme-dark');if(t==='light'){d.style.backgroundColor='#ffffff';d.style.color='#0A0A0A';}else{d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#0A0A0A';}})();`,

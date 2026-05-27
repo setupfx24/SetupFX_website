@@ -165,8 +165,13 @@ function ContactBox({ team, email }: { team: string; email: string }) {
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
       <p className="font-semibold text-gray-900">SwissCresta {team}</p>
       <p className="text-gray-500">Email: {email}</p>
-      <p className="text-gray-500">Phone: +1 (908) 228-0305</p>
-      <p className="text-gray-500">Address: Office 9364hn, 3 Fitzroy Place, Glasgow City Centre, UK, G3 7RH</p>
+      <p className="text-gray-500">
+        Phone:{' '}
+        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#E94E1B] transition-colors">
+          +33 7 59 15 99 87
+        </a>
+      </p>
+      <p className="text-gray-500">Address: Rue de la Tour-de-l&apos;Île 4, 1204 Genève, Switzerland</p>
     </div>
   )
 }

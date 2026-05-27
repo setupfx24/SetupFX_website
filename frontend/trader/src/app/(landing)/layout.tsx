@@ -7,8 +7,18 @@ import ScrollProgress from '@/landing/components/animations/ScrollProgress'
 import MarketingNavbar from '@/landing/marketing/Navbar'
 import Footer from '@/landing/components/Footer'
 import LandingFooter from '@/components/landing/LandingFooter'
+import { LangProvider } from '@/landing/i18n/LangProvider'
 
-const ACTIVE_PAGE_BY_PATH: Record<string, 'private' | 'partners' | 'institutional' | 'careers' | 'group'> = {
+type NavKey = 'private' | 'partners' | 'institutional' | 'careers' | 'group' | 'markets' | 'platforms' | 'white-label' | 'about' | 'contact' | 'policy'
+
+const ACTIVE_PAGE_BY_PATH: Record<string, NavKey> = {
+  '/markets': 'markets',
+  '/precious-metals': 'markets',
+  '/currency-pairs': 'markets',
+  '/cfds': 'markets',
+  '/platforms': 'platforms',
+  '/about': 'about',
+  '/contact': 'contact',
   '/partners': 'partners',
   '/introducing-brokers': 'partners',
   '/money-managers': 'partners',
@@ -16,6 +26,10 @@ const ACTIVE_PAGE_BY_PATH: Record<string, 'private' | 'partners' | 'institutiona
   '/institutional': 'institutional',
   '/careers': 'careers',
   '/group': 'group',
+  '/policy': 'policy',
+  '/privacy': 'policy',
+  '/terms': 'policy',
+  '/risk': 'policy',
 }
 
 // Home-page sub-nav dropdowns (the comprehensive Vantage-style sub-nav
@@ -139,6 +153,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
   }, [isLight])
 
   return (
+    <LangProvider defaultLang="fr">
     <PopupProvider>
       <ScrollProgress />
       {/* Wrapper attributes per mode:
@@ -164,12 +179,13 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
       >
         <MarketingNavbar
           activePage={ACTIVE_PAGE_BY_PATH[pathname] ?? 'private'}
-          subNavLeft={pathname === '/' ? HOME_SUBNAV_LEFT : null}
-          subNavRight={pathname === '/' ? HOME_SUBNAV_RIGHT : null}
+          subNavLeft={null}
+          subNavRight={null}
         />
         {children}
         {isLight ? <LandingFooter /> : <Footer />}
       </div>
     </PopupProvider>
+    </LangProvider>
   )
 }

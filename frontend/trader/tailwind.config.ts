@@ -126,8 +126,8 @@ const config: Config = {
         // Inter Tight (paragraphs + UI), `numeric` = JetBrains Mono
         // via next/font specifically (the legacy `mono` above stays
         // for trader-app code that already uses font-mono).
-        display: ['var(--font-display)', 'Fraunces', 'Georgia', 'serif'],
-        body: ['var(--font-body)', 'Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
         numeric: ['var(--font-mono)', 'JetBrains Mono', 'Menlo', 'monospace'],
       },
       fontSize: {

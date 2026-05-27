@@ -10,7 +10,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
             About SwissCresta<br />
-            <span className="text-blue-600">Revolutionizing Global Trading</span>
+            <span className="text-[#E94E1B]">Revolutionizing Global Trading</span>
           </h1>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             We're on a mission to democratize trading by providing everyone with institutional-grade tools, transparent pricing, and complete financial freedom.
@@ -55,8 +55,8 @@ export default function AboutPage() {
               { icon: Globe, title: 'Global Access', desc: 'Making institutional-grade trading available to everyone, everywhere.' },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="text-center">
-                <div className="w-16 h-16 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <Icon className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-[#FCE6DD] rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Icon className="w-8 h-8 text-[#E94E1B]" />
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
                 <p className="text-gray-500 text-sm">{desc}</p>
@@ -80,7 +80,7 @@ export default function AboutPage() {
               { value: '99.9%', label: 'Uptime' },
             ].map(({ value, label }) => (
               <div key={label} className="text-center">
-                <div className="text-4xl font-extrabold text-blue-600 mb-2">{value}</div>
+                <div className="text-4xl font-extrabold text-[#E94E1B] mb-2">{value}</div>
                 <div className="text-gray-500">{label}</div>
               </div>
             ))}
@@ -106,7 +106,7 @@ export default function AboutPage() {
               <div key={name} className="bg-white rounded-xl p-8 border border-gray-200">
                 <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4" />
                 <h3 className="font-bold text-gray-900 text-center mb-2">{name}</h3>
-                <p className="text-blue-600 text-center text-sm font-semibold mb-3">{role}</p>
+                <p className="text-[#E94E1B] text-center text-sm font-semibold mb-3">{role}</p>
                 <p className="text-gray-500 text-sm text-center">{desc}</p>
               </div>
             ))}

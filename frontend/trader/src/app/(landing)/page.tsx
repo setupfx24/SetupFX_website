@@ -22,7 +22,6 @@ import Steps from '@/landing/marketing/Steps'
 import AboutUs from '@/landing/marketing/AboutUs'
 import FollowUs from '@/landing/marketing/FollowUs'
 import FooterLinks from '@/landing/marketing/FooterLinks'
-import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export default function LandingHomePage() {
@@ -39,7 +38,6 @@ export default function LandingHomePage() {
         <AboutUs />
         <FollowUs />
         <FooterLinks />
-        <Sponsors />
       </main>
       <Disclaimer />
     </div>
