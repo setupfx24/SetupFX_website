@@ -4,9 +4,73 @@ import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { PopupProvider } from '@/landing/components/PopupContext'
 import ScrollProgress from '@/landing/components/animations/ScrollProgress'
-import Navbar from '@/landing/components/Navbar'
+import MarketingNavbar from '@/landing/marketing/Navbar'
 import Footer from '@/landing/components/Footer'
 import LandingFooter from '@/components/landing/LandingFooter'
+
+const ACTIVE_PAGE_BY_PATH: Record<string, 'private' | 'partners' | 'institutional' | 'careers' | 'group'> = {
+  '/partners': 'partners',
+  '/introducing-brokers': 'partners',
+  '/money-managers': 'partners',
+  '/collaboration': 'partners',
+  '/institutional': 'institutional',
+  '/careers': 'careers',
+  '/group': 'group',
+}
+
+// Home-page sub-nav dropdowns (the comprehensive Vantage-style sub-nav
+// tier under the top "PRIVATE / PARTNERS / …" tabs). Ported from the
+// legacy Swistrade home page; English strings inlined since we don't
+// ship i18n. Only mounted when the current path is exactly '/'.
+const HOME_SUBNAV_LEFT = [
+  {
+    label: 'Trade',
+    href: '/',
+    cards: [
+      { title: 'CURRENCY PAIRS', body: 'Trade over 80 currency crosses with transparent pricing and deep liquidity.', accent: 'currency' as const },
+      { title: 'PRECIOUS METALS', body: 'Trade gold, silver, palladium, and more with competitive all-in spreads.', accent: 'metals' as const },
+      { title: 'CFDS', body: 'Diversify and hedge your exposure with spot, forward, and synthetic contracts.', accent: 'crypto' as const },
+    ],
+  },
+  {
+    label: 'Inspire',
+    href: '/',
+    featured: { title: 'INSPIRE', body: 'In finance, patience pays and knowledge wins. Stay sharp, stay ahead.', accent: 'orange' as const },
+    groups: [
+      { title: 'EXPERT INSIGHTS', items: ['Morning News', 'Youtube', 'Podcasts', 'eBooks', 'TradingView'] },
+      { title: 'WEBINARS & EVENTS', items: ['Webinars'] },
+    ],
+  },
+]
+
+const HOME_SUBNAV_RIGHT = [
+  {
+    label: 'Pricing',
+    href: '/',
+    featured: { title: 'PRICING', body: 'Fair pricing for unlimited finances. Discover what you pay, before you trade.', accent: 'orange' as const },
+    groups: [
+      { title: 'TRADING PRICING', items: ['Account types', 'Trading conditions', 'Execution'] },
+    ],
+  },
+  {
+    label: 'Platforms',
+    href: '/',
+    featured: { title: 'FOREX & CFDS', body: "Platforms that put the world's largest market at your fingertips.", accent: 'orange' as const },
+    groups: [
+      { title: 'PLATFORMS', items: ['CFXD', 'MetaTrader 4', 'MetaTrader 5'] },
+      { title: 'SOLUTIONS', items: ['FIX API', 'TradingView'] },
+    ],
+  },
+  {
+    label: 'Help',
+    href: '/',
+    cards: [
+      { title: 'HELP CENTER', body: 'Questions? Solutions. Find fast answers and expert support.', accent: 'news' as const },
+      { title: 'SWISSCRESTA INFO', body: 'Real-time updates on platform status, maintenance, and alerts.', accent: 'pricing' as const },
+      { title: 'CUSTOMER CARE', body: 'We’re just a call, an email, or a chat away. Get support — your way, anytime.', accent: 'platform' as const },
+    ],
+  },
+]
 import '@/landing/landing.css'
 
 // Marketing design system — tokens scoped under `[data-mkt]`. The
@@ -98,7 +162,11 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
             : 'landing-root min-h-screen bg-[#08090b] text-[#f5f5f5]'
         }
       >
-        <Navbar theme={isLight ? 'light' : 'dark'} />
+        <MarketingNavbar
+          activePage={ACTIVE_PAGE_BY_PATH[pathname] ?? 'private'}
+          subNavLeft={pathname === '/' ? HOME_SUBNAV_LEFT : null}
+          subNavRight={pathname === '/' ? HOME_SUBNAV_RIGHT : null}
+        />
         {children}
         {isLight ? <LandingFooter /> : <Footer />}
       </div>

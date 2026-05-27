@@ -86,3 +86,4 @@ build/
 # Client reference mockups dropped at the repo root (kept locally only)
 /ChatGPT Image*.png
 /ChatGPT Image*.jpg
+swisscresta_web/
