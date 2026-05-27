@@ -58,8 +58,8 @@ const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Home', href: '/dashboard', icon: Home },
   { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
   { label: 'Funds', href: '/wallet', icon: Wallet },
-  { label: 'Trade', href: '/trading', icon: LineChart, isNew: true },
-  { label: 'Copy Trading', href: '/social', icon: Copy, isNew: true },
+  { label: 'Trade', href: '/trading', icon: LineChart },
+  { label: 'Copy Trading', href: '/social', icon: Copy },
   { label: 'Affiliates', href: '/business', icon: Users },
 ];
 
