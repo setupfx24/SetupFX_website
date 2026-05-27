@@ -8,6 +8,35 @@ import toast from 'react-hot-toast';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee', 'manager', 'support']);
 
+/** Single source of truth for "this URL renders without auth".
+ *  Covers the marketing site (home + every (landing)/* route),
+ *  legal pages, the public trade-share short URLs, and /auth/*. */
+const PUBLIC_EXACT_PATHS = new Set<string>([
+  '/',
+  // Top-level marketing pages (light + dark legacy)
+  '/about', '/contact', '/how-it-works', '/platforms', '/white-label',
+  '/privacy', '/terms', '/risk',
+  // New Swistrade-port marketing pages
+  '/careers', '/collaboration', '/group', '/institutional',
+  '/introducing-brokers', '/money-managers', '/partners',
+  // Legacy marketing routes still in the (landing) group
+  '/insurance/overview', '/trading/overview', '/protocol',
+  '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto',
+  '/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading',
+  '/platforms/ib-management', '/platforms/super-admin',
+  '/platforms/insurance',
+  '/accounts/standard', '/accounts/pro', '/accounts/demo',
+]);
+
+function isPublicPath(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  if (pathname.startsWith('/auth')) return true;
+  if (pathname.startsWith('/s/')) return true;       // public share-trade short links
+  if (pathname.startsWith('/company')) return true;  // legacy company/* tree
+  if (pathname.startsWith('/education')) return true;
+  return PUBLIC_EXACT_PATHS.has(pathname);
+}
+
 function MaintenanceScreen() {
   return (
     <div style={{
@@ -104,48 +133,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [maintenance, isAuthenticated, isInitialized, user, logout, router]);
 
   useEffect(() => {
-    if (isInitialized) {
-      const isAuthPage = pathname?.startsWith('/auth');
-      const isLandingPage =
-        pathname === '/' ||
-        pathname?.startsWith('/company') ||
-        pathname?.startsWith('/education') ||
-        // /staking + /earning marketing routes removed — checks dropped.
-        pathname === '/insurance/overview' ||
-        pathname === '/trading/overview' ||
-        pathname === '/protocol' ||
-        ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
-        ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
-        ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
-      const isSharePage = pathname?.startsWith('/s/');
-      const isPublic = isLandingPage || isSharePage || pathname === '/privacy' || pathname === '/terms' || pathname === '/risk' || pathname === '/about' || pathname === '/contact' || pathname === '/platforms' || pathname === '/white-label';
+    if (!isInitialized) return;
+    const isAuthPage = pathname?.startsWith('/auth');
+    const isSharePage = pathname?.startsWith('/s/');
+    const isPublic = isPublicPath(pathname);
 
-      if (!isAuthenticated && !isAuthPage && !isPublic) {
-        router.push('/auth/login');
-      } else if (isAuthenticated && (isAuthPage || pathname === '/')) {
-        // Do not redirect authenticated users away from public share pages —
-        // the short link should open the same card regardless of auth state.
-        if (!isSharePage) router.push('/dashboard');
-      }
+    if (!isAuthenticated && !isAuthPage && !isPublic) {
+      router.push('/auth/login');
+    } else if (isAuthenticated && (isAuthPage || pathname === '/')) {
+      // Don't redirect authenticated users away from public share pages —
+      // the short link should open the same card regardless of auth state.
+      if (!isSharePage) router.push('/dashboard');
     }
   }, [isInitialized, isAuthenticated, pathname, router]);
 
   /* Skip loading screen for landing & auth pages — render immediately */
   if (!isInitialized) {
-    const isAuthPage = pathname?.startsWith('/auth');
-    const isLanding =
-      pathname === '/' ||
-      pathname?.startsWith('/company') ||
-      pathname?.startsWith('/education') ||
-      // /staking + /earning marketing routes removed — checks dropped.
-      pathname === '/insurance/overview' ||
-      pathname === '/trading/overview' ||
-      pathname === '/protocol' ||
-      ['/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto'].includes(pathname || '') ||
-      ['/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading', '/platforms/ib-management', '/platforms/super-admin'].includes(pathname || '') ||
-      ['/accounts/standard', '/accounts/pro', '/accounts/demo'].includes(pathname || '');
-    const isSharePage = pathname?.startsWith('/s/');
-    const isPublicPage = isLanding || isAuthPage || isSharePage || pathname === '/privacy' || pathname === '/terms' || pathname === '/risk' || pathname === '/about' || pathname === '/contact' || pathname === '/platforms' || pathname === '/white-label';
+    const isPublicPage = isPublicPath(pathname);
 
     /* Already know maintenance is ON from persisted store → block immediately */
     if (!isPublicPage && maintenance) return <MaintenanceScreen />;
