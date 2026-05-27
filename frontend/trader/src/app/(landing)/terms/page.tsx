@@ -8,8 +8,8 @@ export default function TermsPage() {
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
+            <div className="w-10 h-10 rounded-xl bg-[#FCE6DD] flex items-center justify-center">
+              <FileText className="w-5 h-5 text-[#E94E1B]" />
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900">Terms and Conditions</h1>
           </div>

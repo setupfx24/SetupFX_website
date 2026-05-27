@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     //  --font-mono = JetBrains Mono) globally. Tailwind picks them
     // up via the font-family extensions in tailwind.config.ts —
     // `font-display`, `font-body`, `font-mono`.
-    <html lang="en" suppressHydrationWarning className={fontVariableClass}>
+    <html lang="fr" suppressHydrationWarning className={fontVariableClass}>
       <head>
         <script
           dangerouslySetInnerHTML={{

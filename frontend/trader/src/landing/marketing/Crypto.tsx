@@ -1,6 +1,9 @@
+'use client'
+
 import Eyebrow from './ui/Eyebrow'
 import ExploreLink from './ui/ExploreLink'
 import { HEADING_SECTION } from './ui/headings'
+import { useLang } from '@/landing/i18n/LangProvider'
 
 interface Coin {
   size: number
@@ -20,6 +23,7 @@ const COINS: Coin[] = [
 ]
 
 export default function Crypto() {
+  const { t } = useLang()
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-12 md:py-16">
@@ -27,7 +31,7 @@ export default function Crypto() {
           {COINS.map((coin, i) => (
             <div
               key={i}
-              className="hidden md:block absolute rounded-full bg-gray-100 border border-gray-200/70"
+              className="hidden md:block absolute rounded-full bg-gradient-to-br from-[#E94E1B]/15 to-[#E94E1B]/5 border border-[#E94E1B]/15"
               style={{
                 width: coin.size,
                 height: coin.size,
@@ -40,19 +44,16 @@ export default function Crypto() {
           ))}
 
           <div className="relative max-w-2xl mx-auto text-center">
-            <Eyebrow>Crypto</Eyebrow>
-            <h2 className={`mt-4 ${HEADING_SECTION}`}>The cool kid of trading assets</h2>
-            <p className="mt-6 text-base text-gray-600 leading-relaxed">
-              Join the crypto-mania, with Swiss lucidity. 52 cryptos, including pioneers and
-              newcomers, for you to trade anytime, anywhere on the SwissCresta-developed SQX
-              exchange.
+            <Eyebrow>{t('crypto.eyebrow')}</Eyebrow>
+            <h2 className={`mt-4 ${HEADING_SECTION}`}>
+              {t('crypto.titleA')} <span className="text-[#E94E1B]">{t('crypto.titleB')}</span>
+            </h2>
+            <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed">
+              {t('crypto.lead')}
             </p>
-            <p className="mt-4 text-xs italic text-gray-600">
-              *These products are offered by SwissCresta Bank Ltd, regulated by the Swiss Federal
-              Financial Market Supervisory Authority (FINMA).
-            </p>
+            <p className="mt-4 text-xs italic text-gray-600">{t('crypto.regulated')}</p>
             <div className="mt-6 flex justify-center">
-              <ExploreLink>Explore</ExploreLink>
+              <ExploreLink>{t('crypto.explore')}</ExploreLink>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ChevronRight, Globe, Menu, X } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
+import { useLang } from '@/landing/i18n/LangProvider'
 
 /**
  * Comprehensive SwissCresta marketing Navbar, ported from the legacy
@@ -52,7 +53,7 @@ export interface SubNavLink {
   groups?: LinkGroupItem[]
 }
 
-type ActivePage = 'private' | 'partners' | 'institutional' | 'careers' | 'group'
+type ActivePage = 'private' | 'partners' | 'institutional' | 'careers' | 'group' | 'markets' | 'platforms' | 'white-label' | 'about' | 'contact' | 'policy'
 
 export interface NavbarProps {
   activePage?: ActivePage
@@ -62,11 +63,11 @@ export interface NavbarProps {
 }
 
 const NAV_LINKS: { label: string; key: ActivePage; href: string }[] = [
-  { label: 'PRIVATE', key: 'private', href: '/' },
-  { label: 'PARTNERS', key: 'partners', href: '/partners' },
-  { label: 'INSTITUTIONAL', key: 'institutional', href: '/institutional' },
-  { label: 'CAREERS', key: 'careers', href: '/careers' },
-  { label: 'GROUP', key: 'group', href: '/group' },
+  { label: 'Platforms', key: 'platforms', href: '/platforms' },
+  { label: 'Partners', key: 'partners', href: '/partners' },
+  { label: 'Policy', key: 'policy', href: '/policy' },
+  { label: 'About', key: 'about', href: '/about' },
+  { label: 'Contact', key: 'contact', href: '/contact' },
 ]
 
 function Wordmark() {
@@ -295,8 +296,11 @@ export default function MarketingNavbar({
 }: NavbarProps) {
   const [open, setOpen] = useState(false)
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
+  const { lang, toggleLang, t } = useLang()
 
-  const ctaLabel = activePage === 'partners' ? 'Become a partner' : 'Sign up'
+  const labelFor = (key: ActivePage, fallback: string) =>
+    t(`nav.${key}`) === `nav.${key}` ? fallback : t(`nav.${key}`)
+  const ctaLabel = activePage === 'partners' ? t('nav.partners') : t('nav.signup')
   const hasSubNav = Boolean(
     (subNavLeft && subNavLeft.length) || (subNavRight && subNavRight.length),
   )
@@ -308,24 +312,24 @@ export default function MarketingNavbar({
   )
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-      <nav className="w-full mx-auto px-6 md:px-10 lg:px-16 relative flex items-center gap-6 h-20">
+    <header className="sticky top-3 md:top-4 z-50 mx-3 md:mx-6 lg:mx-10 rounded-2xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-white/45">
+      <nav className="w-full mx-auto px-5 md:px-8 lg:px-10 relative flex items-center gap-6 h-16 md:h-[68px]">
         <div className="shrink-0">
           <Wordmark />
         </div>
 
-        <ul className="hidden lg:flex flex-1 items-center justify-center gap-8 xl:gap-10 min-w-0">
+        <ul className="hidden lg:flex flex-1 items-center justify-center gap-6 xl:gap-8 min-w-0">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
             return (
               <li key={link.key}>
                 <Link
                   href={link.href}
-                  className={`text-[15px] font-bold tracking-wide uppercase transition-colors hover:text-[#E94E1B] ${
+                  className={`text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
                     active ? 'text-[#E94E1B]' : 'text-gray-900'
                   }`}
                 >
-                  {link.label}
+                  {labelFor(link.key, link.label)}
                 </Link>
               </li>
             )
@@ -339,7 +343,7 @@ export default function MarketingNavbar({
                 href="/auth/login"
                 className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold hover:bg-gray-900 hover:text-white transition-colors"
               >
-                Login
+                {t('nav.login')}
               </Link>
               <Button
                 variant="primary"
@@ -350,14 +354,16 @@ export default function MarketingNavbar({
               </Button>
             </>
           )}
-          <span
-            className="flex items-center gap-1 text-sm text-gray-900 ml-1 select-none"
-            aria-label="Language: English"
-            title="Multi-language support coming soon"
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="inline-flex items-center gap-1 text-sm text-gray-900 ml-1 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
+            title={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
           >
             <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
-            <span className="font-medium">EN</span>
-          </span>
+            <span className="font-semibold uppercase">{lang === 'fr' ? 'FR' : 'EN'}</span>
+          </button>
         </div>
 
         <button
@@ -372,10 +378,10 @@ export default function MarketingNavbar({
 
       {hasSubNav && (
         <div
-          className="hidden lg:block border-t border-gray-200 relative"
+          className="hidden lg:block border-t border-black/5 relative"
           onMouseLeave={() => setHoveredLabel(null)}
         >
-          <div className="w-full mx-auto px-6 md:px-10 lg:px-16 flex items-center justify-between h-12">
+          <div className="w-full mx-auto px-5 md:px-8 lg:px-10 flex items-center justify-between h-11">
             <ul className="flex items-center gap-8">
               {(subNavLeft ?? []).map((link) => (
                 <SubNavItem
@@ -403,7 +409,7 @@ export default function MarketingNavbar({
       )}
 
       {open && (
-        <div className="lg:hidden border-t border-gray-200 bg-white">
+        <div className="lg:hidden border-t border-black/5 rounded-b-2xl bg-white/80 backdrop-blur-2xl backdrop-saturate-150">
           <ul className="w-full mx-auto px-6 md:px-10 lg:px-16 py-4 flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const active = link.key === activePage
@@ -411,7 +417,7 @@ export default function MarketingNavbar({
                 <li key={link.key}>
                   <Link
                     href={link.href}
-                    className={`block text-sm uppercase tracking-wide font-bold py-1 ${
+                    className={`block text-sm font-semibold py-1 ${
                       active ? 'text-[#E94E1B]' : 'text-gray-900/80'
                     }`}
                     onClick={() => setOpen(false)}

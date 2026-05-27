@@ -1,5 +1,8 @@
+'use client'
+
 import { Facebook, Youtube, Linkedin, Instagram, Twitter, Twitch, Music2 } from 'lucide-react'
 import { TEXT_DISPLAY } from './ui/headings'
+import { useLang } from '@/landing/i18n/LangProvider'
 
 const SOCIALS = [
   { Icon: Facebook, label: 'Facebook' },
@@ -12,10 +15,11 @@ const SOCIALS = [
 ] as const
 
 export default function FollowUs() {
+  const { t } = useLang()
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-20 md:py-28 text-center">
-        <h2 className={`${TEXT_DISPLAY} text-[#E94E1B] leading-none`}>Follow us</h2>
+        <h2 className={`${TEXT_DISPLAY} text-[#E94E1B] leading-none`}>{t('follow.title')}</h2>
         <div className="mt-10 flex flex-wrap justify-center gap-3 md:gap-4">
           {SOCIALS.map(({ Icon, label }) => (
             <a

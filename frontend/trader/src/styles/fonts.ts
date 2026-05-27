@@ -18,30 +18,23 @@
  * trader-app fonts get migrated to next/font, drop the CDN line and
  * everything else still works.
  */
-import { Fraunces, Inter_Tight, JetBrains_Mono } from 'next/font/google';
+import { Space_Grotesk, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 
-// Fraunces — display serif. Explicit weights, NO `axes` (next/font
-// only allows the `axes` array when `weight` is omitted or set to
-// 'variable'; mixing the two errors at build time:
-//   "Axes can only be defined for variable fonts when the weight
-//    property is nonexistent or set to `variable`.")
-//
-// If you ever want Fraunces' optical-size axis (opsz) back, switch
-// the whole config to variable mode:
-//   weight: undefined → loads the variable font file
-//   then add axes: ['opsz']
-// Tradeoff: variable file is ~250KB vs ~80KB for our 3 fixed weights.
-export const fontDisplay = Fraunces({
+// Marketing-display font — Space Grotesk. Modern geometric sans
+// with subtle character, used for H1/H2/H3 marketing headlines.
+export const fontDisplay = Space_Grotesk({
   subsets: ['latin'],
-  weight: ['300', '400', '600'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal'],
   variable: '--font-display',
   display: 'swap',
 });
 
-export const fontBody = Inter_Tight({
+// Body font — Plus Jakarta Sans. Clean, highly legible humanist
+// sans for paragraphs and UI text.
+export const fontBody = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal'],
   variable: '--font-body',
   display: 'swap',
