@@ -49,14 +49,26 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
 
     host = str(s.SMTP_HOST).strip()
     port = int(s.SMTP_PORT)
-    with smtplib.SMTP(host, port, timeout=30) as server:
-        if s.SMTP_USE_TLS:
-            server.starttls()
-        user = (s.SMTP_USER or "").strip()
-        pwd = (s.SMTP_PASSWORD or "").strip()
-        if user:
-            server.login(user, pwd)
-        server.send_message(msg)
+    user = (s.SMTP_USER or "").strip()
+    pwd = (s.SMTP_PASSWORD or "").strip()
+
+    # Port 465 = implicit TLS (SMTPS) — needs SMTP_SSL which negotiates
+    # TLS before the SMTP greeting. Port 587 = STARTTLS — connect plain,
+    # then upgrade via STARTTLS. Using the wrong class on port 465 hangs
+    # because the server waits for a TLS ClientHello while our client
+    # waits for the plaintext '220' greeting.
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, timeout=30) as server:
+            if user:
+                server.login(user, pwd)
+            server.send_message(msg)
+    else:
+        with smtplib.SMTP(host, port, timeout=30) as server:
+            if s.SMTP_USE_TLS:
+                server.starttls()
+            if user:
+                server.login(user, pwd)
+            server.send_message(msg)
 
 
 async def send_email(
