@@ -50,7 +50,7 @@ export default function DashboardFooter() {
             <Link href="/privacy" className="hover:text-[#E94E1B] transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/risk-disclosure" className="hover:text-[#E94E1B] transition-colors">
+            <Link href="/risk" className="hover:text-[#E94E1B] transition-colors">
               Risk Disclosure
             </Link>
             <Link href="/how-it-works" className="hover:text-[#E94E1B] transition-colors">
