@@ -33,13 +33,9 @@ from .insurance import (
     InsurancePolicyOut, InsuranceClaimOut,
 )
 from .profile import UpdateProfileRequest, ChangePasswordRequest
-from .play_zone import (
-    BidRequest, CreateLotteryRoundRequest, CreateBiddingRoundRequest,
-)
 from .share_support import (
     CreateShareRequest, CreateTicketRequest, ReplyTicketRequest,
 )
-from .staking import OpenStakingPositionRequest
 
 
 __all__ = [
@@ -71,10 +67,6 @@ __all__ = [
     "InsurancePolicyOut", "InsuranceClaimOut",
     # profile
     "UpdateProfileRequest", "ChangePasswordRequest",
-    # play zone
-    "BidRequest", "CreateLotteryRoundRequest", "CreateBiddingRoundRequest",
     # share + support
     "CreateShareRequest", "CreateTicketRequest", "ReplyTicketRequest",
-    # staking
-    "OpenStakingPositionRequest",
 ]

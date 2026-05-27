@@ -19,11 +19,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  ShoppingBag,
-  CheckSquare,
-  Trophy,
-  Sparkles,
-  Coins,
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
@@ -78,20 +73,11 @@ const IconMore = ({ active }: { active: boolean }) => (
   </svg>
 );
 
-/* More-sheet items. Earn group is intentionally surfaced as
-   individual quick-access tiles (Rewards / Tasks / Leaderboard /
-   Play Zone / Staking) instead of a nested "Earn" entry so mobile
-   users can land on the section they want in one tap. Desktop
-   sidebar still shows them under the collapsed Earn group. */
+/* More-sheet items — quick-access tiles for the mobile bottom sheet. */
 const SHEET_ITEMS: { name: string; path: string; color: string; icon: LucideIcon }[] = [
   { name: 'Deposit', path: '/wallet', color: '#6366F1', icon: ArrowDownToLine },
   { name: 'Wallet', path: '/wallet', color: '#3b82f6', icon: Wallet },
   { name: 'Portfolio', path: '/portfolio', color: '#8b5cf6', icon: PieChart },
-  { name: 'Rewards', path: '/earn/store', color: '#6366F1', icon: ShoppingBag },
-  { name: 'Tasks', path: '/earn/tasks', color: '#10b981', icon: CheckSquare },
-  { name: 'Leaderboard', path: '/earn/leaderboard', color: '#f59e0b', icon: Trophy },
-  { name: 'Play Zone', path: '/earn/play-zone', color: '#ec4899', icon: Sparkles },
-  { name: 'Staking', path: '/earn/staking', color: '#059669', icon: Coins },
   { name: 'Insurance', path: '/insurance', color: '#0ea5e9', icon: ShieldCheck },
   { name: 'Copy Trading', path: '/social', color: '#f59e0b', icon: Copy },
   { name: 'Affiliates', path: '/business', color: '#ec4899', icon: Users },

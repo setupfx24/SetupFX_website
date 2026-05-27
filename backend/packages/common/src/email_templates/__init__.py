@@ -18,8 +18,6 @@ from .kyc import render_kyc_approved, render_kyc_rejected
 from .security import render_new_login
 from .risk import render_margin_call, render_stop_out
 from .bonus import render_bonus_credited
-from .rewards import render_mission_completed, render_tier_upgraded
-from .staking import render_staking_digest
 from .verification import render_verification_reminder
 from .trade_placed import render_trade_placed
 from .monthly_statement import render_monthly_statement_available
@@ -40,9 +38,6 @@ __all__ = [
     "render_margin_call",
     "render_stop_out",
     "render_bonus_credited",
-    "render_mission_completed",
-    "render_tier_upgraded",
-    "render_staking_digest",
     "render_verification_reminder",
     "render_trade_placed",
     "render_monthly_statement_available",

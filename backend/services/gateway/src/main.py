@@ -23,13 +23,11 @@ from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers, lp_receiver,
-    share, insurance, rewards, play_zone, staking,
+    share, insurance,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
 from .engines.stats_engine import stats_engine
-from .engines.staking_engine import staking_engine
-from .engines.play_zone_engine import play_zone_engine
 from .engines.overnight_fee_engine import overnight_fee_engine
 from .engines.verification_reminder_engine import verification_reminder_engine
 from .engines.monthly_statement_engine import monthly_statement_engine
@@ -165,8 +163,6 @@ async def lifespan(app: FastAPI):
     await sltp_engine.start()
     await copy_engine.start()
     await stats_engine.start()
-    await staking_engine.start()
-    await play_zone_engine.start()
     await overnight_fee_engine.start()
     await verification_reminder_engine.start()
     await monthly_statement_engine.start()
@@ -181,8 +177,6 @@ async def lifespan(app: FastAPI):
     await monthly_statement_engine.stop()
     await verification_reminder_engine.stop()
     await overnight_fee_engine.stop()
-    await play_zone_engine.stop()
-    await staking_engine.stop()
     await stats_engine.stop()
     await copy_engine.stop()
     await sltp_engine.stop()
@@ -249,9 +243,6 @@ app.include_router(lp_receiver.router, prefix="/api/lp", tags=["LP Receiver"])
 app.include_router(share.router, prefix="/api/v1", tags=["Share Trade"])
 app.include_router(share.public_router, prefix="/api/v1/public", tags=["Public Share"])
 app.include_router(insurance.router, prefix="/api/v1/insurance", tags=["Trade Insurance"])
-app.include_router(rewards.router, prefix="/api/v1/rewards", tags=["Rewards"])
-app.include_router(play_zone.router, prefix="/api/v1/play", tags=["Play Zone"])
-app.include_router(staking.router, prefix="/api/v1/staking", tags=["Staking"])
 
 
 @app.get("/health")

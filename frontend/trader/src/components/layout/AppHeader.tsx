@@ -7,7 +7,6 @@ import { useShellStore } from '@/stores/shellStore';
 import { useAuthStore } from '@/stores/authStore';
 import { NotificationBell } from '@/components/NotificationListener';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import EarnChip from '@/components/earn/EarnChip';
 import api from '@/lib/api/client';
 import { ChevronDown, Wallet } from 'lucide-react';
 
@@ -92,11 +91,8 @@ export default function AppHeader() {
           </svg>
         </button>
 
-        {/* RIGHT — XP/Coin chip + balance + bell + user */}
+        {/* RIGHT — balance + bell + user */}
         <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* XP + AC chip — links to /earn/tasks */}
-          <EarnChip />
-
           {/* Balance pill */}
           <Link
             href="/wallet"

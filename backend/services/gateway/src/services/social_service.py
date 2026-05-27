@@ -13,7 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
-    Referral, RewardsTransaction,
+    Referral,
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
@@ -1019,15 +1019,6 @@ async def distribute_copy_trade_platform_fee(
             break
         anc.main_wallet_balance = Decimal(str(anc.main_wallet_balance or 0)) + payout
         paid_out += payout
-
-        db.add(RewardsTransaction(
-            user_id=ancestor_id,
-            type=f"copy_fee_referral_l{level_idx + 1}",
-            xp_delta=0,
-            ac_delta=Decimal("0"),
-            source="copy_trade_platform_fee",
-            reference_id=reference_id,
-        ))
         current = ancestor_id
     return paid_out
 

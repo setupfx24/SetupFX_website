@@ -17,7 +17,7 @@ import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight, Gift,
   ShieldCheck, BadgeCheck, ExternalLink, Loader2,
-  Wallet as WalletIcon, Shield, Coins, BarChart3, Users,
+  Wallet as WalletIcon, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import api from '@/lib/api/client';
@@ -72,17 +72,6 @@ function BrokerHome() {
   const [movers, setMovers] = useState<{ symbol: string; pct: number; price: number }[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  // Rewards state for Level + DGC Coins (Artha Coin) display.
-  const [rewardsState, setRewardsState] = useState<{
-    level?: number; level_label?: string;
-    xp?: number; xp_next_level?: number;
-    artha_coins?: number;
-  } | null>(null);
-
-  useEffect(() => {
-    api.get<typeof rewardsState>('/rewards/state').then(setRewardsState).catch(() => {});
-  }, []);
-
   // Cached daily-open bars — these don't change intraday, so we fetch
   // once on mount and reuse across every mover refresh. The poll only
   // re-pulls the cheap /instruments/prices/all endpoint.
@@ -205,9 +194,6 @@ function BrokerHome() {
   const todaysPnl = totalEquity - totalBalance;
   const todaysPnlPct = totalBalance > 0 ? (todaysPnl / totalBalance) * 100 : 0;
   const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
-  const level = rewardsState?.level ?? 1;
-  const levelLabel = rewardsState?.level_label || 'New Trader';
-  const dgcCoins = rewardsState?.artha_coins ?? 0;
 
   return (
     <div className="space-y-5 pb-8 max-w-[1200px] mx-auto w-full">
@@ -223,7 +209,7 @@ function BrokerHome() {
               come from theme-aware `--card-*` CSS vars (defined in
               globals.css) so the cards work in both dark and light
               mode without per-component `dark:` overrides. */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {/* Total Balance — purple */}
         <div
           className="rounded-2xl p-4 border"
@@ -276,53 +262,6 @@ function BrokerHome() {
           </div>
         </div>
 
-        {/* My Level — blue */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 relative"
-              style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}
-            >
-              <Shield size={20} style={{ color: 'var(--card-blue-icon)' }} />
-              <span
-                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-bold"
-                style={{ background: 'var(--card-blue-icon)', borderColor: 'var(--card-blue-icon-border)', color: '#ffffff' }}
-              >
-                {level}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>My Level</p>
-              <p className="text-lg font-bold mt-1 truncate" style={{ color: 'var(--card-blue-text-strong)' }}>Level {level}</p>
-              <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--card-blue-text-faint)' }}>{levelLabel}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* DGC Coins — amber */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}
-        >
-          <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}
-            >
-              <Coins size={20} style={{ color: 'var(--card-amber-icon)' }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>DGC Coins</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-amber-text-strong)' }}>
-                {dgcCoins.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-amber-text-faint)' }}>Reward balance</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ── 3 Large CTA buttons (DAG mockup) ── */}

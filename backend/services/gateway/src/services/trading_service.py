@@ -18,7 +18,7 @@ from packages.common.src.models import (
 )
 from packages.common.src.instrument_pricing import resolve_commission
 from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
-from . import rewards_service, wallet_service
+from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.price_cache import price_cache
@@ -976,63 +976,6 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     # `history.profit` reflects only the partial lots; the policy's
     # remaining cap is enforced inside evaluate_claim.
     await insurance_maybe_pay(db=db, position=pos, history=history)
-
-    # Rewards — bump every mission whose action_kind matches this event,
-    # AND credit XP/AC/PS for trade volume (own + 10-level referral chain).
-    # Errors here must never block the close, so swallow.
-    try:
-        await rewards_service.mark_progress(db, user_id, "place_trades", 1)
-        # If the close was profitable, count it for win-streak missions.
-        if result_profit > 0:
-            try:
-                await rewards_service.mark_progress(db, user_id, "win_streak", 1)
-            except Exception:
-                pass
-        try:
-            notional = Decimal(str(close_lots)) * Decimal(str(contract_size)) * Decimal(str(pos.open_price))
-            if notional > 0:
-                volume_usd = int(notional)
-                await rewards_service.mark_progress(db, user_id, "trade_volume_usd", volume_usd)
-                # XP_Reward_mechanism slide 3: award XP/AC/PS by traded
-                # volume + distribute through the 10-level referral chain.
-                await rewards_service.award_trading_volume_rewards(
-                    db, user_id, notional, reference_id=pos.id,
-                )
-
-                # Slide 3 + Slide 4: "First Trade Bonus" milestones — fire
-                # exactly once when the trader closes their first ever
-                # trade. We count TradeHistory rows for this user (joined
-                # via TradingAccount because TradeHistory has no
-                # user_id column); == 1 means "the one we just inserted
-                # is their first". Wrapped in try/except so a quirk
-                # never blocks the close.
-                try:
-                    from packages.common.src.models import Referral
-                    closed_count = (await db.execute(
-                        select(func.count(TradeHistory.id))
-                        .join(TradingAccount, TradingAccount.id == TradeHistory.account_id)
-                        .where(TradingAccount.user_id == user_id)
-                    )).scalar() or 0
-                    if closed_count == 1:
-                        # Self-bonus to the trader.
-                        await rewards_service.award_first_trade_self_bonus(
-                            db, user_id, trade_reference_id=pos.id,
-                        )
-                        # Referrer bonus if this trader was referred.
-                        ref_row = (await db.execute(
-                            select(Referral).where(Referral.referred_id == user_id).limit(1)
-                        )).scalar_one_or_none()
-                        if ref_row is not None and ref_row.referrer_id:
-                            await rewards_service.award_referee_first_trade_bonus(
-                                db, ref_row.referrer_id, user_id,
-                                trade_reference_id=pos.id,
-                            )
-                except Exception as _first_exc:
-                    logger.debug("first-trade bonus dispatch failed: %s", _first_exc)
-        except Exception as _vol_exc:
-            logger.debug("rewards trade-volume distribution failed: %s", _vol_exc)
-    except Exception as _exc:
-        logger.debug("rewards mark_progress failed: %s", _exc)
 
     # Bonus wagering — feed this trade's lots into the FIFO release queue.
     # Demo accounts skipped inside the function so users can't farm demo

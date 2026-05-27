@@ -348,14 +348,6 @@ async def _consume_referral(db: AsyncSession, user_id: UUID, referral_code: str)
     ib_profile = ib_q.scalar_one_or_none()
     if ib_profile:
         db.add(Referral(referrer_id=ib_profile.user_id, referred_id=user_id, ib_profile_id=ib_profile.id))
-        # Best-effort: a rewards-side failure must not block the signup itself.
-        try:
-            from . import rewards_service
-            await rewards_service.award_signup_referral_bonus(
-                db, referrer_user_id=ib_profile.user_id, referred_user_id=user_id,
-            )
-        except Exception as _e:
-            logger.debug("signup referral bonus failed: %s", _e)
 
 
 # ─── Core: issue auth response ───────────────────────────────────────────

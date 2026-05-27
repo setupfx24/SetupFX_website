@@ -14,7 +14,6 @@ Module map:
     support.py    Tickets, notifications, banners
     system.py     SystemSetting, BonusOffer, UserBonus
     insurance.py  InsurancePolicy, InsuranceClaim
-    rewards.py    XP / AC / PS state, missions, store, audit
     share.py      SharedTrade
 """
 
@@ -57,18 +56,6 @@ from .system import (
 from .insurance import (
     InsurancePolicy, InsuranceClaim,
 )
-from .rewards import (
-    RewardsUserState, RewardsMission, RewardsUserMissionProgress,
-    RewardStoreItem, RewardsTransaction, LifestyleFulfillment,
-)
-from .play_zone import (
-    SpinWheelPrize, SpinResult,
-    LotteryRound, LotteryTicket,
-    BiddingRound, Bid,
-)
-from .staking import (
-    StakingPlan, StakingPosition, StakingRewardAccrual,
-)
 from .vip import VipPass
 from .share import SharedTrade
 
@@ -100,15 +87,6 @@ __all__ = [
     "SystemSetting", "BonusOffer", "UserBonus",
     # insurance
     "InsurancePolicy", "InsuranceClaim",
-    # rewards
-    "RewardsUserState", "RewardsMission", "RewardsUserMissionProgress",
-    "RewardStoreItem", "RewardsTransaction", "LifestyleFulfillment",
-    # play zone
-    "SpinWheelPrize", "SpinResult",
-    "LotteryRound", "LotteryTicket",
-    "BiddingRound", "Bid",
-    # staking
-    "StakingPlan", "StakingPosition", "StakingRewardAccrual",
     # vip
     "VipPass",
     # share
