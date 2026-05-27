@@ -16,30 +16,6 @@ type Props = {
   hideFlag?: boolean;
 };
 
-/**
- * Swiss-flag square mark. Public-domain national symbol, not a logo
- * trademark — safe to use. Rendered inline-SVG so it scales crisply on
- * any DPR and recolours via `currentColor` would be trivial to add
- * later (today both colours are baked because the flag is iconic and
- * shouldn't drift). 4px corner-radius softens the edge into the
- * surrounding text.
- */
-function SwissFlagMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 32 32"
-      aria-hidden="true"
-      className={cn('shrink-0', className)}
-    >
-      <rect width="32" height="32" rx="4" fill="#DC2626" />
-      {/* White cross: vertical bar + horizontal bar, sized to the 5/16
-          Swiss flag spec (with a small inset so the cross doesn't kiss
-          the rounded corners). */}
-      <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-      <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-    </svg>
-  );
-}
 
 /**
  * Text wordmark for dashboard chrome. Pure typography next to the
@@ -59,9 +35,11 @@ export function SwissCrestaWordmark({
   hideFlag = false,
 }: Props) {
   if (variant === 'rail') {
-    // Terminal-left-rail variant — only ~36px wide. The flag alone is
-    // the most legible mark at this size; the "S" + "C" letter
-    // fallback shows when the operator explicitly disables the flag.
+    // Terminal-left-rail variant — only ~36px wide. Renders the brand
+    // favicon PNG (same asset as the browser tab icon) so the mark is
+    // consistent across the app. `hideFlag` is honoured as the
+    // backwards-compatible "letter fallback" mode in case marketing
+    // ever wants the S+C lockup again.
     return (
       <Link
         href={href}
@@ -78,7 +56,14 @@ export function SwissCrestaWordmark({
             <span className="text-[#E94E1B]">C</span>
           </span>
         ) : (
-          <SwissFlagMark className="w-6 h-6" />
+          <Image
+            src="/marketing/swisscresta_fevicon.png"
+            alt="SwissCresta"
+            width={28}
+            height={28}
+            priority
+            className="w-7 h-7 object-contain rounded-md"
+          />
         )}
       </Link>
     );
