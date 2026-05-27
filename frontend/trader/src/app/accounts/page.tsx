@@ -2,19 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import {
   ChevronDown,
   Pencil,
-  TrendingDown,
-  TrendingUp,
   ArrowLeftRight,
-  BookOpen,
-  ExternalLink,
   Trash2,
   Wallet,
   Landmark,
+  Settings,
+  LayoutGrid,
+  List as ListIcon,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
@@ -96,13 +96,21 @@ function toTradingAccount(row: AccountRow): TradingAccount {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot transfer funds. Open a live account to move balance between accounts.';
 
+type AccountKindFilter = 'live' | 'demo';
+type ViewMode = 'grid' | 'list';
+
 export default function AccountsPage() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const setStoreAccounts = useTradingStore((s) => s.setAccounts);
   const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
   const removeAccount = useTradingStore((s) => s.removeAccount);
 
   const [tab, setTab] = useState<TabId>('accounts');
+  /* New filter state for the Vantage-style header row. */
+  const [kindFilter, setKindFilter] = useState<AccountKindFilter>('live');
+  const [groupFilter, setGroupFilter] = useState<string>('all'); // 'all' or AccountGroupInfo.id
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [rows, setRows] = useState<AccountRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -277,9 +285,25 @@ export default function AccountsPage() {
     if (user?.is_demo) return rows.filter((a) => a.is_demo);
     return rows.filter((a) => {
       if ((a as { is_active?: boolean }).is_active === false) return false;
+      /* Live/Demo toggle from the new filter row. */
+      if (kindFilter === 'live' && a.is_demo) return false;
+      if (kindFilter === 'demo' && !a.is_demo) return false;
+      /* Account-group filter — 'all' or a specific group id. */
+      if (groupFilter !== 'all' && a.account_group?.id !== groupFilter) return false;
       return true;
     });
-  }, [rows, user?.is_demo]);
+  }, [rows, user?.is_demo, kindFilter, groupFilter]);
+
+  /* Distinct account groups present in the loaded data — drives the
+     "All" dropdown. Only populated when group data is on the rows. */
+  const availableGroups = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const r of rows) {
+      const g = r.account_group;
+      if (g && g.id && !seen.has(g.id)) seen.set(g.id, g.name || 'Standard');
+    }
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [rows]);
 
   /** Sync store + session before opening terminal (navigation via `<Link href>` so clicks always work). */
   const prepareTradeSession = (row: AccountRow) => {
@@ -648,75 +672,152 @@ export default function AccountsPage() {
       <div className="page-main w-full space-y-6">
         {tab === 'accounts' && (
           <div key="tab-accounts" className="animate-wallet-fund-enter-lg">
-            {/* Outer shell — nested cards open inside; soft green light pulse like wallet tabs */}
-            <div className="relative overflow-hidden rounded-2xl border border-border-primary bg-card">
-              <div
-                className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-[0.28] animate-wallet-main-tab-glow"
-                aria-hidden
-              />
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-px bg-gradient-to-r from-transparent via-accent/35 to-transparent" aria-hidden />
-              <div className="relative z-[1] space-y-6 p-5 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-                      Trading Accounts
-                    </h1>
-                    <p className="mt-1 text-sm text-text-secondary">Manage your trading accounts</p>
-                  </div>
-                  {user?.is_demo ? (
-                    <button type="button" onClick={() => setDemoUpgradeOpen(true)} className={newAccountCtaClass}>
-                      <span className="text-lg leading-none">+</span>
-                      New Account
-                    </button>
-                  ) : (
-                    <button type="button" onClick={handleOpenNewAccount} className={newAccountCtaClass}>
-                      <span className="text-lg leading-none">+</span>
-                      New Account
-                    </button>
-                  )}
+            <div className="space-y-5">
+              <h1 className="text-2xl font-bold tracking-tight text-text-primary">Accounts</h1>
+
+              {/* Filter / action bar */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Live / Demo selector */}
+                <FilterDropdown
+                  label={kindFilter === 'live' ? 'Live Account' : 'Demo Account'}
+                  options={[
+                    { id: 'live', label: 'Live Account' },
+                    { id: 'demo', label: 'Demo Account' },
+                  ]}
+                  value={kindFilter}
+                  onChange={(v) => setKindFilter(v as AccountKindFilter)}
+                  disabled={Boolean(user?.is_demo)}
+                />
+                {/* Account-group dropdown — only functional when group data exists. */}
+                <FilterDropdown
+                  label={
+                    groupFilter === 'all'
+                      ? 'All'
+                      : availableGroups.find((g) => g.id === groupFilter)?.name || 'All'
+                  }
+                  options={[
+                    { id: 'all', label: 'All' },
+                    ...availableGroups.map((g) => ({ id: g.id, label: g.name })),
+                  ]}
+                  value={groupFilter}
+                  onChange={setGroupFilter}
+                  title={availableGroups.length === 0 ? 'No account groups available' : undefined}
+                />
+                {/* Trading-platform filter — placeholder; SwissCresta has no MT4/MT5 split. */}
+                <FilterDropdown
+                  label="Trading Platforms"
+                  options={[{ id: 'all', label: 'Trading Platforms' }]}
+                  value="all"
+                  onChange={() => {
+                    /* no-op — kept as static UI for parity with the design */
+                  }}
+                  title="Trading platform filter is not applicable on SwissCresta"
+                />
+
+                <div className="flex-1" />
+
+                {/* Open Account — solid black pill that opens AccountTypePickerModal */}
+                {user?.is_demo ? (
+                  <button
+                    type="button"
+                    onClick={() => setDemoUpgradeOpen(true)}
+                    className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
+                  >
+                    Open Account
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOpenNewAccount}
+                    className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
+                  >
+                    Open Account
+                  </button>
+                )}
+
+                {/* Grid / List view toggle */}
+                <div className="inline-flex items-center gap-1 rounded-full border border-[#E5E5E5] bg-white p-1">
+                  <button
+                    type="button"
+                    aria-label="Grid view"
+                    onClick={() => setViewMode('grid')}
+                    className={clsx(
+                      'p-1.5 rounded-full transition-colors',
+                      viewMode === 'grid'
+                        ? 'bg-white text-[#0A0A0A] shadow-sm'
+                        : 'text-[#9CA3AF] hover:text-[#0A0A0A]',
+                    )}
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="List view"
+                    onClick={() => setViewMode('list')}
+                    className={clsx(
+                      'p-1.5 rounded-full transition-colors',
+                      viewMode === 'list'
+                        ? 'bg-white text-[#0A0A0A] shadow-sm'
+                        : 'text-[#9CA3AF] hover:text-[#0A0A0A]',
+                    )}
+                  >
+                    <ListIcon size={16} />
+                  </button>
                 </div>
-
-                {loading && (
-                  <div className="flex flex-col items-center gap-3 py-16">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-                    <span className="text-sm text-text-secondary">Loading accounts…</span>
-                  </div>
-                )}
-
-                {!loading && error && (
-                  <div className="space-y-3 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-center">
-                    <p className="text-sm text-red-400">{error}</p>
-                    <Button variant="outline" size="sm" onClick={() => void fetchAccounts()}>
-                      Retry
-                    </Button>
-                  </div>
-                )}
-
-                {!loading && !error && visibleRows.length === 0 && (
-                  <div className="rounded-xl border border-border-primary bg-card-nested p-8 text-center">
-                    <p className="text-sm text-text-secondary">
-                      {user?.is_demo
-                        ? 'No demo trading account is linked yet.'
-                        : 'You do not have a trading account yet. Use the "New Account" button above to open one.'}
-                    </p>
-                  </div>
-                )}
-
-                {!loading && !error && visibleRows.length > 0 && (
-                  <ul className="space-y-3">
-                    {visibleRows.map((row) => (
-                      <AccountCard
-                        key={row.id}
-                        row={row}
-                        initialExpanded={row.id === expandAccountId}
-                        tradeHref={tradingTerminalUrl(row.id, { view: 'chart' })}
-                        onTradePrepare={() => prepareTradeSession(row)}
-                        onRemoved={handleAccountRemoved}
-                      />
-                    ))}
-                  </ul>
-                )}
               </div>
+
+              {loading && (
+                <div className="flex flex-col items-center gap-3 py-16">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                  <span className="text-sm text-text-secondary">Loading accounts…</span>
+                </div>
+              )}
+
+              {!loading && error && (
+                <div className="space-y-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-center">
+                  <p className="text-sm text-red-400">{error}</p>
+                  <Button variant="outline" size="sm" onClick={() => void fetchAccounts()}>
+                    Retry
+                  </Button>
+                </div>
+              )}
+
+              {!loading && !error && visibleRows.length === 0 && (
+                <div className="rounded-2xl border border-[#E5E5E5] bg-white p-8 text-center">
+                  <p className="text-sm text-text-secondary">
+                    {user?.is_demo
+                      ? 'No demo trading account is linked yet.'
+                      : 'You do not have a trading account yet. Use the "Open Account" button above to open one.'}
+                  </p>
+                </div>
+              )}
+
+              {!loading && !error && visibleRows.length > 0 && (
+                <div
+                  className={clsx(
+                    'grid gap-5',
+                    viewMode === 'grid'
+                      ? 'grid-cols-1 md:grid-cols-2'
+                      : 'grid-cols-1',
+                  )}
+                >
+                  {visibleRows.map((row) => (
+                    <AccountCard
+                      key={row.id}
+                      row={row}
+                      onDeposit={() => router.push('/wallet')}
+                      onTrade={() => {
+                        prepareTradeSession(row);
+                        router.push(tradingTerminalUrl(row.id, { view: 'chart' }));
+                      }}
+                      onRemoved={handleAccountRemoved}
+                    />
+                  ))}
+
+                  {/* Join Copy Trading promo — full width across the grid */}
+                  <JoinCopyTradingCard onStart={() => router.push('/social')} />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -919,282 +1020,165 @@ export default function AccountsPage() {
   );
 }
 
-const TREND_TABS = ['24H', '7D', '30D', '90D', '1Y'] as const;
-
-function formatCreated(d?: string) {
-  if (!d) return '—';
-  const t = Date.parse(d);
-  if (!Number.isFinite(t)) return '—';
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(t);
-}
-
-interface ClosedTradeRow {
-  id: string;
-  pnl: number;
-  close_time: string;
-}
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function fmtYLabel(v: number): string {
-  if (Math.abs(v) >= 1e6) return `$${(v / 1e6).toFixed(1)}M`;
-  if (Math.abs(v) >= 1e3) return `$${(v / 1e3).toFixed(1)}k`;
-  return `$${v.toFixed(0)}`;
-}
-
-function BalanceTrendBlock({ accountId, balance }: { accountId: string; balance: number }) {
-  const [tab, setTab] = useState<(typeof TREND_TABS)[number]>('7D');
-  const [trades, setTrades] = useState<ClosedTradeRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    api
-      .get<{ items?: ClosedTradeRow[] } | ClosedTradeRow[]>('/portfolio/trades', {
-        page: '1',
-        per_page: '1000',
-        account_id: accountId,
-      })
-      .then((res) => {
-        if (cancelled) return;
-        const items = (res && typeof res === 'object' && 'items' in res ? res.items : Array.isArray(res) ? res : []) || [];
-        setTrades(items);
-      })
-      .catch(() => { if (!cancelled) setTrades([]); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [accountId]);
-
-  /* Build daily balance snapshots: work backwards from current balance */
-  const { dailyPoints, xLabels } = useMemo(() => {
-    const msMap: Record<string, number> = { '24H': 864e5, '7D': 6048e5, '30D': 2592e6, '90D': 7776e6, '1Y': 31536e6 };
-    const periodMs = msMap[tab] || 6048e5;
-    const now = new Date();
-    const startMs = now.getTime() - periodMs;
-
-    /* Determine interval: 24H → hourly, 7D → daily, 30D → daily, 90D → weekly, 1Y → monthly */
-    let intervalMs: number;
-    let labelFn: (d: Date) => string;
-    if (tab === '24H') {
-      intervalMs = 36e5; // 1 hour
-      labelFn = (d) => `${d.getHours().toString().padStart(2, '0')}:00`;
-    } else if (tab === '7D' || tab === '30D') {
-      intervalMs = 864e5; // 1 day
-      // getDay() returns 0-6, DAY_NAMES has 7 entries — bounded by construction.
-      labelFn = (d) => DAY_NAMES[d.getDay()]!;
-    } else if (tab === '90D') {
-      intervalMs = 864e5 * 7; // 1 week
-      labelFn = (d) => `${MONTH_SHORT[d.getMonth()]!} ${d.getDate()}`;
-    } else {
-      intervalMs = 864e5 * 30; // ~1 month
-      labelFn = (d) => MONTH_SHORT[d.getMonth()]!;
-    }
-
-    /* Build time slots from start to now */
-    const slots: number[] = [];
-    let t = startMs;
-    while (t <= now.getTime()) {
-      slots.push(t);
-      t += intervalMs;
-    }
-    if (slots[slots.length - 1]! < now.getTime()) slots.push(now.getTime());
-
-    /* Sort trades by close_time ascending */
-    const sorted = [...trades]
-      .filter((tr) => tr.close_time)
-      .sort((a, b) => new Date(a.close_time).getTime() - new Date(b.close_time).getTime());
-
-    /* Sum P&L per slot: for each slot, accumulate P&L of trades closed after that slot */
-    /* Current balance = balance. Balance at slot[i] = balance - sum(pnl of trades closed after slot[i]) */
-    const pts: { x: number; y: number }[] = [];
-    const labels: string[] = [];
-
-    for (const slotMs of slots) {
-      const pnlAfter = sorted
-        .filter((tr) => new Date(tr.close_time).getTime() > slotMs)
-        .reduce((s, tr) => s + (Number(tr.pnl) || 0), 0);
-      pts.push({ x: slotMs, y: balance - pnlAfter });
-      labels.push(labelFn(new Date(slotMs)));
-    }
-
-    return { dailyPoints: pts, xLabels: labels };
-  }, [trades, tab, balance]);
-
-  /* Chart dimensions with margins for labels */
-  const W = 480;
-  const H = 160;
-  const ML = 48; // left margin for Y-axis labels
-  const MR = 8;
-  const MT = 12;
-  const MB = 22; // bottom margin for X-axis labels
-
-  const { path, areaPath, isProfit, pnlValue, pnlPct, yTicks, screenPts } = useMemo(() => {
-    if (dailyPoints.length < 2) return { path: '', areaPath: '', isProfit: true, pnlValue: 0, pnlPct: 0, yTicks: [] as { y: number; label: string }[], screenPts: [] as { sx: number; sy: number }[] };
-
-    const ys = dailyPoints.map((p) => p.y);
-    const yMin = Math.min(...ys);
-    const yMax = Math.max(...ys);
-    const yPad = (yMax - yMin) * 0.1 || 1;
-    const yLo = yMin - yPad;
-    const yHi = yMax + yPad;
-    const yRange = yHi - yLo || 1;
-    /* dailyPoints.length >= 2 was already checked above. */
-    const xMin = dailyPoints[0]!.x;
-    const xMax = dailyPoints[dailyPoints.length - 1]!.x;
-    const xRange = xMax - xMin || 1;
-
-    const chartW = W - ML - MR;
-    const chartH = H - MT - MB;
-
-    const pts = dailyPoints.map((p) => ({
-      sx: ML + ((p.x - xMin) / xRange) * chartW,
-      sy: MT + (1 - (p.y - yLo) / yRange) * chartH,
-    }));
-
-    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(' ');
-    const area = `${linePath} L${pts[pts.length - 1]!.sx.toFixed(1)},${H - MB} L${pts[0]!.sx.toFixed(1)},${H - MB} Z`;
-
-    const first = dailyPoints[0]!.y;
-    const last = dailyPoints[dailyPoints.length - 1]!.y;
-    const diff = last - first;
-    const pct = first > 0 ? (diff / first) * 100 : 0;
-
-    /* Generate 3-4 Y-axis ticks */
-    const tickCount = 4;
-    const ticks: { y: number; label: string }[] = [];
-    for (let i = 0; i < tickCount; i++) {
-      const val = yLo + (yRange * i) / (tickCount - 1);
-      const sy = MT + (1 - (val - yLo) / yRange) * chartH;
-      ticks.push({ y: sy, label: fmtYLabel(val) });
-    }
-
-    return { path: linePath, areaPath: area, isProfit: diff >= 0, pnlValue: diff, pnlPct: pct, yTicks: ticks, screenPts: pts };
-  }, [dailyPoints]);
-
-  const lineColor = isProfit ? '#f59e0b' : '#ef4444'; // amber like Crucial Markets
-  const gradId = `trend-grad-${accountId}`;
-
-  /* Thin down X-axis labels to avoid overlap */
-  const maxXLabels = tab === '24H' ? 8 : tab === '7D' ? 8 : tab === '30D' ? 10 : 8;
-  const xStep = Math.max(1, Math.ceil(xLabels.length / maxXLabels));
-
+/* ----------------------------------------------------------------------------
+   Small white-pill filter dropdown used in the Accounts toolbar.
+   Renders a native <select> overlaid on a styled button so the click target
+   matches the rest of the bar but accessibility / keyboard nav stays intact.
+   ------------------------------------------------------------------------ */
+function FilterDropdown({
+  label,
+  options,
+  value,
+  onChange,
+  disabled,
+  title,
+}: {
+  label: string;
+  options: ReadonlyArray<{ id: string; label: string }>;
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+  title?: string;
+}) {
   return (
-    <div className="min-w-0">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[13px] font-medium text-text-secondary">Balance Trend</div>
-        <div className="flex flex-wrap items-center gap-1">
-          {TREND_TABS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={clsx(
-                'px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors',
-                tab === t ? 'bg-accent/20 text-accent border border-accent/40' : 'text-text-tertiary border border-transparent hover:bg-bg-hover hover:text-text-secondary',
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="rounded-xl bg-bg-base border border-border-primary relative overflow-hidden" style={{ minHeight: '140px', maxHeight: '220px', aspectRatio: `${W}/${H + 10}` }}>
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-5 w-5 border-2 border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={lineColor} stopOpacity="0.35" />
-                <stop offset="100%" stopColor={lineColor} stopOpacity="0.02" />
-              </linearGradient>
-            </defs>
-
-            {/* Horizontal grid lines at Y ticks */}
-            {yTicks.map((tick, i) => (
-              <g key={i}>
-                <line x1={ML} y1={tick.y} x2={W - MR} y2={tick.y} stroke="#1a1a1a" strokeWidth="0.5" />
-                <text x={ML - 6} y={tick.y + 3} textAnchor="end" fill="#555" fontSize="9" fontFamily="monospace">
-                  {tick.label}
-                </text>
-              </g>
-            ))}
-
-            {/* X-axis labels */}
-            {xLabels.map((label, i) => {
-              if (i % xStep !== 0 && i !== xLabels.length - 1) return null;
-              const sx = screenPts[i]?.sx;
-              if (sx == null) return null;
-              return (
-                <text key={i} x={sx} y={H - 4} textAnchor="middle" fill="#555" fontSize="9">
-                  {label}
-                </text>
-              );
-            })}
-
-            {dailyPoints.length >= 2 && (
-              <>
-                {/* Area fill */}
-                <path d={areaPath} fill={`url(#${gradId})`} />
-                {/* Line */}
-                <path d={path} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-                {/* Data point dots */}
-                {screenPts.map((p, i) => {
-                  if (i % xStep !== 0 && i !== screenPts.length - 1) return null;
-                  return <circle key={i} cx={p.sx} cy={p.sy} r="3" fill={lineColor} stroke="#080808" strokeWidth="1.5" />;
-                })}
-              </>
-            )}
-
-            {dailyPoints.length < 2 && (
-              <text x={W / 2} y={H / 2} textAnchor="middle" dominantBaseline="middle" fill="#444" fontSize="11">
-                Not enough data for this period
-              </text>
-            )}
-          </svg>
-        )}
-      </div>
+    <div
+      className={clsx(
+        'relative inline-flex items-center rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-medium text-[#0A0A0A]',
+        disabled && 'opacity-60',
+      )}
+      title={title}
+    >
+      <span className="pointer-events-none pr-6">{label}</span>
+      <ChevronDown size={14} className="pointer-events-none absolute right-3 text-[#6B7280]" />
+      <select
+        className="absolute inset-0 cursor-pointer appearance-none rounded-full bg-transparent text-transparent opacity-0 disabled:cursor-not-allowed"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+      >
+        {options.map((o) => (
+          <option key={o.id} value={o.id} className="text-[#0A0A0A]">
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
 
+/* ----------------------------------------------------------------------------
+   Join Copy Trading promo card � spans both columns at md+.
+   Click "Start Copying" ? routes to /social (where the copy-trading UI lives).
+   The inline SVG line is intentionally minimal so it stays performant and
+   doesn't pull in image assets.
+   ------------------------------------------------------------------------ */
+function JoinCopyTradingCard({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="md:col-span-2 relative overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white p-6">
+      <div className="relative z-[1] flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="max-w-md">
+          <h3 className="text-lg font-bold tracking-tight text-[#0A0A0A]">Join Copy Trading</h3>
+          <p className="mt-2 text-sm leading-relaxed text-[#4B5563]">
+            More than <span className="font-semibold text-emerald-600">50,000+ Copiers</span>
+            <br />
+            Trade like a master and earn by copying professional investors
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onStart}
+          className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-5 py-2 text-sm font-semibold text-white hover:bg-black transition-colors shrink-0"
+        >
+          Start Copying
+        </button>
+      </div>
+      {/* Faded background trend graph � purely decorative */}
+      <svg
+        className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-1/2 opacity-30 md:block"
+        viewBox="0 0 400 160"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="copy-trend-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0,120 L40,110 L80,115 L120,90 L160,95 L200,70 L240,80 L280,55 L320,60 L360,35 L400,40 L400,160 L0,160 Z"
+          fill="url(#copy-trend-fade)"
+        />
+        <path
+          d="M0,120 L40,110 L80,115 L120,90 L160,95 L200,70 L240,80 L280,55 L320,60 L360,35 L400,40"
+          fill="none"
+          stroke="#10B981"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------------------
+   AccountCard � Vantage-style compact card.
+   White outer surface, light-gray inner summary tile, "--" placeholder where
+   the rich numeric panel used to live. Real balance / credit values are still
+   passed through so we can render them in the subline when the data lands.
+   ------------------------------------------------------------------------ */
 function AccountCard({
   row,
-  initialExpanded = false,
-  tradeHref,
-  onTradePrepare,
+  onDeposit,
+  onTrade,
   onRemoved,
 }: {
   row: AccountRow;
-  initialExpanded?: boolean;
-  tradeHref: string;
-  onTradePrepare: () => void;
+  onDeposit: () => void;
+  onTrade: () => void;
   onRemoved: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(initialExpanded);
-  const [aliasDraft, setAliasDraft] = useState('');
-  const [editingAlias, setEditingAlias] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [closeModal, setCloseModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [aliasDraft, setAliasDraft] = useState('');
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  /* Close the settings menu on outside-click. */
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [menuOpen]);
 
   useEffect(() => {
     setAliasDraft(readAlias(row.id));
   }, [row.id]);
 
-  useEffect(() => {
-    if (initialExpanded) setOpen(true);
-  }, [initialExpanded]);
+  const isActive = row.is_active !== false;
+  const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
+  const groupName = row.account_group?.name?.trim() || 'Standard';
+  /* SwissCresta has a single server � Live for real, Demo for demo accounts. */
+  const serverLabel = row.is_demo ? 'SwissCresta-Demo' : 'SwissCresta-Live';
+  /* Platform badge. SwissCresta is a single internal platform; we show "MT5"
+     to mirror the screenshot's visual rhythm. If the codebase later carries
+     a real platform field, swap this for it. */
+  const platformBadge = 'MT5';
+  /* "V" mark � first letter of the group name (Vantage's avatar tile shows
+     the broker initial). Falls back to "S" for SwissCresta. */
+  const markChar = (groupName[0] || 'S').toUpperCase();
 
-  const alias = readAlias(row.id);
-  const pnl = row.equity - row.balance;
-  const pct =
-    row.balance > 0 && Number.isFinite(row.equity) ? (row.equity / row.balance - 1) * 100 : 0;
-  const pnlPositive = pnl >= 0;
-  const idLabel = row.is_demo ? `#D#${row.account_number}` : `#L#${row.account_number}`;
+  const balance = Number.isFinite(row.balance) ? row.balance : 0;
+  const credit = Number.isFinite(row.credit) ? row.credit : 0;
+  const hasNumbers = balance > 0 || credit > 0;
 
   const confirmCloseAccount = async () => {
     setDeleting(true);
@@ -1210,252 +1194,133 @@ function AccountCard({
     }
   };
 
-  const accountLabel = row.is_demo
-    ? 'Demo Account'
-    : row.account_number.startsWith('PM')
-      ? 'PAMM Pool Account'
-      : row.account_number.startsWith('MM')
-        ? 'MAM Pool Account'
-        : row.account_number.startsWith('CT')
-          ? 'MAM Master Account'
-          : row.account_number.startsWith('CF')
-            ? 'MAM Account'
-            : row.account_number.startsWith('IF')
-              ? 'Investment Account'
-              : 'Live Account';
-
-  const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
-  const isPoolAccount = row.account_number.startsWith('PM') || row.account_number.startsWith('MM') || row.account_number.startsWith('CT');
+  const saveAlias = () => {
+    writeAlias(row.id, aliasDraft);
+    setRenameOpen(false);
+    toast.success('Label updated');
+  };
 
   return (
-    <li
+    <div
       id={`account-card-${row.id}`}
-      className="relative overflow-hidden rounded-2xl transition-all duration-300"
-      style={{
-        background: 'var(--bg-card)',
-        border: open ? '1px solid var(--border-accent)' : '1px solid var(--border-primary)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-      }}
+      className="rounded-2xl border border-[#E5E5E5] bg-white p-5"
     >
-      {/* ── Header Row — always visible ── */}
-      <div
-        className="flex w-full items-start gap-2 sm:gap-3 px-3 sm:px-5 md:px-6 py-4 sm:py-5 cursor-pointer transition-colors hover:bg-bg-hover"
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o); } }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={open}
-      >
-        <span
-          className={clsx(
-            'mt-2 h-2.5 w-2.5 rounded-full shrink-0',
-            row.is_demo ? 'bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.7)]' : 'bg-[#E94E1B] shadow-[0_0_6px_rgba(233,78,27,0.7)]',
-          )}
-          aria-hidden
-        />
-        <div className="flex-1 min-w-0">
-          {/* Account name + ID + alias */}
-          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mb-3 sm:mb-4">
-            <span className="text-sm sm:text-base font-bold text-text-primary">{accountLabel}</span>
-            <span className="text-xs sm:text-sm text-text-tertiary font-mono">{idLabel}</span>
-            {row.is_wallet_account && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-[#E94E1B]/15 text-[#E94E1B] border border-[#E94E1B]/35"
-                title="Wallet-bound account — deposits land here and withdrawals return to your linked wallet"
-              >
-                <Wallet size={10} /> Wallet
-              </span>
+      {/* Header � status pill + platform + account number + settings cog */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={clsx(
+              'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
+              isActive
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-gray-100 text-gray-600',
             )}
-            {!editingAlias ? (
-              <span className="inline-flex items-center gap-1 text-sm" onClick={(e) => e.stopPropagation()}>
-                {alias ? (
-                  <>
-                    <span className="text-text-secondary">{alias}</span>
-                    <button type="button" onClick={() => { setAliasDraft(alias); setEditingAlias(true); }} className="rounded p-0.5 text-accent/70 hover:text-accent hover:bg-accent/10" aria-label="Edit label"><Pencil size={13} /></button>
-                  </>
-                ) : (
-                  <button type="button" onClick={() => { setAliasDraft(''); setEditingAlias(true); }} className="text-accent/60 hover:text-accent text-xs font-semibold">+ Add label</button>
-                )}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                <input value={aliasDraft} onChange={(e) => setAliasDraft(e.target.value)} placeholder="Alias" className="px-2 py-1 rounded-lg border border-border-primary bg-bg-input text-sm text-text-primary w-36 max-w-[50vw] outline-none focus:border-accent/30" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') { writeAlias(row.id, aliasDraft); setEditingAlias(false); } if (e.key === 'Escape') setEditingAlias(false); }} />
-                <button type="button" className="text-xs text-accent font-semibold" onClick={() => { writeAlias(row.id, aliasDraft); setEditingAlias(false); }}>Save</button>
-              </span>
-            )}
-          </div>
-
-          {/* Stats row — Balance | Equity | P&L | Leverage */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3">
-            <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Balance</p>
-              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono truncate">{fmt(row.balance, row.currency)}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Equity</p>
-              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono truncate">{fmt(row.equity, row.currency)}</p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">P&amp;L</p>
-              <div className="flex items-center gap-1">
-                <span className={clsx('text-sm sm:text-lg font-bold tabular-nums font-mono truncate', pnlPositive ? 'text-[#E94E1B]' : 'text-red-400')}>
-                  ~{' '}{pnlPositive ? '+' : ''}{fmt(pnl, row.currency)}
-                </span>
-              </div>
-              <p className={clsx('text-[10px] sm:text-xs font-semibold tabular-nums', pnlPositive ? 'text-[#E94E1B]/70' : 'text-red-400/70')}>
-                ({pnlPositive ? '+' : ''}{pct.toFixed(2)}%)
-              </p>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] sm:text-[11px] text-text-tertiary font-medium mb-0.5">Leverage</p>
-              <p className="text-sm sm:text-lg font-bold text-text-primary tabular-nums font-mono">1:{row.leverage}</p>
-            </div>
-          </div>
+          >
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+          <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-[#0A0A0A]">
+            {platformBadge}
+          </span>
+          <span className="text-sm font-semibold tabular-nums text-[#0A0A0A]">
+            {row.account_number}
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
-          className="text-text-tertiary shrink-0 mt-1 p-1.5 rounded-lg hover:bg-bg-hover hover:text-text-primary transition-colors"
-          aria-label={open ? 'Collapse' : 'Expand'}
-        >
-          <ChevronDown size={20} className={clsx('transition-transform duration-200', open && 'rotate-180')} />
-        </button>
+
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Account settings"
+            className="rounded-full p-1.5 text-[#6B7280] hover:bg-gray-100 hover:text-[#0A0A0A] transition-colors"
+          >
+            <Settings size={18} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-9 z-20 w-44 rounded-xl border border-[#E5E5E5] bg-white py-1 shadow-lg">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setRenameOpen(true); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#0A0A0A] hover:bg-gray-50"
+              >
+                <Pencil size={14} />
+                Rename label
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onDeposit(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#0A0A0A] hover:bg-gray-50"
+              >
+                <ArrowLeftRight size={14} />
+                Transfer funds
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); setCloseModal(true); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 size={14} />
+                Close account
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── Expanded Section ── */}
-      {open && (
-        <div className="px-3 sm:px-5 md:px-6 pb-4 sm:pb-5 pt-0" style={{ borderTop: '1px solid var(--border-primary)' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 sm:gap-6 pt-4 sm:pt-5">
-            {/* Left — Balance Trend chart */}
-            <BalanceTrendBlock accountId={row.id} balance={row.balance} />
+      {/* Sub-header � group + server line */}
+      <p className="mt-2 text-xs text-[#6B7280]">
+        {groupName} STP <span className="mx-2 text-[#D1D5DB]">|</span> {serverLabel}
+      </p>
 
-            {/* Right — Account Details */}
-            <div>
-              <p className="text-[13px] font-medium text-text-secondary mb-3">Account Details</p>
-              <div className="grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-3 sm:gap-y-4">
-                <div>
-                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Free Margin</p>
-                  <p className="text-base font-bold text-text-primary font-mono tabular-nums">{fmt(row.free_margin, row.currency)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Margin Level</p>
-                  <p className="text-base font-bold text-text-primary font-mono tabular-nums">
-                    {Number.isFinite(row.margin_level) && row.margin_level > 0 ? `${row.margin_level.toFixed(2)}%` : '0.00%'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Currency</p>
-                  <p className="text-base font-bold text-text-primary font-mono">{row.currency}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Created</p>
-                  <p className="text-base font-bold text-text-primary">{formatCreated(row.created_at)}</p>
-                </div>
-                {row.account_group?.name ? (
-                  <div className="col-span-2">
-                    <p className="text-[11px] text-text-tertiary font-medium mb-0.5">Account Type</p>
-                    <p className="text-base font-bold text-text-primary">{row.account_group.name}</p>
-                  </div>
-                ) : null}
-              </div>
-            </div>
+      {/* Inner summary tile */}
+      <div className="mt-4 rounded-xl bg-[#F5F5F5] p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-base font-bold text-[#0A0A0A] ring-1 ring-[#E5E5E5]">
+            {markChar}
           </div>
-
-          {/* Action buttons row */}
-          <div className="relative z-[60] flex flex-wrap items-center gap-2 pt-4 sm:pt-5 mt-4 sm:mt-5" style={{ borderTop: '1px solid var(--border-primary)' }}>
-            {isManagedAccount ? (
-              <>
-                <Link
-                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-sm font-bold hover:bg-[#C73E11] transition-colors"
-                >
-                  <BookOpen size={16} />
-                  View Trades
-                </Link>
-                <div className="rounded-lg border border-border-primary bg-bg-secondary px-4 py-2.5 text-xs text-text-tertiary flex items-center gap-2 sm:ml-auto">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  {row.account_number.startsWith('IF') ? 'Managed by PAMM master' : 'Managed by MAM master'}
-                </div>
-              </>
-            ) : isPoolAccount ? (
-              <>
-                <Link
-                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-primary text-text-primary text-sm font-semibold hover:border-border-secondary hover:bg-bg-hover transition-colors"
-                >
-                  <BookOpen size={16} />
-                  Trade History
-                </Link>
-                <a
-                  href={tradeHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-sm font-bold hover:bg-[#C73E11] transition-colors"
-                >
-                  Trade
-                  <ExternalLink size={14} />
-                </a>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setCloseModal(true); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-red-400 text-xs sm:text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
-                >
-                  <Trash2 size={14} />
-                  Close Account
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href={`/portfolio?account_id=${encodeURIComponent(row.id)}&account_no=${encodeURIComponent(row.account_number)}&tab=history`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg border border-border-primary text-text-primary text-xs sm:text-sm font-semibold hover:border-border-secondary hover:bg-bg-hover transition-colors"
-                >
-                  Trading Journal
-                </Link>
-                <a
-                  href={tradeHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => { e.stopPropagation(); onTradePrepare(); }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-[#E94E1B] text-white text-xs sm:text-sm font-bold hover:bg-[#C73E11] transition-colors"
-                >
-                  Trade
-                  <ExternalLink size={13} />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setCloseModal(true)}
-                  className="inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg text-red-400 text-xs sm:text-sm font-medium hover:bg-red-500/10 transition-colors sm:ml-auto"
-                >
-                  <Trash2 size={14} />
-                  Close Account
-                </button>
-              </>
-            )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-[#0A0A0A]">
+              {hasNumbers ? fmt(balance, row.currency) : '--'}
+            </p>
+            <p className="mt-0.5 text-xs text-[#6B7280]">
+              Credits: {hasNumbers ? fmt(credit, row.currency) : '-'}
+              <span className="mx-2 text-[#D1D5DB]">|</span>
+              Balance: {hasNumbers ? fmt(balance, row.currency) : '-'}
+            </p>
           </div>
         </div>
-      )}
 
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onDeposit}
+            className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-sm font-semibold text-white hover:bg-black transition-colors"
+          >
+            Deposit
+          </button>
+          <button
+            type="button"
+            onClick={onTrade}
+            disabled={isManagedAccount}
+            title={isManagedAccount ? 'Managed account � trades are placed by the master' : undefined}
+            className="inline-flex items-center justify-center rounded-full border border-[#E5E5E5] px-4 py-1.5 text-sm font-semibold text-[#0A0A0A] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Trade
+          </button>
+        </div>
+      </div>
+
+      {/* Close-account confirmation */}
       <Modal open={closeModal} onClose={() => !deleting && setCloseModal(false)} title="Close account">
         <div className="p-4 space-y-4">
           <p className="text-sm text-text-secondary">
-            Close {accountLabel.toLowerCase()} <span className="font-mono font-semibold">{row.account_number}</span>?
+            Close account <span className="font-mono font-semibold">{row.account_number}</span>?
           </p>
           <ul className="text-xs text-text-tertiary space-y-1 pl-4 list-disc">
             <li>Any open positions will close at their open price (zero P&amp;L).</li>
             <li>Pending orders will be cancelled.</li>
-            {row.balance + (row.equity - row.balance) > 0 ? (
+            {balance > 0 ? (
               <li>
-                <span className="text-text-secondary font-semibold">{fmt(row.balance, row.currency)}</span> will transfer to your main wallet.
-              </li>
-            ) : null}
-            {isPoolAccount ? (
-              <li className="text-amber-500">
-                Followers linked to this master will be refunded and stopped copying.
+                <span className="text-text-secondary font-semibold">{fmt(balance, row.currency)}</span> will transfer to your main wallet.
               </li>
             ) : null}
           </ul>
@@ -1470,11 +1335,38 @@ function AccountCard({
               disabled={deleting}
               onClick={() => void confirmCloseAccount()}
             >
-              {deleting ? 'Closing…' : 'Close account'}
+              {deleting ? 'Closing�' : 'Close account'}
             </Button>
           </div>
         </div>
       </Modal>
-    </li>
+
+      {/* Rename-label modal */}
+      <Modal open={renameOpen} onClose={() => setRenameOpen(false)} title="Rename account label">
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-text-secondary">
+            Set a friendly label for account{' '}
+            <span className="font-mono font-semibold">{row.account_number}</span>. Labels are stored
+            locally on this device.
+          </p>
+          <input
+            value={aliasDraft}
+            onChange={(e) => setAliasDraft(e.target.value)}
+            placeholder="e.g. Main trading"
+            className="w-full rounded-xl border border-border-primary bg-bg-input px-4 py-2.5 text-sm text-text-primary outline-none focus:border-accent/40"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" size="sm" onClick={saveAlias}>
+              Save
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 }
+
