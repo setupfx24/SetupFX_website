@@ -8,28 +8,9 @@ import GoodForBusiness from '@/landing/marketing/institutional/GoodForBusiness'
 import GetInTouch from '@/landing/marketing/institutional/GetInTouch'
 import OurOffices from '@/landing/marketing/institutional/OurOffices'
 import FollowUs from '@/landing/marketing/FollowUs'
-import FooterLinks, { type FooterColumn } from '@/landing/marketing/FooterLinks'
+import FooterLinks from '@/landing/marketing/FooterLinks'
 import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
-
-const FOOTER_COLUMNS: FooterColumn[] = [
-  {
-    heading: 'Private & Premium',
-    links: ['Multi-Asset Brokerage', 'Global Custody', 'Forex & Treasury', 'Discretionary Services'],
-  },
-  {
-    heading: 'Forex & Treasury',
-    links: ['Execution Forex', 'Swaps & Forwards', 'Precious Metals', 'Leveraged Forex'],
-  },
-  {
-    heading: 'Institutional',
-    links: ['Trading', 'Custody'],
-  },
-  {
-    heading: 'Technology',
-    links: ['Trading Platform', 'Liquidity', 'Trading APIs', 'Forex APIs'],
-  },
-]
 
 export const metadata = {
   title: 'Institutional — SwissCresta',
@@ -50,7 +31,7 @@ export default function InstitutionalPage() {
         <GetInTouch />
         <OurOffices />
         <FollowUs />
-        <FooterLinks columns={FOOTER_COLUMNS} align="left" />
+        <FooterLinks />
         <Sponsors />
       </main>
       <Disclaimer />
