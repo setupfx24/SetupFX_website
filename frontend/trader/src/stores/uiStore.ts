@@ -53,11 +53,11 @@ export const useUIStore = create<UIState>()(
       theme: 'light' as Theme,
       watchlistWidth: WATCHLIST_DEFAULT_PX,
       orderPanelWidth: 340,
-      // 480 px is the minimum that lets the TradingView Technical
-      // Analysis widget (470 px natural height) fit alongside the
-      // positions table without clipping the "Sell · Neutral · Buy"
-      // legend at the bottom of the gauge.
-      bottomPanelHeight: 480,
+      // Bottom panel only hosts the positions table now (the TradingView
+      // Technical Analysis widget was removed). 260 px shows ~5 rows
+      // and gives the chart the full remaining vertical space, which
+      // is what traders actually want.
+      bottomPanelHeight: 260,
       activeBottomTab: 'positions',
       chartTimeframe: '15m',
       chartType: 'candlestick',
@@ -102,7 +102,7 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: STORAGE_KEY_UI,
-      version: 11,
+      version: 12,
       onRehydrateStorage: () => (rehydrated, err) => {
         if (err || !rehydrated || typeof window === 'undefined') return;
         if (window.innerWidth < 768) return;
@@ -131,8 +131,14 @@ export const useUIStore = create<UIState>()(
         let op = state.orderPanelWidth ?? 340;
         if (v < 5) op = Math.max(250, Math.min(560, op));
         if (v < 6 && w === 620) w = WATCHLIST_DEFAULT_PX;
-        let bp = state.bottomPanelHeight ?? 280;
+        let bp = state.bottomPanelHeight ?? 260;
         if (v < 7 && bp <= 280) bp = 320;
+        // v12: the TradingView TA widget was removed; the old 480-px
+        // minimum no longer applies and was crushing the chart on
+        // smaller viewports. Reset any persisted height >= 400 back
+        // to the new 260 default so existing users see the correct
+        // layout on first reload.
+        if (v < 12 && bp >= 400) bp = 260;
         bp = Math.max(160, bp);
         const terminalMarketsOpen =
           v < 8 ? false : Boolean((state as UIState & { terminalMarketsOpen?: boolean }).terminalMarketsOpen);
