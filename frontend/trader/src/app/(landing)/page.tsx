@@ -1,41 +1,47 @@
-'use client'
-
 /**
- * SwissCresta home — Swiss-broker style.
+ * SwissCresta marketing home — full broker landing port from the
+ * legacy Swistrade Next 14 site. Keep the file as a thin composer —
+ * each section lives in `@/landing/marketing/*` and is independently
+ * editable.
  *
- * Section order mirrors what serious multi-asset brokers (Dukascopy,
- * Saxo, Interactive Brokers) put on their home page: hero → product
- * grid → trust pillars → account tiers → platforms → social trading →
- * final CTA. Original copy throughout — no verbatim text from any
- * competitor.
- *
- * Previous DeFi-flavoured sections (Problem/Solution, HowItWorks,
- * TradingModes/fully-funded, Insurance, Gamification, Staking,
- * Referral, plus three inline banner-image blocks pointing at
- * hero_banner{1,2,3}.png) were removed in the broker-repositioning
- * pass. The trader app still serves staking / gamification / insurance
- * routes if you navigate to them directly — they're just no longer
- * surfaced from the marketing home.
+ * The parent `(landing)/layout.tsx` already mounts the shared Navbar +
+ * LandingFooter for light marketing routes. We deliberately do NOT
+ * mount `marketing/Navbar.tsx` here — that component is ported for
+ * future use (multi-tier sub-nav with PRIVATE/PARTNERS/INSTITUTIONAL/
+ * CAREERS/GROUP hover dropdowns) but mounting it here would double up
+ * the chrome.
  */
 
-import HeroSection from '@/landing/pages/home/HeroSection'
-import FxProducts from '@/landing/pages/home/FxProducts'
-import FxWhySwissCresta from '@/landing/pages/home/FxWhySwissCresta'
-import FxAccountTypes from '@/landing/pages/home/FxAccountTypes'
-import FxPlatforms from '@/landing/pages/home/FxPlatforms'
-import FxCopyTrading from '@/landing/pages/home/FxCopyTrading'
-import FxFinalCTA from '@/landing/pages/home/FxFinalCTA'
+import Hero from '@/landing/marketing/Hero'
+import DifferentBank from '@/landing/marketing/DifferentBank'
+import Platforms from '@/landing/marketing/Platforms'
+import Pricing from '@/landing/marketing/Pricing'
+import Securities from '@/landing/marketing/Securities'
+import Crypto from '@/landing/marketing/Crypto'
+import Steps from '@/landing/marketing/Steps'
+import AboutUs from '@/landing/marketing/AboutUs'
+import FollowUs from '@/landing/marketing/FollowUs'
+import FooterLinks from '@/landing/marketing/FooterLinks'
+import Sponsors from '@/landing/marketing/Sponsors'
+import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export default function LandingHomePage() {
   return (
-    <>
-      <HeroSection />
-      <FxProducts />
-      <FxWhySwissCresta />
-      <FxAccountTypes />
-      <FxPlatforms />
-      <FxCopyTrading />
-      <FxFinalCTA />
-    </>
+    <div className="min-h-screen bg-white text-gray-900">
+      <main>
+        <Hero />
+        <DifferentBank />
+        <Platforms />
+        <Pricing />
+        <Securities />
+        <Crypto />
+        <Steps />
+        <AboutUs />
+        <FollowUs />
+        <FooterLinks />
+        <Sponsors />
+      </main>
+      <Disclaimer />
+    </div>
   )
 }

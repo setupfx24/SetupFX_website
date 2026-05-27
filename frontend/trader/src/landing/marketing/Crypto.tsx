@@ -1,0 +1,62 @@
+import Eyebrow from './ui/Eyebrow'
+import ExploreLink from './ui/ExploreLink'
+import { HEADING_SECTION } from './ui/headings'
+
+interface Coin {
+  size: number
+  top: string
+  left?: string
+  right?: string
+}
+
+const COINS: Coin[] = [
+  { size: 56, top: '6%', left: '8%' },
+  { size: 80, top: '20%', left: '14%' },
+  { size: 44, top: '52%', left: '4%' },
+  { size: 64, top: '70%', left: '18%' },
+  { size: 72, top: '12%', right: '10%' },
+  { size: 96, top: '40%', right: '6%' },
+  { size: 56, top: '72%', right: '14%' },
+]
+
+export default function Crypto() {
+  return (
+    <section className="bg-white">
+      <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-12 md:py-16">
+        <div className="relative bg-gray-50 rounded-[2rem] px-6 md:px-10 lg:px-16 py-20 md:py-28 overflow-hidden">
+          {COINS.map((coin, i) => (
+            <div
+              key={i}
+              className="hidden md:block absolute rounded-full bg-gray-100 border border-gray-200/70"
+              style={{
+                width: coin.size,
+                height: coin.size,
+                top: coin.top,
+                left: coin.left,
+                right: coin.right,
+              }}
+              aria-hidden="true"
+            />
+          ))}
+
+          <div className="relative max-w-2xl mx-auto text-center">
+            <Eyebrow>Crypto</Eyebrow>
+            <h2 className={`mt-4 ${HEADING_SECTION}`}>The cool kid of trading assets</h2>
+            <p className="mt-6 text-base text-gray-600 leading-relaxed">
+              Join the crypto-mania, with Swiss lucidity. 52 cryptos, including pioneers and
+              newcomers, for you to trade anytime, anywhere on the SwissCresta-developed SQX
+              exchange.
+            </p>
+            <p className="mt-4 text-xs italic text-gray-600">
+              *These products are offered by SwissCresta Bank Ltd, regulated by the Swiss Federal
+              Financial Market Supervisory Authority (FINMA).
+            </p>
+            <div className="mt-6 flex justify-center">
+              <ExploreLink>Explore</ExploreLink>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
