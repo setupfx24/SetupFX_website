@@ -1040,29 +1040,68 @@ function FilterDropdown({
   disabled?: boolean;
   title?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handleDown);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleDown);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [open]);
+
   return (
-    <div
-      className={clsx(
-        'relative inline-flex items-center rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-medium text-[#0A0A0A]',
-        disabled && 'opacity-60',
-      )}
-      title={title}
-    >
-      <span className="pointer-events-none pr-6">{label}</span>
-      <ChevronDown size={14} className="pointer-events-none absolute right-3 text-[#6B7280]" />
-      <select
-        className="absolute inset-0 cursor-pointer appearance-none rounded-full bg-transparent text-transparent opacity-0 disabled:cursor-not-allowed"
-        value={value}
+    <div ref={ref} className="relative inline-block" title={title}>
+      <button
+        type="button"
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={clsx(
+          'inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-medium text-[#0A0A0A] hover:border-[#0A0A0A] transition-colors',
+          disabled && 'opacity-60 cursor-not-allowed hover:border-[#E5E5E5]',
+        )}
       >
-        {options.map((o) => (
-          <option key={o.id} value={o.id} className="text-[#0A0A0A]">
-            {o.label}
-          </option>
-        ))}
-      </select>
+        <span>{label}</span>
+        <ChevronDown size={14} className={clsx('text-[#6B7280] transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && !disabled && (
+        <ul
+          role="listbox"
+          className="absolute left-0 top-full z-50 mt-2 min-w-[160px] overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-lg ring-1 ring-black/5"
+        >
+          {options.map((o) => {
+            const selected = o.id === value;
+            return (
+              <li key={o.id} role="option" aria-selected={selected}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(o.id);
+                    setOpen(false);
+                  }}
+                  className={clsx(
+                    'block w-full px-4 py-2 text-left text-sm hover:bg-[#F5F5F5] transition-colors',
+                    selected ? 'bg-[#F5F5F5] font-semibold text-[#0A0A0A]' : 'text-[#0A0A0A]',
+                  )}
+                >
+                  {o.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
