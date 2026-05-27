@@ -17,7 +17,6 @@ from packages.common.src.models import (
     TradeHistory, Transaction, CopyTrade, UserAuditLog, User,
 )
 from packages.common.src.instrument_pricing import resolve_commission
-from packages.common.src.insurance.claims import maybe_pay as insurance_maybe_pay
 from . import wallet_service
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.redis_client import redis_client, PriceChannel
@@ -969,13 +968,6 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
         description=f"{'Partial ' if is_partial else ''}Close {pos.instrument.symbol} {sv} {close_lots} lots @ {close_price}",
     )
     db.add(tx)
-
-    # Trade insurance — evaluate on full AND partial close. `maybe_pay`
-    # swallows its own exceptions so a payout failure can never block the
-    # close. For partial close, the claim is naturally proportional because
-    # `history.profit` reflects only the partial lots; the policy's
-    # remaining cap is enforced inside evaluate_claim.
-    await insurance_maybe_pay(db=db, position=pos, history=history)
 
     # Bonus wagering — feed this trade's lots into the FIFO release queue.
     # Demo accounts skipped inside the function so users can't farm demo

@@ -27,11 +27,6 @@ from .wallet import (
 from .market import TickData, OHLCVBar, InstrumentResponse
 from .admin import AdminFundAdjustment, AdminTradeCreate, AdminModifyTrade
 from .common import PaginationParams, PaginatedResponse
-from .insurance import (
-    InsuranceQuoteRequest, InsuranceTierQuote,
-    InsuranceActivateRequest, InsuranceActivateResponse,
-    InsurancePolicyOut, InsuranceClaimOut,
-)
 from .profile import UpdateProfileRequest, ChangePasswordRequest
 from .share_support import (
     CreateShareRequest, CreateTicketRequest, ReplyTicketRequest,
@@ -61,10 +56,6 @@ __all__ = [
     "AdminFundAdjustment", "AdminTradeCreate", "AdminModifyTrade",
     # common
     "PaginationParams", "PaginatedResponse",
-    # insurance
-    "InsuranceQuoteRequest", "InsuranceTierQuote",
-    "InsuranceActivateRequest", "InsuranceActivateResponse",
-    "InsurancePolicyOut", "InsuranceClaimOut",
     # profile
     "UpdateProfileRequest", "ChangePasswordRequest",
     # share + support

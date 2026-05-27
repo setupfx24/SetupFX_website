@@ -67,7 +67,6 @@ const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
 const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Transactions', href: '/transactions', icon: Receipt },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
-  { label: 'Trade Insurance', href: '/insurance', icon: ShieldCheck },
   { label: 'PAMM', href: '/pamm', icon: TrendingUp },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },

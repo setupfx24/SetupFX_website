@@ -13,7 +13,6 @@ Module map:
     business.py   IB, master accounts, investor allocations, copy trades
     support.py    Tickets, notifications, banners
     system.py     SystemSetting, BonusOffer, UserBonus
-    insurance.py  InsurancePolicy, InsuranceClaim
     share.py      SharedTrade
 """
 
@@ -53,9 +52,6 @@ from .support import (
 from .system import (
     SystemSetting, BonusOffer, UserBonus,
 )
-from .insurance import (
-    InsurancePolicy, InsuranceClaim,
-)
 from .vip import VipPass
 from .share import SharedTrade
 
@@ -85,8 +81,6 @@ __all__ = [
     "SupportTicket", "TicketMessage", "Notification", "Banner",
     # system
     "SystemSetting", "BonusOffer", "UserBonus",
-    # insurance
-    "InsurancePolicy", "InsuranceClaim",
     # vip
     "VipPass",
     # share

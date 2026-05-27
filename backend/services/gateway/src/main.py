@@ -23,7 +23,7 @@ from .api import (
     auth, orders, positions, accounts, instruments, deposits, webhooks,
     websocket_manager, social, business, portfolio, profile, support,
     notifications, banners, trading_catalog, followers, lp_receiver,
-    share, insurance,
+    share,
 )
 from .engines.sltp_engine import sltp_engine
 from .engines.copy_engine import copy_engine
@@ -242,7 +242,6 @@ app.include_router(webhooks.router, prefix="/api/v1/webhooks", tags=["Webhooks"]
 app.include_router(lp_receiver.router, prefix="/api/lp", tags=["LP Receiver"])
 app.include_router(share.router, prefix="/api/v1", tags=["Share Trade"])
 app.include_router(share.public_router, prefix="/api/v1/public", tags=["Public Share"])
-app.include_router(insurance.router, prefix="/api/v1/insurance", tags=["Trade Insurance"])
 
 
 @app.get("/health")

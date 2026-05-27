@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 /**
  * Crawler directives. Allow the marketing surface (home + 8 light pages
- * + dark marketing trading/platforms/insurance/protocol routes), block
+ * + dark marketing trading/platforms/protocol routes), block
  * everything authenticated. Search engines have no business indexing
  * /dashboard or /wallet — those require login anyway, but disallowing
  * them keeps the crawl budget on the marketing pages.
@@ -32,7 +32,6 @@ export default function robots(): MetadataRoute.Robots {
           '/news',
           '/business',
           '/pamm',
-          '/insurance',
           '/accounts',
           '/support',
           '/more',

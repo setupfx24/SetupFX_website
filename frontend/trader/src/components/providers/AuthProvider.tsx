@@ -20,11 +20,10 @@ const PUBLIC_EXACT_PATHS = new Set<string>([
   '/careers', '/collaboration', '/group', '/institutional',
   '/introducing-brokers', '/money-managers', '/partners',
   // Legacy marketing routes still in the (landing) group
-  '/insurance/overview', '/trading/overview', '/protocol',
+  '/trading/overview', '/protocol',
   '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto',
   '/platforms/web', '/platforms/copy-trading', '/platforms/prop-trading',
   '/platforms/ib-management', '/platforms/super-admin',
-  '/platforms/insurance',
   '/accounts/standard', '/accounts/pro', '/accounts/demo',
 ]);
 
