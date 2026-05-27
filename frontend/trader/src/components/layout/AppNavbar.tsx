@@ -200,29 +200,38 @@ export default function AppNavbar() {
             {moreOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-2 w-[240px] rounded-xl border border-[#E5E5E5] bg-white py-1 shadow-lg"
+                className="absolute right-0 top-full mt-2 w-[520px] rounded-2xl border border-[#E5E5E5] bg-white p-3 shadow-xl ring-1 ring-black/5"
               >
-                {MORE_ITEMS.map((item) => {
-                  const active = isActive(pathname, item.href);
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={false}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        'flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors',
-                        active
-                          ? 'bg-[#FCE6DD] text-[#E94E1B]'
-                          : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
-                      )}
-                    >
-                      <Icon size={15} strokeWidth={1.85} className="shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                    </Link>
-                  );
-                })}
+                <div className="grid grid-cols-2 gap-1">
+                  {MORE_ITEMS.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        prefetch={false}
+                        onClick={() => setMoreOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                          active
+                            ? 'bg-[#FCE6DD] text-[#E94E1B]'
+                            : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                            active ? 'bg-[#E94E1B] text-white' : 'bg-[#F5F5F5] text-[#0A0A0A]',
+                          )}
+                        >
+                          <Icon size={17} strokeWidth={1.9} />
+                        </span>
+                        <span className="truncate">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
