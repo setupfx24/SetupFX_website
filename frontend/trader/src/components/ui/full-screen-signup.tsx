@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -157,16 +158,19 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[20rem] md:min-h-[36rem]">
-          <Link href="/" className="inline-flex items-center gap-2 self-start relative z-10">
-            <svg viewBox="0 0 32 32" className="w-7 h-7 shrink-0" aria-hidden>
-              <rect width="32" height="32" rx="4" fill="#DC2626" />
-              <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-              <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-            </svg>
-            <span className="text-xl font-bold tracking-tight">
-              <span className="text-white">Swiss</span>
-              <span className="text-[#E94E1B]">Cresta</span>
-            </span>
+          <Link
+            href="/"
+            aria-label="SwissCresta home"
+            className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5"
+          >
+            <Image
+              src="/marketing/swisscresta-logo.png"
+              alt="SwissCresta"
+              width={220}
+              height={48}
+              priority
+              className="h-8 w-auto"
+            />
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">
             {copy.hero}

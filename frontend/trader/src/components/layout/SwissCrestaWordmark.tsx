@@ -1,5 +1,8 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+
+const LOGO_SRC = '/marketing/swisscresta-logo.png';
 
 type Props = {
   href?: string;
@@ -81,33 +84,30 @@ export function SwissCrestaWordmark({
     );
   }
 
-  const mark = (
-    <span className={cn('inline-flex items-center gap-2 select-none', className)}>
-      {!hideFlag && (
-        <SwissFlagMark className="w-7 h-7 sm:w-8 sm:h-8" />
-      )}
-      <span
-        className={cn(
-          'inline-flex items-baseline font-bold tracking-tight',
-          'text-xl sm:text-2xl drop-shadow-[0_0_24px_rgba(233,78,27,0.18)]',
-          textClassName,
-        )}
-      >
-        <span className="text-text-primary">Swiss</span>
-        <span className="text-[#E94E1B]">Cresta</span>
-      </span>
-    </span>
-  );
+  // textClassName preserved for backward compatibility with callers
+  // that previously controlled the inner text sizing. Now that the
+  // wordmark renders the full logo image, those classes apply to the
+  // outer link (e.g. extra margin) — they're a no-op on the image
+  // height itself, which is driven by Tailwind h-* below.
+  void textClassName;
 
   return (
     <Link
       href={href}
+      aria-label="SwissCresta home"
       className={cn(
-        'min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
+        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
         className,
       )}
     >
-      {mark}
+      <Image
+        src={LOGO_SRC}
+        alt="SwissCresta"
+        width={220}
+        height={48}
+        priority
+        className="h-9 sm:h-10 w-auto"
+      />
     </Link>
   );
 }
