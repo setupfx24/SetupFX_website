@@ -123,7 +123,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     setErrors({});
     try {
       setSubmitting(true);
-      await api.post('/auth/email/verify-otp', { code });
+      await api.post('/auth/email/verify-otp', { otp: code });
       await refreshUser();
       toast.success('Email verified. Welcome to SwissCresta.');
       router.push('/dashboard');

@@ -888,7 +888,7 @@ function WalletPageContent() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => router.push('/rewards')}
+                    onClick={() => router.push('/transactions')}
                     className="mt-3 w-full py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors"
                   >
                     View Details

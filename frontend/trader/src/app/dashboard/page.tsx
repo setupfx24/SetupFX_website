@@ -16,7 +16,7 @@ import { clsx } from 'clsx';
 import {
   ChevronDown, ArrowDownToLine, ArrowUpFromLine,
   TrendingUp, TrendingDown, ArrowRight, Gift,
-  ShieldCheck, BadgeCheck, ExternalLink, Loader2,
+  ShieldCheck, ExternalLink, Loader2,
   Wallet as WalletIcon, BarChart3, Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -329,7 +329,6 @@ function BrokerHome() {
         loading={loading}
       />
       <TopMoversCard movers={movers} />
-      <StatusProgramCard />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <InviteFriendsCard />
         <BonusCard />
@@ -502,67 +501,6 @@ function TopMoversCard({ movers }: { movers: { symbol: string; pct: number; pric
           );
         })}
       </ul>
-    </Card>
-  );
-}
-
-function StatusProgramCard() {
-  return (
-    <Card>
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base font-bold text-text-primary mb-2 flex items-center gap-2">
-            <BadgeCheck size={18} className="text-[#E94E1B]" /> Status program
-          </h2>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors"
-              style={{ background: 'rgba(233,78,27,0.14)', color: '#E94E1B', border: '1px solid rgba(233,78,27,0.35)' }}
-            >
-              Challenges
-            </Link>
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-semibold rounded-full transition-colors hover:bg-bg-hover"
-              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
-            >
-              My rewards
-            </Link>
-          </div>
-        </div>
-        <div
-          className="md:w-[420px] rounded-xl p-4 flex items-center gap-4"
-          style={{
-            background: 'linear-gradient(135deg, rgba(233,78,27,0.12) 0%, rgba(155,125,58,0.06) 100%)',
-            border: '1px solid rgba(233,78,27,0.32)',
-          }}
-        >
-          <Gift size={28} className="text-[#E94E1B] shrink-0" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-text-primary leading-tight">Welcome cashback</p>
-            <p className="text-xs text-text-secondary leading-tight mt-0.5">
-              Activate the welcome program to earn cashback on your first 10 closed trades.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/rewards"
-              className="px-3 py-1.5 text-xs font-bold rounded-md"
-              style={{ background: '#E94E1B', color: '#ffffff' }}
-            >
-              Activate
-            </Link>
-            <button
-              type="button"
-              className="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors hover:bg-bg-hover"
-              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-secondary)' }}
-            >
-              Decline
-            </button>
-          </div>
-        </div>
-      </div>
     </Card>
   );
 }
