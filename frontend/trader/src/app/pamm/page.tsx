@@ -471,55 +471,55 @@ export default function PammPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">PAM Accounts</h1>
-          <p className="text-sm text-text-secondary mt-0.5">Choose a PAM account to copy trade and grow your profits.</p>
+          <h1 className="text-2xl font-bold text-text-primary">PAMM Accounts</h1>
+          <p className="text-sm text-text-secondary mt-0.5">Choose a PAMM account to copy trade and grow your profits.</p>
         </div>
 
-        {/* ── Top stat cards (purple/DAG aesthetic per client mockup) ── */}
+        {/* ── Top stat cards — clean Vantage style ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* My PAM Investments — purple */}
-          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}>
+          {/* My PAMM Investments */}
+          <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}>
-                <Users size={20} style={{ color: 'var(--card-purple-icon)' }} />
+              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                <Users size={20} className="text-[#E94E1B]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>My PAM Investments</p>
-                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-purple-text-strong)' }}>
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">My PAMM Investments</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums text-text-primary">
                   ${(summary?.total_invested ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--card-purple-text-faint)' }}>In {allocations.length} {allocations.length === 1 ? 'Account' : 'Accounts'}</p>
+                <p className="text-[11px] mt-1 text-text-secondary">In {allocations.length} {allocations.length === 1 ? 'Account' : 'Accounts'}</p>
               </div>
             </div>
           </div>
 
-          {/* Total Profit — green */}
-          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-green-bg)', borderColor: 'var(--card-green-border)' }}>
+          {/* Total Profit — value/ROI stays green/red */}
+          <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-green-icon-bg)', borderColor: 'var(--card-green-icon-border)' }}>
-                <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
+              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                <TrendingUp size={20} className="text-[#E94E1B]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-green-text-muted)' }}>Total Profit (All PAM)</p>
-                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-green-text-strong)' }}>
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Profit (All PAMM)</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums text-text-primary">
                   ${(summary?.total_pnl ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <p className="text-[11px] mt-1 font-semibold" style={{ color: (summary?.overall_pnl_pct ?? 0) >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
+                <p className={clsx('text-[11px] mt-1 font-semibold', (summary?.overall_pnl_pct ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                   {(summary?.overall_pnl_pct ?? 0) >= 0 ? '+' : ''}{(summary?.overall_pnl_pct ?? 0).toFixed(2)}% Overall ROI
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Available Balance — blue */}
-          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-blue-bg)', borderColor: 'var(--card-blue-border)' }}>
+          {/* Available Balance */}
+          <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-blue-icon-bg)', borderColor: 'var(--card-blue-icon-border)' }}>
-                <Wallet size={20} style={{ color: 'var(--card-blue-icon)' }} />
+              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                <Wallet size={20} className="text-[#E94E1B]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-blue-text-muted)' }}>Available Balance</p>
-                <p className="text-xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-blue-text-strong)' }}>
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Available Balance</p>
+                <p className="text-xl font-bold mt-1 font-mono tabular-nums text-text-primary">
                   ${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
@@ -527,22 +527,22 @@ export default function PammPage() {
             <button
               type="button"
               onClick={() => { setActiveTab('browse'); }}
-              className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+              className="w-full py-2 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors"
             >
               Invest Now
             </button>
           </div>
 
-          {/* Total PAM Accounts — amber */}
-          <div className="relative overflow-hidden rounded-2xl p-5 border" style={{ background: 'var(--card-amber-bg)', borderColor: 'var(--card-amber-border)' }}>
+          {/* Total PAMM Accounts */}
+          <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0" style={{ background: 'var(--card-amber-icon-bg)', borderColor: 'var(--card-amber-icon-border)' }}>
-                <BarChart2 size={20} style={{ color: 'var(--card-amber-icon)' }} />
+              <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                <BarChart2 size={20} className="text-[#E94E1B]" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-amber-text-muted)' }}>Total PAM Accounts</p>
-                <p className="text-2xl font-bold mt-1 font-mono tabular-nums" style={{ color: 'var(--card-amber-text-strong)' }}>{accounts.length}</p>
-                <p className="text-[11px] mt-1" style={{ color: 'var(--card-amber-text-faint)' }}>Active PAM Accounts</p>
+                <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total PAMM Accounts</p>
+                <p className="text-2xl font-bold mt-1 font-mono tabular-nums text-text-primary">{accounts.length}</p>
+                <p className="text-[11px] mt-1 text-text-secondary">Active PAMM Accounts</p>
               </div>
             </div>
           </div>
@@ -552,7 +552,7 @@ export default function PammPage() {
         {accounts.length > 0 && (
           <div>
             <div className="flex items-baseline justify-between gap-2 mb-3">
-              <h2 className="text-lg font-bold text-text-primary">Top PAM Accounts</h2>
+              <h2 className="text-lg font-bold text-text-primary">Top PAMM Accounts</h2>
               <p className="text-[11px] text-text-tertiary">Sorted by ROI (High to Low)</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -577,7 +577,7 @@ export default function PammPage() {
                   return (
                     <div
                       key={a.id}
-                      className="relative rounded-2xl p-5 bg-gradient-to-b from-[#1a1330] to-[#0d0820] border border-purple-500/15 flex flex-col"
+                      className="relative rounded-2xl p-5 bg-bg-card border border-border-primary flex flex-col"
                     >
                       {/* Rank badge */}
                       <div className={clsx('absolute top-3 left-3 w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold', rankColors[rank])}>
@@ -591,8 +591,8 @@ export default function PammPage() {
 
                       {/* Name + style — avatar skipped per client direction */}
                       <div className="mt-8 text-center">
-                        <p className="text-base font-bold text-white truncate">{a.manager_name}</p>
-                        <p className="text-[11px] text-purple-300/70 mt-0.5">{styleLabel}</p>
+                        <p className="text-base font-bold text-text-primary truncate">{a.manager_name}</p>
+                        <p className="text-[11px] text-text-secondary mt-0.5">{styleLabel}</p>
                       </div>
 
                       {/* ROI + Total Return (Total Return = AUM × ROI%) */}
@@ -601,14 +601,14 @@ export default function PammPage() {
                           <p className="text-[10px] uppercase tracking-wide text-text-tertiary">ROI (All Time)</p>
                           <p className={clsx(
                             'text-sm font-bold font-mono tabular-nums mt-0.5',
-                            a.total_return_pct >= 0 ? 'text-emerald-400' : 'text-red-400',
+                            a.total_return_pct >= 0 ? 'text-emerald-600' : 'text-red-600',
                           )}>
                             {a.total_return_pct >= 0 ? '+' : ''}{a.total_return_pct.toFixed(2)}%
                           </p>
                         </div>
                         <div>
                           <p className="text-[10px] uppercase tracking-wide text-text-tertiary">Total Return</p>
-                          <p className="text-sm font-bold text-white font-mono tabular-nums mt-0.5">
+                          <p className="text-sm font-bold text-text-primary font-mono tabular-nums mt-0.5">
                             ${totalReturnUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                           </p>
                         </div>
@@ -618,23 +618,23 @@ export default function PammPage() {
                       <div className="mt-4 space-y-1.5 text-[11px]">
                         <div className="flex items-center justify-between">
                           <span className="text-text-tertiary">Max Drawdown</span>
-                          <span className="text-white font-mono tabular-nums">{a.max_drawdown_pct.toFixed(2)}%</span>
+                          <span className="text-text-primary font-mono tabular-nums">{a.max_drawdown_pct.toFixed(2)}%</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-text-tertiary">Win Rate</span>
-                          <span className="text-white font-mono tabular-nums">
+                          <span className="text-text-primary font-mono tabular-nums">
                             {a.total_trades > 0 ? `${a.win_rate.toFixed(0)}%` : 'No trades yet'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-text-tertiary">AUM</span>
-                          <span className="text-white font-mono tabular-nums">
+                          <span className="text-text-primary font-mono tabular-nums">
                             ${aum.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-text-tertiary">Investors</span>
-                          <span className="text-white font-mono tabular-nums">{a.active_investors}</span>
+                          <span className="text-text-primary font-mono tabular-nums">{a.active_investors}</span>
                         </div>
                       </div>
 
@@ -642,7 +642,7 @@ export default function PammPage() {
                       <button
                         type="button"
                         onClick={() => openInvest(a)}
-                        className="mt-4 w-full py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs font-bold transition-colors"
+                        className="mt-4 w-full py-2.5 rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-bold transition-colors"
                       >
                         View Details &amp; Invest
                       </button>
