@@ -272,16 +272,16 @@ function BrokerHome() {
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#1E66F5] transition-colors flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-            <Users size={22} className="text-[#1E66F5]" />
+          <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+            <Users size={22} className="text-[#E94E1B]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold text-text-primary truncate">Copy Trading</p>
             <p className="text-xs text-text-secondary mt-0.5">Copy Top Traders</p>
           </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#1E66F5] group-hover:translate-x-1 transition-all shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
         <button

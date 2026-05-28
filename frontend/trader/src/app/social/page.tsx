@@ -990,8 +990,8 @@ function SocialPageInner() {
             {/* Total Invested */}
             <div className="rounded-2xl p-4 bg-bg-card border border-border-primary">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                  <DollarSign size={18} className="text-[#1E66F5]" />
+                <div className="w-10 h-10 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                  <DollarSign size={18} className="text-[#E94E1B]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">Total Invested</p>
@@ -1112,7 +1112,7 @@ function SocialPageInner() {
             <h3 className="text-base font-bold text-text-primary mb-4">How Copy Trading Works?</h3>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
               {[
-                { icon: Search, tile: 'bg-blue-50', fg: 'text-[#1E66F5]', title: 'Choose a Master', desc: 'Select a top trader' },
+                { icon: Search, tile: 'bg-[#FCE6DD]', fg: 'text-[#E94E1B]', title: 'Choose a Master', desc: 'Select a top trader' },
                 { icon: DollarSign, tile: 'bg-emerald-50', fg: 'text-emerald-600', title: 'Set Your Amount', desc: 'Invest any amount' },
                 { icon: ArrowDownToLine, tile: 'bg-[#FCE6DD]', fg: 'text-[#E94E1B]', title: 'Start Copying', desc: 'We copy trades for you' },
               ].map((s, idx, arr) => (
