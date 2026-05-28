@@ -48,9 +48,23 @@ export const fontMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// Numeric font — Space Grotesk at heavier weights for the "solid"
+// ValutaSolid-style look on balances / prices / P&L. Tabular-nums
+// (applied via the `tabular-nums` utility at each call-site) keeps
+// digits aligned. The Tailwind `mono` family points here first, so
+// every existing `font-mono` number picks this up automatically.
+export const fontNumeric = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  style: ['normal'],
+  variable: '--font-numeric',
+  display: 'swap',
+});
+
 /** Joined `className` to drop straight onto <html>. */
 export const fontVariableClass = [
   fontDisplay.variable,
   fontBody.variable,
   fontMono.variable,
+  fontNumeric.variable,
 ].join(' ');

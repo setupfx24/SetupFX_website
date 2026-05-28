@@ -119,16 +119,15 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        // `mono` now renders the numeric font (Space Grotesk, solid
+        // ValutaSolid-style) so every existing `font-mono tabular-nums`
+        // balance / price / P&L picks it up app-wide. JetBrains Mono
+        // stays as the fallback for any true monospace context.
+        mono: ['var(--font-numeric)', 'JetBrains Mono', 'Menlo', 'monospace'],
         // ── Marketing-design-system fonts (next/font CSS vars) ───────
-        // Wired in src/app/layout.tsx via the fontVariableClass on
-        // <html>. `display` = Fraunces serif (headlines), `body` =
-        // Inter Tight (paragraphs + UI), `numeric` = JetBrains Mono
-        // via next/font specifically (the legacy `mono` above stays
-        // for trader-app code that already uses font-mono).
         display: ['var(--font-display)', 'Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
         body: ['var(--font-body)', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
-        numeric: ['var(--font-mono)', 'JetBrains Mono', 'Menlo', 'monospace'],
+        numeric: ['var(--font-numeric)', 'Space Grotesk', 'Menlo', 'monospace'],
       },
       fontSize: {
         'xxs': ['10px', { lineHeight: '14px' }],
