@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -150,12 +151,16 @@ export default function AppNavbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#E5E5E5] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[60px] max-w-[1400px] items-center px-4 lg:px-6">
-        {/* LEFT — Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-baseline font-bold italic tracking-tight text-[20px] leading-none select-none">
-            <span className="text-[#0A0A0A]">Swiss</span>
-            <span className="text-[#E94E1B]">Cresta</span>
-          </span>
+        {/* LEFT — Logo (same PNG as the marketing navbar) */}
+        <Link href="/dashboard" className="flex items-center shrink-0" aria-label="SwissCresta home">
+          <Image
+            src="/marketing/swisscresta-logo.png"
+            alt="SwissCresta"
+            width={200}
+            height={44}
+            priority
+            className="h-9 w-auto"
+          />
         </Link>
 
         {/* CENTER — Primary nav (lg+) */}
