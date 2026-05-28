@@ -14,7 +14,6 @@ import {
   subMonths,
 } from 'date-fns';
 import {
-  Activity,
   BarChart3,
   Calendar,
   ChevronLeft,
@@ -54,34 +53,6 @@ function dayMapFromCells(cells: CalendarDayCell[]) {
   const m = new Map<string, CalendarDayCell>();
   cells.forEach((c) => m.set(c.date, c));
   return m;
-}
-
-function ScoreDonut({ score }: { score: number }) {
-  const size = 120;
-  const r = 44;
-  const c = 2 * Math.PI * r;
-  const pct = Math.min(100, Math.max(0, score)) / 100;
-  const dash = c * pct;
-  return (
-    <div className="relative mx-auto" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="rotate-[-90deg]">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border-primary)" strokeWidth={10} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="#FFAA00"
-          strokeWidth={10}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${c}`}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-3xl font-bold text-text-primary">{score}</span>
-      </div>
-    </div>
-  );
 }
 
 function EquityChart({ points }: { points: { date: string; equityUsd: number }[] }) {
@@ -465,44 +436,14 @@ export default function TradingOverview({ data }: { data?: TradingDashboardData 
         </div>
       </section>
 
-      {/* —— Equity + stats + score —— */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
+      {/* —— Equity —— */}
+      <section>
+        <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
           <div className="flex items-center gap-2 mb-3">
             <LineChart className="w-5 h-5 text-[#E94E1B]" />
             <h3 className="font-bold text-text-primary">Equity growth</h3>
           </div>
           <EquityChart points={d.equity} />
-        </div>
-        <div className="space-y-3">
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
-            <h4 className="text-sm font-semibold text-text-primary mb-3">Trading statistics</h4>
-            <ul className="space-y-2.5 text-sm">
-              {[
-                ['Risk–reward', d.stats.riskReward, 'text-[#E94E1B]'],
-                ['Expectancy', `${d.stats.expectancyUsd >= 0 ? '+' : ''}${fmtUsd(d.stats.expectancyUsd)}`, d.stats.expectancyUsd >= 0 ? 'text-[#E94E1B]' : 'text-red-400'],
-                ['Best streak', d.stats.bestStreak, 'text-[#E94E1B]'],
-                ['Worst streak', d.stats.worstStreak, 'text-red-400'],
-                ['Best trade', fmtUsd(d.stats.bestTradeUsd), 'text-[#E94E1B]'],
-                ['Worst trade', fmtUsd(d.stats.worstTradeUsd), 'text-red-400'],
-              ].map(([k, v, c]) => (
-                <li key={k} className="flex justify-between gap-2">
-                  <span className="text-text-tertiary">{k}</span>
-                  <span className={clsx('font-medium tabular-nums text-right', c)}>{v}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-xl p-4 border" style={{ backgroundColor: CARD, borderColor: BORDER }}>
-            <div className="flex items-center gap-2 text-sm font-semibold mb-2">
-              <Activity className="w-4 h-4 text-orange-400" />
-              Crucial score
-            </div>
-            <ScoreDonut score={d.crucialScore} />
-            <p className="text-[10px] text-text-tertiary text-center mt-3 leading-relaxed">
-              Win rate · Profit factor · Risk–reward · Expectancy
-            </p>
-          </div>
         </div>
       </section>
     </div>
