@@ -13,6 +13,9 @@ import {
   Settings,
   LayoutGrid,
   List as ListIcon,
+  Wallet,
+  ArrowDownToLine,
+  TrendingUp,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
@@ -696,7 +699,6 @@ function AccountCard({
   /* SwissCresta has a single server — Live for real, Demo for demo accounts. */
   const serverLabel = row.is_demo ? 'SwissCresta-Demo' : 'SwissCresta-Live';
   /* Avatar mark — first letter of the group name; falls back to "S". */
-  const markChar = (groupName[0] || 'S').toUpperCase();
 
   const balance = Number.isFinite(row.balance) ? row.balance : 0;
   const credit = Number.isFinite(row.credit) ? row.credit : 0;
@@ -793,11 +795,12 @@ function AccountCard({
       {/* Inner summary tile */}
       <div className="mt-4 rounded-xl bg-[#F5F5F5] p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-base font-bold text-[#0A0A0A] ring-1 ring-[#E5E5E5]">
-            {markChar}
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FCE6DD]">
+            <Wallet size={20} className="text-[#E94E1B]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-[#0A0A0A]">
+            <p className="text-[11px] uppercase tracking-wide font-semibold text-[#9A9A9A]">Equity</p>
+            <p className="truncate text-xl font-bold font-mono tabular-nums text-[#0A0A0A]">
               {hasNumbers ? fmt(balance, row.currency) : '--'}
             </p>
             <p className="mt-0.5 text-xs text-[#6B7280]">
@@ -812,17 +815,19 @@ function AccountCard({
           <button
             type="button"
             onClick={onDeposit}
-            className="inline-flex items-center justify-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-sm font-semibold text-white hover:bg-black transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#0A0A0A] px-4 py-2 text-sm font-semibold text-white hover:bg-black transition-colors"
           >
+            <ArrowDownToLine size={15} />
             Deposit
           </button>
           <button
             type="button"
             onClick={onTrade}
             disabled={isManagedAccount}
-            title={isManagedAccount ? 'Managed account � trades are placed by the master' : undefined}
-            className="inline-flex items-center justify-center rounded-full border border-[#E5E5E5] px-4 py-1.5 text-sm font-semibold text-[#0A0A0A] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isManagedAccount ? 'Managed account — trades are placed by the master' : undefined}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-[#E94E1B] hover:text-[#E94E1B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
+            <TrendingUp size={15} />
             Trade
           </button>
         </div>
