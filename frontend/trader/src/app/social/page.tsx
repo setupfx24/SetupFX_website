@@ -985,17 +985,17 @@ function SocialPageInner() {
             </div>
           </section>
 
-          {/* ── 4 Stat Cards (DAG aesthetic per client mockup) ── */}
+          {/* ── 4 Stat Cards — clean Vantage style ── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-5">
             {/* Total Invested */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0e2a55] via-[#143a72] to-[#0b1d3d] border border-blue-500/20">
+            <div className="rounded-2xl p-4 bg-bg-card border border-border-primary">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/25 border border-blue-400/30 flex items-center justify-center shrink-0">
-                  <DollarSign size={18} className="text-blue-300" />
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                  <DollarSign size={18} className="text-[#1E66F5]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-blue-200/80 font-medium">Total Invested (All Masters)</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">Total Invested</p>
+                  <p className="text-lg font-bold text-text-primary mt-1 font-mono tabular-nums truncate">
                     ${copySummary.totalInvested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -1003,14 +1003,14 @@ function SocialPageInner() {
             </div>
 
             {/* Total Profit */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#0d3f2a] via-[#0f5535] to-[#082921] border border-emerald-500/20">
+            <div className="rounded-2xl p-4 bg-bg-card border border-border-primary">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/25 border border-emerald-400/30 flex items-center justify-center shrink-0">
-                  <TrendingUp size={18} className="text-emerald-300" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                  <TrendingUp size={18} className="text-emerald-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-emerald-200/80 font-medium">Total Profit (All Masters)</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">Total Profit</p>
+                  <p className="text-lg font-bold text-text-primary mt-1 font-mono tabular-nums truncate">
                     ${copySummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -1018,14 +1018,14 @@ function SocialPageInner() {
             </div>
 
             {/* Profit This Month */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#3a1c5e] via-[#4a2470] to-[#2a1442] border border-purple-500/20">
+            <div className="rounded-2xl p-4 bg-bg-card border border-border-primary">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/25 border border-purple-400/30 flex items-center justify-center shrink-0">
-                  <ArrowDownToLine size={18} className="text-purple-300" />
+                <div className="w-10 h-10 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+                  <ArrowDownToLine size={18} className="text-[#E94E1B]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-purple-200/80 font-medium">Profit This Month</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums truncate">
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">Profit This Month</p>
+                  <p className="text-lg font-bold text-text-primary mt-1 font-mono tabular-nums truncate">
                     ${copySummary.profitThisMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -1033,15 +1033,15 @@ function SocialPageInner() {
             </div>
 
             {/* Active Copy Trades */}
-            <div className="rounded-2xl p-4 bg-gradient-to-br from-[#4a3a0d] via-[#5e4a10] to-[#2e2407] border border-amber-500/20">
+            <div className="rounded-2xl p-4 bg-bg-card border border-border-primary">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/30 flex items-center justify-center shrink-0">
-                  <Users size={18} className="text-amber-300" />
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                  <Users size={18} className="text-amber-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] uppercase tracking-wide text-amber-200/80 font-medium">Active Copy Trades</p>
-                  <p className="text-lg font-bold text-white mt-1 font-mono tabular-nums">
-                    {copySummary.activeCopies} <span className="text-xs font-medium text-amber-200/60">/ 10</span>
+                  <p className="text-[10px] uppercase tracking-wide text-text-tertiary font-semibold">Active Copy Trades</p>
+                  <p className="text-lg font-bold text-text-primary mt-1 font-mono tabular-nums">
+                    {copySummary.activeCopies} <span className="text-xs font-medium text-text-tertiary">/ 10</span>
                   </p>
                 </div>
               </div>
