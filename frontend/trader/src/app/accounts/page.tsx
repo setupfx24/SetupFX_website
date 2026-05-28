@@ -387,17 +387,6 @@ export default function AccountsPage() {
                   onChange={setGroupFilter}
                   title={availableGroups.length === 0 ? 'No account groups available' : undefined}
                 />
-                {/* Trading-platform filter — placeholder; SwissCresta has no MT4/MT5 split. */}
-                <FilterDropdown
-                  label="Trading Platforms"
-                  options={[{ id: 'all', label: 'Trading Platforms' }]}
-                  value="all"
-                  onChange={() => {
-                    /* no-op — kept as static UI for parity with the design */
-                  }}
-                  title="Trading platform filter is not applicable on SwissCresta"
-                />
-
                 <div className="flex-1" />
 
                 {/* Open Account — solid black pill that opens AccountTypePickerModal */}
@@ -697,14 +686,9 @@ function AccountCard({
   const isActive = row.is_active !== false;
   const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
   const groupName = row.account_group?.name?.trim() || 'Standard';
-  /* SwissCresta has a single server � Live for real, Demo for demo accounts. */
+  /* SwissCresta has a single server — Live for real, Demo for demo accounts. */
   const serverLabel = row.is_demo ? 'SwissCresta-Demo' : 'SwissCresta-Live';
-  /* Platform badge. SwissCresta is a single internal platform; we show "MT5"
-     to mirror the screenshot's visual rhythm. If the codebase later carries
-     a real platform field, swap this for it. */
-  const platformBadge = 'MT5';
-  /* "V" mark � first letter of the group name (Vantage's avatar tile shows
-     the broker initial). Falls back to "S" for SwissCresta. */
+  /* Avatar mark — first letter of the group name; falls back to "S". */
   const markChar = (groupName[0] || 'S').toUpperCase();
 
   const balance = Number.isFinite(row.balance) ? row.balance : 0;
@@ -748,9 +732,6 @@ function AccountCard({
             )}
           >
             {isActive ? 'Active' : 'Inactive'}
-          </span>
-          <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-[#0A0A0A]">
-            {platformBadge}
           </span>
           <span className="text-sm font-semibold tabular-nums text-[#0A0A0A]">
             {row.account_number}
