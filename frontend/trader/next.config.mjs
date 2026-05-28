@@ -123,13 +123,15 @@ const nextConfig = {
       // 'unsafe-inline' needed for: layout.tsx inline bootloader,
       // framer-motion inline styles, TradingView widget script.innerHTML.
       // 'unsafe-eval' needed for: Next.js client runtime in some configs.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://www.tradingview-widget.com https://accounts.google.com https://apis.google.com",
+      // Kept in sync with the enforced nginx CSP (deploy/nginx/swisscresta.conf).
+      // *.razorpay.com covers checkout.js + the cdn.razorpay.com risk script.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://verify.walletconnect.com https://verify.walletconnect.org https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       // wss: for the WebSocket price feed, https: covers gateway + 3rd party.
       "connect-src 'self' https: wss:",
-      "frame-src 'self' https://s.tradingview.com https://www.tradingview-widget.com https://accounts.google.com",
+      "frame-src 'self' https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.razorpay.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
