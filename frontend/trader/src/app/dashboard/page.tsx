@@ -210,63 +210,43 @@ function BrokerHome() {
               globals.css) so the cards work in both dark and light
               mode without per-component `dark:` overrides. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {/* Total Balance — purple */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{ background: 'var(--card-purple-bg)', borderColor: 'var(--card-purple-border)' }}
-        >
+        {/* Total Balance */}
+        <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{ background: 'var(--card-purple-icon-bg)', borderColor: 'var(--card-purple-icon-border)' }}
-            >
-              <WalletIcon size={20} style={{ color: 'var(--card-purple-icon)' }} />
+            <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+              <WalletIcon size={20} className="text-[#E94E1B]" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: 'var(--card-purple-text-muted)' }}>Total Balance</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: 'var(--card-purple-text-strong)' }}>{fmtUsd(totalBalance)}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--card-purple-text-faint)' }}>Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Balance</p>
+              <p className="text-2xl font-bold mt-1 font-mono tabular-nums truncate text-text-primary">{fmtUsd(totalBalance)}</p>
+              <p className="text-xs mt-0.5 text-text-secondary">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
             </div>
           </div>
         </div>
 
-        {/* Today's P/L — green when up, red when down */}
-        <div
-          className="rounded-2xl p-4 border"
-          style={{
-            background: todaysPnl >= 0 ? 'var(--card-green-bg)' : 'var(--card-red-bg)',
-            borderColor: todaysPnl >= 0 ? 'var(--card-green-border)' : 'var(--card-red-border)',
-          }}
-        >
+        {/* Open P/L — green when up, red when down */}
+        <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
           <div className="flex items-start gap-3">
-            <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center shrink-0"
-              style={{
-                background: todaysPnl >= 0 ? 'var(--card-green-icon-bg)' : 'var(--card-red-icon-bg)',
-                borderColor: todaysPnl >= 0 ? 'var(--card-green-icon-border)' : 'var(--card-red-icon-border)',
-              }}
-            >
+            <div className={clsx('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', todaysPnl >= 0 ? 'bg-emerald-50' : 'bg-red-50')}>
               {todaysPnl >= 0
-                ? <TrendingUp size={20} style={{ color: 'var(--card-green-icon)' }} />
-                : <TrendingDown size={20} style={{ color: 'var(--card-red-icon)' }} />}
+                ? <TrendingUp size={20} className="text-emerald-600" />
+                : <TrendingDown size={20} className="text-red-600" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-muted)' : 'var(--card-red-text-muted)' }}>Open P/L</p>
-              <p className="text-lg font-bold mt-1 font-mono tabular-nums truncate" style={{ color: todaysPnl >= 0 ? 'var(--card-green-icon)' : 'var(--card-red-icon)' }}>
+              <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Open P/L</p>
+              <p className={clsx('text-2xl font-bold mt-1 font-mono tabular-nums truncate', todaysPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: todaysPnl >= 0 ? 'var(--card-green-text-faint)' : 'var(--card-red-text-faint)' }}>
+              <p className="text-xs mt-0.5 text-text-secondary">
                 {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
               </p>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ── 3 Large CTA buttons (DAG mockup) ── */}
+      {/* ── 3 quick-action cards — clean white, subtle accent on hover ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-        {/* Trade Now — blue gradient */}
         <button
           type="button"
           onClick={() => {
@@ -277,48 +257,46 @@ function BrokerHome() {
             const id = activeId || accounts[0]!.id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 border border-blue-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-blue-900/30"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <BarChart3 size={22} className="text-white" />
+          <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+            <BarChart3 size={22} className="text-[#E94E1B]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Trade Now</p>
-            <p className="text-xs text-blue-100/80 mt-0.5">Start Trading</p>
+            <p className="text-base font-bold text-text-primary truncate">Trade Now</p>
+            <p className="text-xs text-text-secondary mt-0.5">Start Trading</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
-        {/* Copy Trading — green gradient */}
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 border border-emerald-400/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-emerald-900/30"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#1E66F5] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <Users size={22} className="text-white" />
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <Users size={22} className="text-[#1E66F5]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Copy Trading</p>
-            <p className="text-xs text-emerald-100/80 mt-0.5">Copy Top Traders</p>
+            <p className="text-base font-bold text-text-primary truncate">Copy Trading</p>
+            <p className="text-xs text-text-secondary mt-0.5">Copy Top Traders</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#1E66F5] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
-        {/* Add Funds — amber gradient */}
         <button
           type="button"
           onClick={() => router.push('/wallet')}
-          className="group rounded-2xl p-5 bg-gradient-to-br from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-300/30 transition-all flex items-center gap-4 text-left shadow-lg shadow-amber-900/30"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-emerald-500 transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <WalletIcon size={22} className="text-white" />
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <WalletIcon size={22} className="text-emerald-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-white truncate">Add Funds</p>
-            <p className="text-xs text-amber-100/80 mt-0.5">Deposit Now</p>
+            <p className="text-base font-bold text-text-primary truncate">Add Funds</p>
+            <p className="text-xs text-text-secondary mt-0.5">Deposit Now</p>
           </div>
-          <ArrowRight size={20} className="text-white/70 group-hover:translate-x-1 transition-transform shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-emerald-600 group-hover:translate-x-1 transition-all shrink-0" />
         </button>
       </div>
 
