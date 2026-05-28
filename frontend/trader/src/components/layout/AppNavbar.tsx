@@ -61,7 +61,7 @@ type NavItem = {
 const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Home', href: '/dashboard', icon: Home },
   { label: 'Accounts', href: '/accounts', icon: LayoutGrid },
-  { label: 'Trade', href: '/trading', icon: LineChart },
+  { label: 'Funds', href: '/wallet', icon: Wallet },
   {
     label: 'Social',
     href: '/social',
@@ -76,7 +76,7 @@ const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
 
 /** Secondary nav items (live under the "More" dropdown on lg+). */
 const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
-  { label: 'Funds', href: '/wallet', icon: Wallet },
+  { label: 'Trade', href: '/trading', icon: LineChart },
   { label: 'Transactions', href: '/transactions', icon: Receipt },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'Economic News', href: '/news', icon: Newspaper },
