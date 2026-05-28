@@ -111,6 +111,21 @@ const LIGHT_MARKETING_PATHS = new Set<string>([
   '/risk',
   '/terms',
   '/white-label',
+  // Swistrade-port marketing pages
+  '/careers',
+  '/collaboration',
+  '/group',
+  '/institutional',
+  '/introducing-brokers',
+  '/money-managers',
+  '/partners',
+  // home/page marketing rebuild pages
+  '/policy',
+  '/markets',
+  '/cfds',
+  '/currency-pairs',
+  '/precious-metals',
+  '/demo-account',
 ])
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {

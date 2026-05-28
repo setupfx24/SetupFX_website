@@ -19,6 +19,9 @@ const PUBLIC_EXACT_PATHS = new Set<string>([
   // New Swistrade-port marketing pages
   '/careers', '/collaboration', '/group', '/institutional',
   '/introducing-brokers', '/money-managers', '/partners',
+  // home/page marketing rebuild pages
+  '/policy', '/markets', '/cfds', '/currency-pairs',
+  '/precious-metals', '/demo-account',
   // Legacy marketing routes still in the (landing) group
   '/trading/overview', '/protocol',
   '/trading/forex', '/trading/commodities', '/trading/indices', '/trading/crypto',
