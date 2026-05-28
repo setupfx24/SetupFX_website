@@ -77,11 +77,7 @@ export default function BusinessPage() {
 
   return (
 
-    <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
-
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-
-        <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+    <DashboardShell>
 
           <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-4 sm:mb-5">
 
@@ -190,10 +186,6 @@ export default function BusinessPage() {
             </div>
 
           </div>
-
-        </div>
-
-      </div>
 
     </DashboardShell>
 
@@ -307,7 +299,7 @@ function IBTab() {
 
     return (
 
-      <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5 max-w-2xl mx-auto">
+      <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5">
 
         <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
 
@@ -675,7 +667,7 @@ function SubBrokerTab() {
 
   return (
 
-    <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5 max-w-2xl mx-auto">
+    <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5">
 
       <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become a Sub-Broker</h3>
 
