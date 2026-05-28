@@ -516,8 +516,15 @@ function WalletPageContent() {
   // Default the deposit / withdrawal account picker to the first live row
   // (or the wallet-bound account if migrated) once accounts are loaded.
   useEffect(() => {
+    // Non-migrated users always fund via the main wallet — default both
+    // pickers to it (works even when they have no live trading account yet).
+    if (!wallet?.wallet_account) {
+      setDepositAccountId(MAIN_WALLET_OPTION_ID);
+      setWithdrawAccountId(MAIN_WALLET_OPTION_ID);
+      return;
+    }
     if (liveAccounts.length === 0) return;
-    const defaultId = wallet?.wallet_account?.id ?? liveAccounts[0]?.id ?? null;
+    const defaultId = wallet.wallet_account.id ?? liveAccounts[0]?.id ?? null;
     setDepositAccountId((cur) => cur && liveAccounts.some((a) => a.id === cur) ? cur : defaultId);
     setWithdrawAccountId((cur) => cur && liveAccounts.some((a) => a.id === cur) ? cur : defaultId);
   }, [liveAccounts, wallet?.wallet_account?.id]);
@@ -1022,11 +1029,22 @@ function WalletPageContent() {
   // Tab bodies
   // -----------------------------------------------------------------
 
-  const accountOptionsForFunding = liveAccounts.map((a) => ({
-    id: a.id,
-    label: `${a.account_group?.name || 'Standard'} · ${a.account_number || a.id.slice(0, 8)}`,
-    sublabel: formatCurrency(Number(a.balance) || 0, a.currency || wallet?.currency || 'USD'),
-  }));
+  // Non-migrated users fund through the main wallet: deposits land there and
+  // withdrawals come from it; trading accounts are funded via the Transfer
+  // tab. Migrated / wallet-bound users pick a real account row directly.
+  const accountOptionsForFunding = wallet?.wallet_account
+    ? liveAccounts.map((a) => ({
+        id: a.id,
+        label: `${a.account_group?.name || 'Standard'} · ${a.account_number || a.id.slice(0, 8)}`,
+        sublabel: formatCurrency(Number(a.balance) || 0, a.currency || wallet?.currency || 'USD'),
+      }))
+    : [
+        {
+          id: MAIN_WALLET_OPTION_ID,
+          label: 'Main Wallet',
+          sublabel: formatCurrency(Number(wallet?.main_wallet_balance ?? 0), wallet?.currency || 'USD'),
+        },
+      ];
 
   /** Voucher field — disabled placeholder. Backend rebate flow isn't
    *  surfaced to the trader UI yet, so this just renders a non-interactive
