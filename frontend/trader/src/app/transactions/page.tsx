@@ -253,16 +253,12 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#E94E1B]/[0.04] pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#E94E1B]/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0.06) 100%)' }}
-                >
-                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(99,102,241,0.5))' }} />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-[#FCE6DD]">
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#E94E1B]/60">Total Deposits</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Total Deposits</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(totalDeposited)}
                   </p>
@@ -279,16 +275,12 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-red-500/[0.04] pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-red-500/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.06) 100%)' }}
-                >
-                  <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(239,68,68,0.5))' }} />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-[#FCE6DD]">
+                  <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-red-400/60">Withdrawals</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Withdrawals</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(totalWithdrawn)}
                   </p>
@@ -305,16 +297,12 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-[#E94E1B]/[0.03] pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-[#E94E1B]/20"
-                  style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(99,102,241,0.04) 100%)' }}
-                >
-                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(99,102,241,0.4))' }} />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-[#FCE6DD]">
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[#E94E1B]/50">IB Commissions</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-text-tertiary">IB Commissions</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5 truncate">
                     {fmt(0)}
                   </p>
@@ -331,16 +319,12 @@ export default function TransactionsPage() {
                 boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               }}
             >
-              <div className="absolute top-0 right-0 w-20 h-20 rounded-bl-[50px] bg-amber-500/[0.04] pointer-events-none" />
               <div className="relative flex items-center gap-3">
-                <div
-                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 border border-amber-500/25"
-                  style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.06) 100%)' }}
-                >
-                  <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" strokeWidth={2} style={{ filter: 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' }} />
+                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-[#FCE6DD]">
+                  <Hourglass className="w-4 h-4 sm:w-5 sm:h-5 text-[#E94E1B]" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-400/60">Pending</p>
+                  <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-text-tertiary">Pending</p>
                   <p className="text-sm sm:text-lg md:text-xl font-bold font-mono text-text-primary tabular-nums mt-0.5">
                     {pendingTxCount} <span className="text-sm font-semibold text-text-tertiary">transactions</span>
                   </p>
