@@ -361,32 +361,39 @@ export default function AccountsPage() {
 
               {/* Filter / action bar */}
               <div className="flex flex-wrap items-center gap-3">
-                {/* Live / Demo selector */}
-                <FilterDropdown
-                  label={kindFilter === 'live' ? 'Live Account' : 'Demo Account'}
-                  options={[
-                    { id: 'live', label: 'Live Account' },
-                    { id: 'demo', label: 'Demo Account' },
-                  ]}
-                  value={kindFilter}
-                  onChange={(v) => setKindFilter(v as AccountKindFilter)}
-                  disabled={Boolean(user?.is_demo)}
-                />
-                {/* Account-group dropdown — only functional when group data exists. */}
-                <FilterDropdown
-                  label={
-                    groupFilter === 'all'
-                      ? 'All'
-                      : availableGroups.find((g) => g.id === groupFilter)?.name || 'All'
-                  }
-                  options={[
-                    { id: 'all', label: 'All' },
-                    ...availableGroups.map((g) => ({ id: g.id, label: g.name })),
-                  ]}
-                  value={groupFilter}
-                  onChange={setGroupFilter}
-                  title={availableGroups.length === 0 ? 'No account groups available' : undefined}
-                />
+                {/* Live/Demo + account-group filters only make sense for a
+                    registered user who can hold real accounts across tiers.
+                    A demo (try-with-demo) user has exactly one demo account,
+                    so the filters are hidden — they'd only show confusing
+                    'Live Account' / 'Standard' options that don't apply. */}
+                {!user?.is_demo && (
+                  <>
+                    <FilterDropdown
+                      label={kindFilter === 'live' ? 'Live Account' : 'Demo Account'}
+                      options={[
+                        { id: 'live', label: 'Live Account' },
+                        { id: 'demo', label: 'Demo Account' },
+                      ]}
+                      value={kindFilter}
+                      onChange={(v) => setKindFilter(v as AccountKindFilter)}
+                    />
+                    {availableGroups.length > 0 && (
+                      <FilterDropdown
+                        label={
+                          groupFilter === 'all'
+                            ? 'All'
+                            : availableGroups.find((g) => g.id === groupFilter)?.name || 'All'
+                        }
+                        options={[
+                          { id: 'all', label: 'All' },
+                          ...availableGroups.map((g) => ({ id: g.id, label: g.name })),
+                        ]}
+                        value={groupFilter}
+                        onChange={setGroupFilter}
+                      />
+                    )}
+                  </>
+                )}
                 <div className="flex-1" />
 
                 {/* Open Account — solid black pill that opens AccountTypePickerModal */}
