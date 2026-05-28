@@ -99,6 +99,49 @@ interface WalletListItem {
   currency: string;
 }
 
+/** Raw DB method code → friendly label. Covers both manual (bank / UPI /
+ *  QR) and crypto (BTC / ETH / USDT / NOWPayments / OxaPay / wallet)
+ *  channels so the history row reads clearly. */
+function prettyMethod(method?: string): string {
+  const m = (method || '').toLowerCase();
+  switch (m) {
+    case 'bank_transfer':
+    case 'bank':
+    case 'card':
+      return 'Bank Transfer';
+    case 'upi':
+      return 'UPI';
+    case 'qr':
+      return 'QR Code';
+    case 'manual':
+      return 'Manual';
+    case 'crypto_btc':
+      return 'Crypto (BTC)';
+    case 'crypto_eth':
+      return 'Crypto (ETH)';
+    case 'crypto_usdt':
+      return 'Crypto (USDT)';
+    case 'metamask':
+      return 'Crypto (Wallet)';
+    case 'nowpayments':
+    case 'oxapay':
+    case 'crypto':
+      return 'Crypto';
+    default:
+      return m ? m.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '—';
+  }
+}
+
+function fmtHistoryDate(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString(undefined, {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
 
@@ -1355,10 +1398,11 @@ function WalletPageContent() {
           <h2 className="text-base font-semibold text-[#0A0A0A]">Recent transactions</h2>
         </div>
         <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-white">
-          <div className="grid grid-cols-[1fr_1fr_1fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">
+          <div className="grid grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">
             <span>Type</span>
             <span>Method</span>
             <span className="text-right">Amount</span>
+            <span className="text-right">Date</span>
             <span className="text-right">Status</span>
           </div>
           {historyLoading ? (
@@ -1380,13 +1424,14 @@ function WalletPageContent() {
               return (
                 <div
                   key={`${it.id}-${it.type}`}
-                  className="grid grid-cols-[1fr_1fr_1fr_1fr] items-center px-4 py-3 text-sm border-b border-[#F0F0F0] last:border-b-0"
+                  className="grid grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] items-center px-4 py-3 text-sm border-b border-[#F0F0F0] last:border-b-0"
                 >
                   <div className="font-medium text-[#0A0A0A] capitalize truncate">{t || 'transaction'}</div>
-                  <div className="text-[#6B7280] truncate">{it.method || '—'}</div>
+                  <div className="text-[#6B7280] truncate">{prettyMethod(it.method)}</div>
                   <div className="font-mono tabular-nums text-right text-[#0A0A0A]">
                     {formatCurrency(Number(it.amount) || 0, it.currency || wallet?.currency || 'USD')}
                   </div>
+                  <div className="text-right text-[#6B7280] text-xs tabular-nums">{fmtHistoryDate(it.created_at)}</div>
                   <div className="flex justify-end">
                     <span className={clsx('rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize', statusClass)}>
                       {status || 'unknown'}
