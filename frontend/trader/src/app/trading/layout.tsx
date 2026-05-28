@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
+import { useUIStore } from '@/stores/uiStore';
 import { wsManager } from '@/lib/ws/wsManager';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
@@ -260,6 +261,7 @@ function TradingSession({ children }: { children: React.ReactNode }) {
 export default function TradingLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const terminalOnly = pathname?.startsWith('/trading/terminal');
+  const theme = useUIStore((s) => s.theme);
 
   const fallback = (
     <div className="flex-1 flex items-center justify-center text-text-tertiary text-sm bg-bg-primary">
@@ -267,14 +269,16 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
     </div>
   );
 
-  /* Trading TERMINAL is ALWAYS dark + full-screen — charts and price
-   * ladders read cleaner on a dark canvas, and the terminal ships its
-   * own chrome (left rail), so no app navbar here. */
+  /* Terminal follows the user's theme (default light). The in-terminal
+   * Sun/Moon toggle flips uiStore.theme, and this wrapper re-renders to
+   * match — previously the wrapper hardcoded data-theme="dark" which
+   * overrode the toggle and pinned the terminal to dark. */
   if (terminalOnly) {
+    const isDark = theme === 'dark';
     return (
       <div
-        className="trading-page theme-dark flex flex-col h-[100dvh] bg-bg-base min-h-0"
-        data-theme="dark"
+        className={`trading-page ${isDark ? 'theme-dark' : 'theme-light'} flex flex-col h-[100dvh] bg-bg-base min-h-0`}
+        data-theme={isDark ? 'dark' : 'light'}
       >
         <div className="flex-1 flex overflow-hidden min-h-0">
           <Suspense fallback={fallback}>
