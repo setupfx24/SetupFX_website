@@ -628,13 +628,22 @@ function WalletPageContent() {
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const [dep, wd] = await Promise.allSettled([
+      const [dep, wd, txn] = await Promise.allSettled([
         api.get<{ items?: WalletListItem[] }>('/wallet/deposits'),
         api.get<{ items?: WalletListItem[] }>('/wallet/withdrawals'),
+        api.get<{ items?: (WalletListItem & { description?: string })[] }>('/wallet/transactions'),
       ]);
       const depItems = dep.status === 'fulfilled' ? dep.value?.items || [] : [];
       const wdItems = wd.status === 'fulfilled' ? wd.value?.items || [] : [];
-      const merged = [...depItems, ...wdItems].sort((a, b) => {
+      const txnItems = txn.status === 'fulfilled' ? txn.value?.items || [] : [];
+      // Internal transfer legs (trading ↔ main wallet). Deposits/withdrawals
+      // are already fetched above, so we pull only the 'transfer' rows here to
+      // avoid double-listing. Each transfer surfaces both legs (out of one
+      // bucket, into the other) with its own descriptive label.
+      const transferItems: WalletListItem[] = txnItems
+        .filter((t) => (t.type || '').toLowerCase() === 'transfer')
+        .map((t) => ({ ...t, method: t.description || t.method }));
+      const merged = [...depItems, ...wdItems, ...transferItems].sort((a, b) => {
         const ad = a.created_at ? Date.parse(a.created_at) : 0;
         const bd = b.created_at ? Date.parse(b.created_at) : 0;
         return bd - ad;
