@@ -2,13 +2,12 @@
 
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { clsx } from 'clsx';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { wsManager } from '@/lib/ws/wsManager';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
 import { sounds, unlockAudio } from '@/lib/sounds';
-import TopBar from '@/components/layout/TopBar';
+import DashboardShell from '@/components/layout/DashboardShell';
 
 function mapApiAccount(a: Record<string, unknown>): TradingAccount {
   const g = a.account_group as Record<string, unknown> | null | undefined;
@@ -262,29 +261,38 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const terminalOnly = pathname?.startsWith('/trading/terminal');
 
-  /* Trading terminal is ALWAYS dark — charts and price ladders read
-   * cleaner on a dark canvas, so we override the app-level theme
-   * here regardless of the user's preference for the rest of the app. */
-  return (
-    <div
-      className={clsx(
-        'trading-page theme-dark flex flex-col h-[100dvh] bg-bg-base min-h-0',
-        terminalOnly ? 'pb-0 md:pb-0' : 'pb-16 md:h-screen md:pb-0',
-      )}
-      data-theme="dark"
-    >
-      {!terminalOnly && <TopBar />}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        <Suspense
-          fallback={
-            <div className="flex-1 flex items-center justify-center text-text-tertiary text-sm bg-bg-primary">
-              Loading trading…
-            </div>
-          }
-        >
-          <TradingSession>{children}</TradingSession>
-        </Suspense>
-      </div>
+  const fallback = (
+    <div className="flex-1 flex items-center justify-center text-text-tertiary text-sm bg-bg-primary">
+      Loading trading…
     </div>
+  );
+
+  /* Trading TERMINAL is ALWAYS dark + full-screen — charts and price
+   * ladders read cleaner on a dark canvas, and the terminal ships its
+   * own chrome (left rail), so no app navbar here. */
+  if (terminalOnly) {
+    return (
+      <div
+        className="trading-page theme-dark flex flex-col h-[100dvh] bg-bg-base min-h-0"
+        data-theme="dark"
+      >
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          <Suspense fallback={fallback}>
+            <TradingSession>{children}</TradingSession>
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
+
+  /* Account picker (/trading) uses the standard app chrome — the new
+   * AppNavbar + the user's theme — so it matches the rest of the
+   * logged-in app instead of the old dark TopBar. */
+  return (
+    <Suspense fallback={fallback}>
+      <TradingSession>
+        <DashboardShell>{children}</DashboardShell>
+      </TradingSession>
+    </Suspense>
   );
 }
