@@ -46,10 +46,10 @@ def init_sentry(service_name: str) -> None:
         _REDACT = "[redacted]"
         _SENSITIVE_HEADERS = {
             "authorization", "cookie", "set-cookie", "x-api-key",
-            "x-api-secret", "x-nowpayments-sig", "hmac",
+            "x-api-secret", "x-razorpay-signature", "hmac",
         }
         _SENSITIVE_URL_PREFIXES = (
-            "/api/v1/webhooks/",   # NOWPayments / OxaPay / on-chain IPNs
+            "/api/v1/webhooks/",   # Razorpay / OxaPay / on-chain IPNs
             "/api/v1/auth/",       # passwords, OAuth tokens, 2FA codes
             "/api/lp/",            # Corecen LP push (HMAC-signed prices)
             "/api/v1/wallet/",     # deposit/withdraw bodies

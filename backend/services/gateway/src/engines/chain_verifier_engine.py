@@ -252,7 +252,7 @@ async def _verify_via_vault_event(
 
 
 async def _credit_deposit(db: AsyncSession, deposit: Deposit) -> None:
-    """Mirror the credit logic used by the existing oxapay/nowpayments
+    """Mirror the credit logic used by the existing oxapay/razorpay
     webhook handlers so balances, transactions, bonuses, and emails all
     behave the same way regardless of which deposit method was used."""
     user = (await db.execute(

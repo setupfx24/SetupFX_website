@@ -122,11 +122,16 @@ class Settings(BaseSettings):
     OXAPAY_SANDBOX: bool = False
     OXAPAY_CALLBACK_BASE_URL: str = ""  # public gateway URL for webhooks, e.g. "https://api.yourdomain.com"
 
-    # NOWPayments crypto payment gateway (current default for new deposits).
-    NOWPAYMENTS_API_KEY: str = ""
-    NOWPAYMENTS_IPN_SECRET: str = ""    # IPN HMAC secret from dashboard
-    NOWPAYMENTS_SANDBOX: bool = False
-    NOWPAYMENTS_CALLBACK_BASE_URL: str = ""  # e.g. "https://api.swisscresta.com"
+    # Razorpay payment gateway (current default for new automated deposits).
+    # User enters a USD amount; we convert USD→INR at USD_TO_INR_RATE and
+    # charge INR via Razorpay Checkout. On success we credit the USD amount
+    # to the user's main wallet. No `razorpay` pip SDK — httpx + stdlib hmac.
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+    # USD→INR conversion rate used to compute the INR charge amount. Configure
+    # to a realistic live rate before going to production.
+    USD_TO_INR_RATE: float = 83.0
 
     # Decentralized USDT deposit flow — per-chain explorer + RPC config.
     # All optional: with no keys the chain_verifier_engine falls back to

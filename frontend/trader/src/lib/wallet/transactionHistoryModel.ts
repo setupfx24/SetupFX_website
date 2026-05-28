@@ -61,6 +61,7 @@ export function formatMethod(method: string): string {
     card: 'Card',
     oxapay: 'Crypto',
     nowpayments: 'Crypto',
+    razorpay: 'Card / UPI',
     manual: 'Manual / Bank',
   };
   if (labels[m]) return labels[m];

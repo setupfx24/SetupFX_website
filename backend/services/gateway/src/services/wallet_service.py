@@ -37,7 +37,7 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src.config import get_settings
 from packages.common.src.path_safety import PathTraversalError, safe_join_under_base
-from . import oxapay_service, nowpayments_service
+from . import oxapay_service, razorpay_service
 
 logger = logging.getLogger("wallet_service")
 
@@ -212,7 +212,7 @@ METHOD_MAP = {
     "metamask": "metamask",
     "card": "bank_transfer",
     "oxapay": "oxapay",
-    "nowpayments": "nowpayments",
+    "razorpay": "razorpay",
     "manual": "manual",
 }
 
@@ -361,13 +361,13 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
 
     # For automated crypto methods, use 'initiated' status until payment is
     # actually started. This prevents showing incomplete payment attempts in
-    # history. NOWPayments is the current default; OxaPay is kept mounted for
-    # in-flight + historical deposits.
+    # history. OxaPay is kept mounted for in-flight + historical deposits.
+    # Razorpay deposits use the dedicated /deposit/razorpay/order endpoint,
+    # not this generic create_deposit path.
     settings = get_settings()
     crypto_currency = getattr(req, "crypto_currency", None)
     is_oxapay = db_method == "oxapay" and bool(settings.OXAPAY_MERCHANT_KEY)
-    is_nowpayments = db_method == "nowpayments" and bool(settings.NOWPAYMENTS_API_KEY)
-    is_automated_crypto = is_oxapay or is_nowpayments
+    is_automated_crypto = is_oxapay
 
     deposit = Deposit(
         user_id=user_id,
@@ -409,29 +409,6 @@ async def create_deposit(req, user_id: UUID, db: AsyncSession) -> dict:
             raise HTTPException(
                 status_code=502,
                 detail=f"OxaPay payment creation failed: {str(oxapay_err)}",
-            )
-    elif is_nowpayments:
-        try:
-            np = await nowpayments_service.create_payment(
-                amount=req.amount,
-                crypto_currency=crypto_currency,
-                order_id=str(deposit.id),
-                description=f"SwissCresta deposit ${float(req.amount):,.2f}",
-            )
-            deposit.transaction_id = np["invoice_id"]
-            payment_url = np["payment_url"]
-            await db.commit()
-        except Exception as np_err:
-            logger.exception(
-                "NOWPayments create_payment failed for deposit %s",
-                deposit.id,
-            )
-            # Delete the initiated deposit since payment creation failed
-            await db.delete(deposit)
-            await db.commit()
-            raise HTTPException(
-                status_code=502,
-                detail=f"NOWPayments payment creation failed: {str(np_err)}",
             )
 
     try:
@@ -737,99 +714,24 @@ async def handle_oxapay_webhook(
     logger.info("OxaPay webhook: deposit %s → %s", order_id, deposit.status)
 
 
-# ─── On-site wallet-connect deposit (NOWPayments /v1/payment) ───────────
+# ─── Razorpay deposit (Checkout popup, charged in INR) ─────────────────────
 
 
-async def create_wallet_deposit(
+async def create_razorpay_deposit(
     *,
     amount: Decimal,
-    crypto_currency: str,
+    account_target: str | None,
     user_id: UUID,
     db: AsyncSession,
 ) -> dict:
-    """Create a Deposit row + a NOWPayments direct payment for the
-    wallet-connect flow. Returns the address + exact crypto amount the
-    frontend renders. No payment_url — user pays from their connected
-    wallet directly. Settlement still gates on the IPN webhook."""
-    from packages.common.src.settings_store import get_bool_setting
-    if await get_bool_setting("maintenance_mode", False):
-        raise HTTPException(status_code=503, detail="Platform is under maintenance.")
-    if not await get_bool_setting("allow_deposits", True):
-        raise HTTPException(status_code=403, detail="Deposits are currently disabled")
+    """Create a *pending* Deposit row + a Razorpay order.
 
-    settings = get_settings()
-    if not settings.NOWPAYMENTS_API_KEY:
-        raise HTTPException(status_code=503, detail="Crypto deposits are not configured")
-
-    if amount <= 0:
-        raise HTTPException(status_code=400, detail="Invalid amount")
-
-    deposit = Deposit(
-        user_id=user_id,
-        account_id=None,
-        amount=amount,
-        method="nowpayments",
-        status="initiated",
-    )
-    db.add(deposit)
-    await db.commit()
-    await db.refresh(deposit)
-
-    try:
-        np = await nowpayments_service.create_direct_payment(
-            amount_usd=amount,
-            crypto_currency=crypto_currency,
-            order_id=str(deposit.id),
-            description=f"SwissCresta deposit ${float(amount):,.2f}",
-        )
-    except Exception as e:
-        logger.exception("NOWPayments create_direct_payment failed for deposit %s", deposit.id)
-        await db.delete(deposit)
-        await db.commit()
-        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
-
-    deposit.transaction_id = np["payment_id"]
-    deposit.crypto_address = np["pay_address"]
-    deposit.pay_amount = Decimal(np["pay_amount"])
-    deposit.pay_currency = np["pay_currency"]
-    deposit.network = np["network"] or None
-    if np.get("expires_at"):
-        try:
-            from datetime import datetime as _dt
-            deposit.expires_at = _dt.fromisoformat(np["expires_at"].replace("Z", "+00:00"))
-        except Exception:
-            deposit.expires_at = None
-    await db.commit()
-    await db.refresh(deposit)
-
-    return {
-        "id": str(deposit.id),
-        "status": deposit.status,
-        "amount_usd": float(deposit.amount),
-        "pay_address": deposit.crypto_address,
-        "pay_amount": str(deposit.pay_amount),
-        "pay_currency": deposit.pay_currency,
-        "network": deposit.network,
-        "expires_at": deposit.expires_at.isoformat() if deposit.expires_at else None,
-        "payment_id": deposit.transaction_id,
-    }
-
-
-async def create_hosted_invoice_deposit(
-    *,
-    amount: Decimal,
-    crypto_currency: str | None,
-    user_id: UUID,
-    db: AsyncSession,
-) -> dict:
-    """Create a Deposit row + a NOWPayments **hosted invoice** for users
-    who don't want to (or can't) use a connected wallet.
-
-    Returns ``{id, payment_url}``. The frontend redirects the browser to
-    ``payment_url`` — NOWPayments hosts the pay page, the user picks
-    currency (if not pre-selected), pays, and is redirected back to
-    ``success_url``. Settlement still gates on the same IPN webhook;
-    balance is never credited from this endpoint.
+    The user enters a USD amount (`amount`); the order is charged in INR by
+    razorpay_service.create_order. The order id is stamped onto the deposit's
+    `transaction_id` so the verify endpoint and the webhook can both look the
+    row up by Razorpay order id. Balance is never credited here — it settles
+    via verify_and_credit_razorpay / handle_razorpay_webhook (whichever
+    arrives first credits exactly once).
     """
     from packages.common.src.settings_store import get_bool_setting
     if await get_bool_setting("maintenance_mode", False):
@@ -837,54 +739,270 @@ async def create_hosted_invoice_deposit(
     if not await get_bool_setting("allow_deposits", True):
         raise HTTPException(status_code=403, detail="Deposits are currently disabled")
 
-    settings = get_settings()
-    if not settings.NOWPAYMENTS_API_KEY:
-        raise HTTPException(status_code=503, detail="Crypto deposits are not configured")
+    if not razorpay_service.razorpay_configured():
+        raise HTTPException(status_code=503, detail="Card / UPI deposits are not configured")
 
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
+    # Honour the user's chosen credit target (wallet-bound account vs main
+    # wallet). Stored on the row so the webhook/verify path credits the
+    # right bucket via _credit_from_deposit_row.
+    target_account_id = await _resolve_deposit_target_account_id(db, user_id, account_target)
+
     deposit = Deposit(
         user_id=user_id,
-        account_id=None,
+        account_id=target_account_id,
         amount=amount,
-        method="nowpayments",
-        status="initiated",
+        method="razorpay",
+        status="pending",
     )
     db.add(deposit)
     await db.commit()
     await db.refresh(deposit)
 
     try:
-        np = await nowpayments_service.create_payment(
-            amount=amount,
-            crypto_currency=crypto_currency,
-            order_id=str(deposit.id),
-            description=f"SwissCresta deposit ${float(amount):,.2f}",
+        order = await razorpay_service.create_order(
+            amount_usd=amount,
+            receipt=str(deposit.id),
+            notes={"user_id": str(user_id), "deposit_id": str(deposit.id)},
         )
-    except Exception as e:
-        logger.exception(
-            "NOWPayments create_payment (hosted invoice) failed for deposit %s",
-            deposit.id,
-        )
+    except HTTPException:
+        # Razorpay order failed — drop the orphan pending row so it doesn't
+        # linger in the user's history as an un-payable deposit.
         await db.delete(deposit)
         await db.commit()
-        raise HTTPException(status_code=502, detail=f"Crypto payment creation failed: {e}")
+        raise
+    except Exception as e:
+        logger.exception("Razorpay create_order failed for deposit %s", deposit.id)
+        await db.delete(deposit)
+        await db.commit()
+        raise HTTPException(status_code=502, detail=f"Razorpay order creation failed: {e}")
 
-    # Store the invoice id in transaction_id; the IPN webhook looks up by
-    # order_id (deposit.id), so we don't strictly need this column to match
-    # — but support uses it for forensics.
-    deposit.transaction_id = np["invoice_id"]
+    # Map the Razorpay order id onto the deposit so verify + webhook can find
+    # this row by order id.
+    deposit.transaction_id = order["order_id"]
     await db.commit()
     await db.refresh(deposit)
 
     return {
-        "id": str(deposit.id),
-        "status": deposit.status,
-        "amount_usd": float(deposit.amount),
-        "payment_url": np["payment_url"],
-        "invoice_id": deposit.transaction_id,
+        "deposit_id": str(deposit.id),
+        "order_id": order["order_id"],
+        "key_id": order["key_id"],
+        "amount_paise": order["amount_paise"],
+        "amount_inr": order["amount_inr"],
+        "currency": order["currency"],
+        "name": "SwissCresta",
+        "description": "Wallet deposit",
     }
+
+
+async def _credit_razorpay_deposit_locked(
+    *, deposit: Deposit, payment_id: str | None, db: AsyncSession,
+) -> bool:
+    """Idempotently credit a Razorpay deposit. Caller MUST already hold a
+    `with_for_update()` lock on the Deposit row.
+
+    Returns True when this call performed the credit, False when the deposit
+    was already settled (no-op). Reuses the exact lock-order + credit +
+    Transaction + bonus pattern from the OxaPay/NOWPayments webhook handlers
+    so the wallet is credited exactly once regardless of whether the client
+    `verify` call or the webhook arrives first.
+    """
+    # Idempotency guard — already-settled rows are left alone. This is the
+    # primary defence against double-crediting: the first writer flips the
+    # status under the row lock; the second writer sees a terminal status
+    # and returns without touching the balance.
+    if deposit.status not in ("initiated", "pending"):
+        logger.info("Razorpay credit: deposit %s already %s, skipping", deposit.id, deposit.status)
+        return False
+
+    if payment_id:
+        deposit.transaction_id = str(payment_id)
+    deposit.status = "auto_approved"
+    deposit.approved_at = datetime.utcnow()
+
+    # Lock the User row BEFORE crediting main_wallet_balance. Lock order:
+    # Deposit (held by caller) → User → tagged TradingAccount (inside
+    # _credit_from_deposit_row). Prevents a lost-update if verify + webhook
+    # ever race on the same user.
+    user_q = await db.execute(
+        select(User).where(User.id == deposit.user_id).with_for_update()
+    )
+    user_row = user_q.scalar_one_or_none()
+    if not user_row:
+        logger.error("Razorpay credit: user not found for deposit %s", deposit.id)
+        raise HTTPException(status_code=404, detail="User not found")
+
+    target_kind, target_row = await _credit_from_deposit_row(db, deposit, user_row)
+    if target_kind == "trading":
+        target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
+        target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
+        target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
+        db.add(Transaction(
+            user_id=deposit.user_id,
+            account_id=target_row.id,
+            type="deposit",
+            amount=deposit.amount,
+            balance_after=target_row.balance,
+            reference_id=deposit.id,
+            description="Deposit to wallet account - razorpay (auto)",
+        ))
+    else:
+        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
+        db.add(Transaction(
+            user_id=deposit.user_id,
+            account_id=None,
+            type="deposit",
+            amount=deposit.amount,
+            balance_after=user_row.main_wallet_balance,
+            reference_id=deposit.id,
+            description="Deposit to main wallet - razorpay (auto)",
+        ))
+
+    # Apply active bonus offers — mirrors the OxaPay/NOWPayments path so promo
+    # behaviour is identical regardless of provider.
+    bonus_msg = ""
+    applied_bonuses: list[tuple[str, Decimal]] = []
+    now = datetime.utcnow()
+    offers_q = await db.execute(
+        select(BonusOffer).where(
+            BonusOffer.is_active == True,
+            BonusOffer.bonus_type.in_(["deposit", "welcome"]),
+            BonusOffer.min_deposit <= deposit.amount,
+        )
+    )
+    for offer in offers_q.scalars().all():
+        if offer.starts_at and offer.starts_at > now:
+            continue
+        if offer.expires_at and offer.expires_at < now:
+            continue
+        if offer.percentage and offer.percentage > 0:
+            bonus_amount = deposit.amount * offer.percentage / Decimal("100")
+        elif offer.fixed_amount and offer.fixed_amount > 0:
+            bonus_amount = offer.fixed_amount
+        else:
+            continue
+        if offer.max_bonus and bonus_amount > offer.max_bonus:
+            bonus_amount = offer.max_bonus
+
+        user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
+        db.add(Transaction(
+            user_id=deposit.user_id,
+            account_id=None,
+            type="bonus",
+            amount=bonus_amount,
+            balance_after=user_row.main_wallet_balance,
+            description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
+        ))
+        bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
+        applied_bonuses.append((offer.name, bonus_amount))
+
+    await create_notification(
+        db, deposit.user_id,
+        title="Deposit approved",
+        message=f"Your deposit of ${float(deposit.amount):,.2f} was approved automatically.{bonus_msg}",
+        notif_type="deposit", action_url="/wallet",
+    )
+
+    # Best-effort email — never blocks settlement.
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates import render_deposit_confirmed
+        from packages.common.src.config import get_settings as _gs
+        if smtp_configured() and user_row.email:
+            subject, html, text = render_deposit_confirmed(
+                first_name=user_row.first_name,
+                amount=deposit.amount,
+                currency="USD",
+                method="Card / UPI (Razorpay)",
+                reference=str(deposit.id),
+                new_balance=user_row.main_wallet_balance,
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
+            )
+            fire_and_forget(send_email(user_row.email, subject, html, text=text))
+            _send_bonus_emails_for_user(user_row, applied_bonuses)
+    except Exception as _e:
+        logger.warning("razorpay deposit email failed: %s", _e)
+
+    return True
+
+
+async def verify_and_credit_razorpay(
+    *,
+    razorpay_order_id: str,
+    razorpay_payment_id: str,
+    razorpay_signature: str,
+    user_id: UUID,
+    db: AsyncSession,
+) -> dict:
+    """Client-side settlement: verify the Checkout handler signature then
+    idempotently credit the deposit. Safe to call concurrently with the
+    webhook — the row lock + status guard in _credit_razorpay_deposit_locked
+    ensure exactly-once crediting."""
+    if not razorpay_service.verify_checkout_signature(
+        razorpay_order_id, razorpay_payment_id, razorpay_signature
+    ):
+        logger.warning("Razorpay verify: bad signature order=%s", razorpay_order_id)
+        raise HTTPException(status_code=400, detail="Invalid payment signature")
+
+    # Look the deposit up by the Razorpay order id stamped at order-creation,
+    # scoped to the authenticated user so one user can't settle another's row.
+    result = await db.execute(
+        select(Deposit)
+        .where(
+            Deposit.transaction_id == razorpay_order_id,
+            Deposit.user_id == user_id,
+            Deposit.method == "razorpay",
+        )
+        .with_for_update()
+    )
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        logger.warning("Razorpay verify: deposit not found order=%s user=%s", razorpay_order_id, user_id)
+        raise HTTPException(status_code=404, detail="Deposit not found")
+
+    credited = await _credit_razorpay_deposit_locked(
+        deposit=deposit, payment_id=razorpay_payment_id, db=db,
+    )
+    await db.commit()
+    logger.info(
+        "Razorpay verify: deposit %s order=%s credited=%s",
+        deposit.id, razorpay_order_id, credited,
+    )
+    return {"status": "credited", "amount": float(deposit.amount)}
+
+
+async def handle_razorpay_webhook(
+    *, order_id: str, payment_id: str, db: AsyncSession,
+) -> None:
+    """Server-side settlement from the Razorpay `payment.captured` webhook.
+    Performs the SAME idempotent credit as verify_and_credit_razorpay so
+    whichever arrives first (client verify or webhook) credits once; the
+    second is a no-op."""
+    result = await db.execute(
+        select(Deposit)
+        .where(
+            Deposit.transaction_id == order_id,
+            Deposit.method == "razorpay",
+        )
+        .with_for_update()
+    )
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        logger.warning("Razorpay webhook: deposit not found order=%s", order_id)
+        return
+
+    credited = await _credit_razorpay_deposit_locked(
+        deposit=deposit, payment_id=payment_id, db=db,
+    )
+    await db.commit()
+    logger.info(
+        "Razorpay webhook: deposit %s order=%s credited=%s",
+        deposit.id, order_id, credited,
+    )
 
 
 async def release_bonuses_after_trade(
@@ -972,276 +1090,6 @@ async def release_bonuses_after_trade(
                     description="Bonus released — wagering requirement met",
                 ))
     await db.flush()
-
-
-async def get_wallet_deposit_status(
-    *, deposit_id: UUID, user_id: UUID, db: AsyncSession,
-) -> dict:
-    """Polled by the wallet-connect UI. Returns local row status + a fresh
-    NOWPayments status (best-effort) so the UI can show confirmation
-    progress before the IPN lands."""
-    q = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id, Deposit.user_id == user_id)
-    )
-    deposit = q.scalar_one_or_none()
-    if not deposit:
-        raise HTTPException(status_code=404, detail="Deposit not found")
-
-    np_status: str | None = None
-    confirmations = None
-    if deposit.transaction_id and deposit.method == "nowpayments":
-        try:
-            data = await nowpayments_service.get_payment_status(deposit.transaction_id)
-            np_status = data.get("payment_status")
-            confirmations = data.get("confirmations")
-            # Side-effect: if NOWPayments says we're past 'waiting' but our
-            # local row is still 'initiated' (missed IPN), bump to 'pending'
-            # so the UI moves. Settlement still requires the IPN.
-            if (
-                deposit.status == "initiated"
-                and np_status in ("confirming", "sending", "waiting")
-            ):
-                deposit.status = "pending"
-                await db.commit()
-        except Exception as e:
-            logger.warning("NOWPayments status fetch failed for deposit %s: %s", deposit.id, e)
-
-    return {
-        "id": str(deposit.id),
-        "status": deposit.status,
-        "amount_usd": float(deposit.amount or 0),
-        "pay_address": deposit.crypto_address,
-        "pay_amount": str(deposit.pay_amount) if deposit.pay_amount is not None else None,
-        "pay_currency": deposit.pay_currency,
-        "network": deposit.network,
-        "tx_hash": deposit.crypto_tx_hash,
-        "expires_at": deposit.expires_at.isoformat() if deposit.expires_at else None,
-        "nowpayments_status": np_status,
-        "confirmations": confirmations,
-    }
-
-
-async def save_wallet_deposit_tx_hash(
-    *, deposit_id: UUID, tx_hash: str, user_id: UUID, db: AsyncSession,
-) -> dict:
-    """Persist the on-chain tx hash the user's wallet returned after broadcast.
-    Strictly informational — balance credit still gates on the IPN."""
-    th = (tx_hash or "").strip()
-    if not th or len(th) < 10 or len(th) > 200:
-        raise HTTPException(status_code=400, detail="Invalid tx hash")
-
-    q = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_id, Deposit.user_id == user_id)
-    )
-    deposit = q.scalar_one_or_none()
-    if not deposit:
-        raise HTTPException(status_code=404, detail="Deposit not found")
-    if deposit.status not in ("initiated", "pending"):
-        return {"id": str(deposit.id), "saved": False, "status": deposit.status}
-
-    deposit.crypto_tx_hash = th
-    if deposit.status == "initiated":
-        deposit.status = "pending"
-    await db.commit()
-    return {"id": str(deposit.id), "saved": True, "status": deposit.status}
-
-
-# ─── NOWPayments Webhook ─────────────────────────────────────────────────
-
-# NOWPayments status terminals — mapping decided by client spec:
-#   waiting / confirming / sending → 'pending'   (in flight)
-#   confirmed / finished           → 'auto_approved' (credit balance)
-#   failed / expired / refunded /
-#     partially_paid               → 'rejected'   (no credit)
-
-
-async def handle_nowpayments_webhook(
-    order_id: str,
-    np_status: str,
-    payment_id: str | None,
-    payload: dict,
-    db: AsyncSession,
-) -> None:
-    """Process a NOWPayments IPN. Auto-approve on 'finished'/'confirmed';
-    reject on terminal failures; otherwise just bump 'initiated' → 'pending'.
-    Idempotent — already-settled rows are left alone."""
-    from uuid import UUID as UUIDType
-
-    try:
-        deposit_uuid = UUIDType(order_id)
-    except ValueError:
-        logger.warning("NOWPayments webhook: invalid order_id=%s", order_id)
-        return
-
-    # Lock the deposit row so a concurrent admin approval can't credit
-    # twice when the IPN lands at the same moment as a manual flip.
-    result = await db.execute(
-        select(Deposit).where(Deposit.id == deposit_uuid).with_for_update()
-    )
-    deposit = result.scalar_one_or_none()
-    if not deposit:
-        logger.warning("NOWPayments webhook: deposit not found order_id=%s", order_id)
-        return
-
-    # Idempotent — skip if already terminal.
-    if deposit.status not in ("initiated", "pending"):
-        logger.info("NOWPayments webhook: deposit %s already %s, skipping", order_id, deposit.status)
-        return
-
-    if payment_id:
-        deposit.transaction_id = str(payment_id)
-
-    status = (np_status or "").lower()
-
-    in_flight = ("waiting", "confirming", "sending")
-    success = ("confirmed", "finished")
-    failure = ("failed", "expired", "refunded", "partially_paid")
-
-    # Move 'initiated' → 'pending' on first signal that the user actually paid.
-    if status in in_flight and deposit.status == "initiated":
-        deposit.status = "pending"
-        await db.commit()
-        logger.info("NOWPayments webhook: deposit %s → pending (status=%s)", order_id, status)
-        return
-
-    if status in success:
-        deposit.status = "auto_approved"
-        deposit.approved_at = datetime.utcnow()
-
-        # Lock User row BEFORE crediting main_wallet_balance. Without
-        # this lock a re-delivered IPN (routine for payment providers)
-        # racing a concurrent admin approval or a second webhook on the
-        # same user could lost-update the balance: both reads see the
-        # pre-credit value, both write pre + deposit.amount, second
-        # write overwrites first → one of the two deposits silently
-        # vanishes from the balance. Lock order: Deposit (above) →
-        # User → tagged TradingAccount (inside _credit_from_deposit_row).
-        user_q = await db.execute(
-            select(User).where(User.id == deposit.user_id).with_for_update()
-        )
-        user_row = user_q.scalar_one_or_none()
-        if not user_row:
-            logger.error("NOWPayments webhook: user not found for deposit %s", order_id)
-            return
-
-        # If the deposit row was tagged at submit time, honor it.
-        # `_credit_from_deposit_row` itself takes `with_for_update()`
-        # on the tagged TradingAccount, keeping the lock chain intact.
-        target_kind, target_row = await _credit_from_deposit_row(
-            db, deposit, user_row,
-        )
-        if target_kind == "trading":
-            target_row.balance = (target_row.balance or Decimal("0")) + deposit.amount
-            target_row.equity = (target_row.equity or Decimal("0")) + deposit.amount
-            target_row.free_margin = (target_row.free_margin or Decimal("0")) + deposit.amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=target_row.id,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=target_row.balance,
-                reference_id=deposit.id,
-                description="Deposit to wallet account - nowpayments (auto)",
-            ))
-        else:
-            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + deposit.amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="deposit",
-                amount=deposit.amount,
-                balance_after=user_row.main_wallet_balance,
-                reference_id=deposit.id,
-                description="Deposit to main wallet - nowpayments (auto)",
-            ))
-
-        # Apply active bonus offers — mirrors the OxaPay path so promo
-        # behaviour is identical regardless of provider.
-        bonus_msg = ""
-        applied_bonuses: list[tuple[str, Decimal]] = []
-        now = datetime.utcnow()
-        offers_q = await db.execute(
-            select(BonusOffer).where(
-                BonusOffer.is_active == True,
-                BonusOffer.bonus_type.in_(["deposit", "welcome"]),
-                BonusOffer.min_deposit <= deposit.amount,
-            )
-        )
-        for offer in offers_q.scalars().all():
-            if offer.starts_at and offer.starts_at > now:
-                continue
-            if offer.expires_at and offer.expires_at < now:
-                continue
-            if offer.percentage and offer.percentage > 0:
-                bonus_amount = deposit.amount * offer.percentage / Decimal("100")
-            elif offer.fixed_amount and offer.fixed_amount > 0:
-                bonus_amount = offer.fixed_amount
-            else:
-                continue
-            if offer.max_bonus and bonus_amount > offer.max_bonus:
-                bonus_amount = offer.max_bonus
-
-            user_row.main_wallet_balance = (user_row.main_wallet_balance or Decimal("0")) + bonus_amount
-            db.add(Transaction(
-                user_id=deposit.user_id,
-                account_id=None,
-                type="bonus",
-                amount=bonus_amount,
-                balance_after=user_row.main_wallet_balance,
-                description=f"Bonus: {offer.name} ({offer.percentage or 0}%)",
-            ))
-            bonus_msg = f" + ${float(bonus_amount):.2f} bonus ({offer.name})"
-            applied_bonuses.append((offer.name, bonus_amount))
-
-        await create_notification(
-            db, deposit.user_id,
-            title="Deposit approved",
-            message=f"Your deposit of ${float(deposit.amount):,.2f} was approved automatically.{bonus_msg}",
-            notif_type="deposit", action_url="/wallet",
-        )
-
-        # Best-effort email — never blocks settlement.
-        try:
-            from packages.common.src.smtp_mail import (
-                send_email, smtp_configured, fire_and_forget,
-            )
-            from packages.common.src.email_templates import render_deposit_confirmed
-            from packages.common.src.config import get_settings as _gs
-            if smtp_configured() and user_row.email:
-                subject, html, text = render_deposit_confirmed(
-                    first_name=user_row.first_name,
-                    amount=deposit.amount,
-                    currency="USD",
-                    method="Crypto (NOWPayments)",
-                    reference=str(deposit.id),
-                    new_balance=user_row.main_wallet_balance,
-                    trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
-                )
-                fire_and_forget(send_email(user_row.email, subject, html, text=text))
-                _send_bonus_emails_for_user(user_row, applied_bonuses)
-        except Exception as _e:
-            logger.warning("nowpayments deposit email failed: %s", _e)
-
-    elif status in failure:
-        deposit.status = "rejected"
-        deposit.rejection_reason = f"NOWPayments payment {status}"
-        _send_deposit_failed_email(
-            user_row, deposit, status, method_label="Crypto (NOWPayments)",
-        )
-        await create_notification(
-            db, deposit.user_id,
-            title="Deposit not completed",
-            message=f"Your ${float(deposit.amount):,.2f} crypto deposit {status}. Please try again.",
-            notif_type="deposit", action_url="/wallet",
-        )
-
-    else:
-        # Unknown / informational — log and bail without mutating state.
-        logger.info("NOWPayments webhook: deposit %s status=%s (no action)", order_id, status)
-        return
-
-    await db.commit()
-    logger.info("NOWPayments webhook: deposit %s → %s", order_id, deposit.status)
 
 
 # ─── Withdrawals ──────────────────────────────────────────────────────────

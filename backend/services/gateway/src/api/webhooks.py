@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.models import WebhookEvent
-from ..services import oxapay_service, nowpayments_service, wallet_service
+from ..services import oxapay_service, razorpay_service, wallet_service
 
 router = APIRouter()
 logger = logging.getLogger("webhooks")
@@ -98,61 +98,69 @@ async def oxapay_webhook(
     return {"status": "ok"}
 
 
-@router.post("/nowpayments")
-async def nowpayments_webhook(
+@router.post("/razorpay")
+async def razorpay_webhook(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ):
-    """NOWPayments IPN callback. Public endpoint secured by HMAC-SHA512.
+    """Razorpay webhook callback. Public endpoint secured by HMAC-SHA256.
 
-    Signature header is `x-nowpayments-sig`; the body must be canonicalised
-    (JSON keys sorted alphabetically) before HMAC verification — that's
-    handled inside nowpayments_service.verify_webhook_signature."""
+    Signature arrives in the `X-Razorpay-Signature` header, computed over the
+    RAW request body with RAZORPAY_WEBHOOK_SECRET. We handle the
+    `payment.captured` event: the captured payment carries its `order_id`
+    (which we stamped onto the deposit at order-creation) and its payment
+    `id`. Crediting is idempotent + deduped by _claim_webhook so a replay
+    can't double-credit."""
     raw_body = await request.body()
     sig = (
-        request.headers.get("x-nowpayments-sig")
-        or request.headers.get("X-Nowpayments-Sig")
+        request.headers.get("X-Razorpay-Signature")
+        or request.headers.get("x-razorpay-signature")
         or ""
     )
 
-    if not nowpayments_service.verify_webhook_signature(raw_body, sig):
-        logger.warning("NOWPayments webhook: invalid HMAC signature")
-        raise HTTPException(status_code=403, detail="Invalid signature")
+    if not razorpay_service.verify_webhook_signature(raw_body, sig):
+        logger.warning("Razorpay webhook: invalid HMAC signature")
+        raise HTTPException(status_code=400, detail="Invalid signature")
 
     try:
         payload = json.loads(raw_body)
     except (json.JSONDecodeError, ValueError):
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
-    # NOWPayments sends both invoice-level + payment-level fields. We use
-    # `order_id` (echoed back from the invoice we created) to look up the
-    # deposit row, `payment_status` for the lifecycle stage, and
-    # `payment_id` to stamp transaction_id.
-    order_id = payload.get("order_id")
-    status = payload.get("payment_status") or payload.get("status")
-    payment_id = payload.get("payment_id")
+    event = payload.get("event")
+    if event != "payment.captured":
+        logger.info("Razorpay webhook: event=%s ignored", event)
+        return {"ok": True}
 
-    if not order_id or not status:
-        logger.info("NOWPayments webhook: missing order_id/status, ignoring")
-        return {"status": "ignored"}
+    entity = (
+        payload.get("payload", {})
+        .get("payment", {})
+        .get("entity", {})
+    )
+    order_id = entity.get("order_id")
+    payment_id = entity.get("id")
+
+    if not order_id or not payment_id:
+        logger.info("Razorpay webhook: missing order_id/payment_id, ignoring")
+        return {"ok": True}
 
     logger.info(
-        "NOWPayments webhook: order=%s status=%s payment_id=%s",
-        order_id, status, payment_id,
+        "Razorpay webhook: event=%s order=%s payment_id=%s",
+        event, order_id, payment_id,
     )
 
+    # Dedup on the payment id so a re-delivered payment.captured can't
+    # double-credit even before the deposit's status guard kicks in.
     if not await _claim_webhook(
-        db, provider="nowpayments", external_id=str(order_id), status=str(status),
+        db, provider="razorpay", external_id=str(payment_id), status="captured",
         raw_body=raw_body,
     ):
-        return {"status": "duplicate"}
+        return {"ok": True}
 
-    await wallet_service.handle_nowpayments_webhook(
+    await wallet_service.handle_razorpay_webhook(
         order_id=str(order_id),
-        np_status=str(status),
-        payment_id=str(payment_id) if payment_id else None,
-        payload=payload,
+        payment_id=str(payment_id),
         db=db,
     )
 
-    return {"status": "ok"}
+    return {"ok": True}

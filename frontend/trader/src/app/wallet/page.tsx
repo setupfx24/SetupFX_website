@@ -9,12 +9,11 @@ import DemoLockGate from '@/components/demo/DemoLockGate';
 import { formatCurrency } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
-// Wallet-integration components removed in the wallet-purge — they
-// depended on RainbowKit / wagmi / viem which are no longer installed.
-// If a crypto-deposit flow comes back, build a NOWPayments-only
-// hosted-invoice modal (calls POST /wallet/deposit/hosted-invoice and
-// redirects to the returned payment_url) — no client-side signing
-// needed.
+// Automated deposits go through Razorpay Checkout (cards / UPI / netbanking).
+// The user enters a USD amount; the backend converts USD→INR at
+// USD_TO_INR_RATE, creates a Razorpay order, and we open the Razorpay
+// Checkout popup (checkout.js). On success the handler posts the signature
+// to /wallet/deposit/razorpay/verify which credits the USD amount.
 import {
   Wallet as WalletIcon,
   CreditCard,
@@ -27,6 +26,56 @@ import {
   CheckCircle2,
   Hourglass,
 } from 'lucide-react';
+
+// ─── Razorpay Checkout typings ─────────────────────────────────────────────
+// Minimal typed surface for the global injected by checkout.js. Keeps the
+// integration free of `any` while only declaring what we actually use.
+interface RazorpayHandlerResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayCheckoutOptions {
+  key: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  handler: (response: RazorpayHandlerResponse) => void;
+  prefill?: { email?: string; name?: string; contact?: string };
+  theme?: { color?: string };
+  modal?: { ondismiss?: () => void };
+}
+
+interface RazorpayInstance {
+  open: () => void;
+}
+
+interface RazorpayConstructor {
+  new (options: RazorpayCheckoutOptions): RazorpayInstance;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: RazorpayConstructor;
+  }
+}
+
+const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+
+/** Backend response shape for POST /wallet/deposit/razorpay/order. */
+interface RazorpayOrderResponse {
+  deposit_id: string;
+  order_id: string;
+  key_id: string;
+  amount_paise: number;
+  amount_inr: number;
+  currency: string;
+  name: string;
+  description: string;
+}
 
 interface AccountItem {
   id: string;
@@ -123,6 +172,8 @@ function prettyMethod(method?: string): string {
       return 'Crypto (USDT)';
     case 'metamask':
       return 'Crypto (Wallet)';
+    case 'razorpay':
+      return 'Card / UPI';
     case 'nowpayments':
     case 'oxapay':
     case 'crypto':
@@ -145,27 +196,15 @@ function fmtHistoryDate(iso: string | null): string {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
 
-// Provider used for new deposits. NOWPayments replaced OxaPay in this build;
-// the OxaPay backend code stays mounted so historical / in-flight OxaPay
-// deposits still settle, but new deposits are always created against
-// NOWPayments. Withdrawals still echo the OxaPay-style payout payload.
-const CRYPTO_DEPOSIT_METHOD = 'nowpayments';
-
-/** UI grid — selection is sent with NOWPayments / payout details for finance matching. */
-const CRYPTO_ASSETS = [
-  { id: 'USDT_BSC', label: 'USDT', sub: 'BEP20' },
-  { id: 'USDT_ERC', label: 'USDT', sub: 'ERC20' },
-  { id: 'USDT_TRC', label: 'USDT', sub: 'TRC20' },
-  { id: 'BTC', label: 'BTC', sub: 'Bitcoin' },
-  { id: 'ETH', label: 'ETH', sub: 'Ethereum' },
-  { id: 'USDC_ERC', label: 'USDC', sub: 'ERC20' },
-  { id: 'TRX', label: 'TRX', sub: 'Tron' },
-  { id: 'USDC_TRC', label: 'USDC', sub: 'TRC20' },
-  { id: 'USDT_SOL', label: 'USDT', sub: 'SOL' },
-  { id: 'USDC_SOL', label: 'USDC', sub: 'SOL' },
-  { id: 'SOL', label: 'SOL', sub: 'Solana' },
-  { id: 'XRP', label: 'XRP', sub: 'XRP' },
-] as const;
+// USD→INR display rate. Razorpay charges in INR; the wallet is credited in
+// USD. This is a UI-only estimate so the user sees the rupee amount before
+// the Checkout popup opens — the authoritative conversion happens on the
+// backend (USD_TO_INR_RATE). Override via NEXT_PUBLIC_USD_TO_INR_RATE if the
+// backend rate is changed, so the preview matches the actual charge.
+const USD_TO_INR_RATE = (() => {
+  const raw = Number(process.env.NEXT_PUBLIC_USD_TO_INR_RATE);
+  return Number.isFinite(raw) && raw > 0 ? raw : 83.0;
+})();
 
 // Networks the on-chain USDT payout supports (admin signs the transfer
 // manually). Must mirror `ALLOWED_NETWORKS` in onchain_withdraw_service.py.
@@ -193,8 +232,10 @@ const WITHDRAW_NETWORK_OPTIONS = [
   },
 ];
 
-// 'crypto' = automated provider flow (NOWPayments for deposits, OxaPay-style
-// payout details for withdrawals). 'manual' = legacy bank/UPI manual path.
+// 'crypto' = automated provider flow (Razorpay Checkout for deposits;
+// on-chain USDT payout details for withdrawals). 'manual' = legacy bank/UPI
+// manual path. (The deposit chip is labelled "Card / UPI" since Razorpay
+// covers cards, UPI and netbanking.)
 type FundingChannel = 'crypto' | 'manual';
 
 interface ManualBankDetailsResponse {
@@ -217,6 +258,8 @@ function WalletPageContent() {
   // Wallet-integration purged: the SIWE link flow that populated this
   // field is gone, so `user.wallet_address` is always undefined now.
   const linkedWalletAddress = useAuthStore((s) => s.user?.wallet_address || '');
+  // Prefill the Razorpay Checkout email field.
+  const userEmail = useAuthStore((s) => s.user?.email || '');
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountFromUrl = searchParams.get('account');
@@ -246,7 +289,8 @@ function WalletPageContent() {
   // handlers' channel branching.
   const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
-  const [selectedCryptoDeposit, setSelectedCryptoDeposit] = useState<string>(CRYPTO_ASSETS[0].id);
+  // True once checkout.js has loaded and window.Razorpay is available.
+  const [razorpayReady, setRazorpayReady] = useState(false);
 
   const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
   const [depositAmount, setDepositAmount] = useState('');
@@ -407,6 +451,35 @@ function WalletPageContent() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  // Load the Razorpay Checkout script once. Guards against double-injection
+  // (the page can re-mount under Suspense / fast refresh).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.Razorpay) {
+      setRazorpayReady(true);
+      return;
+    }
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${RAZORPAY_CHECKOUT_SRC}"]`,
+    );
+    if (existing) {
+      if (existing.dataset.loaded === 'true') setRazorpayReady(true);
+      else existing.addEventListener('load', () => setRazorpayReady(true), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = RAZORPAY_CHECKOUT_SRC;
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      setRazorpayReady(true);
+    };
+    script.onerror = () => {
+      toast.error('Could not load the secure payment library. Check your connection and retry.');
+    };
+    document.body.appendChild(script);
+  }, []);
 
   const fmt = useCallback(
     (n: number) => formatCurrency(n, wallet?.currency || 'USD'),
@@ -653,14 +726,65 @@ function WalletPageContent() {
       return;
     }
     if (depositChannel === 'crypto') {
-      // Crypto deposit flow temporarily unavailable — the wallet-
-      // connect modal it called was removed in the wallet-integration
-      // purge. Rebuild as a NOWPayments-hosted-invoice modal when
-      // crypto deposits come back.
-      void amt;
-      void selectedCryptoDeposit;
-      void CRYPTO_DEPOSIT_METHOD;
-      toast.error('Crypto deposits are temporarily unavailable. Please use bank / UPI.');
+      // Razorpay Checkout path: create the order on the backend (charged in
+      // INR), then open the Checkout popup. The handler posts the signature
+      // to /verify which credits the USD amount to the wallet.
+      if (!razorpayReady || typeof window === 'undefined' || !window.Razorpay) {
+        toast.error('Secure payment is still loading — please wait a moment and retry.');
+        return;
+      }
+      setDepositSubmitting(true);
+      try {
+        const order = await api.post<RazorpayOrderResponse>('/wallet/deposit/razorpay/order', {
+          amount: amt,
+          account_target: wallet?.wallet_account ? fundTargetPreference : undefined,
+        });
+        const Razorpay = window.Razorpay;
+        if (!Razorpay) {
+          toast.error('Secure payment library unavailable. Please refresh and retry.');
+          return;
+        }
+        const rzp = new Razorpay({
+          key: order.key_id,
+          order_id: order.order_id,
+          amount: order.amount_paise,
+          currency: order.currency,
+          name: order.name,
+          description: order.description,
+          handler: (resp: RazorpayHandlerResponse) => {
+            // Settle on the backend. Idempotent — the webhook may also fire;
+            // whichever lands first credits once.
+            void (async () => {
+              try {
+                await api.post('/wallet/deposit/razorpay/verify', {
+                  razorpay_order_id: resp.razorpay_order_id,
+                  razorpay_payment_id: resp.razorpay_payment_id,
+                  razorpay_signature: resp.razorpay_signature,
+                });
+                toast.success(`Deposit of $${amt.toLocaleString()} received — credited to your wallet`);
+                setDepositAmount('');
+                void fetchData(true);
+              } catch (err) {
+                // Payment captured but verify failed — the webhook is the
+                // safety net, so reassure rather than alarm.
+                toast.error(
+                  err instanceof Error
+                    ? `Payment received; confirmation pending: ${err.message}`
+                    : 'Payment received; confirmation pending. It will reflect shortly.',
+                );
+                void fetchData(true);
+              }
+            })();
+          },
+          prefill: userEmail ? { email: userEmail } : undefined,
+          theme: { color: '#E94E1B' },
+        });
+        rzp.open();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not start the payment');
+      } finally {
+        setDepositSubmitting(false);
+      }
       return;
     }
 
@@ -965,7 +1089,7 @@ function WalletPageContent() {
           <div className="flex gap-2">
             {(
               [
-                { id: 'crypto' as const, label: 'Crypto', sub: 'USDT / BTC / ETH' },
+                { id: 'crypto' as const, label: 'Card / UPI', sub: 'Instant · Razorpay' },
                 { id: 'manual' as const, label: 'Bank / UPI', sub: 'Manual transfer' },
               ]
             ).map((c) => {
@@ -994,31 +1118,23 @@ function WalletPageContent() {
 
         {/* Channel-specific extras ------------------------------ */}
         {depositUiSection === 'crypto' ? (
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">Network</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'USDT_BSC', label: 'USDT BEP-20' },
-                { id: 'USDT_ERC', label: 'USDT ERC-20' },
-                { id: 'USDT_TRC', label: 'USDT TRC-20' },
-              ].map((n) => {
-                const active = selectedCryptoDeposit === n.id;
-                return (
-                  <button
-                    key={n.id}
-                    type="button"
-                    onClick={() => setSelectedCryptoDeposit(n.id)}
-                    className={clsx(
-                      'rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors',
-                      active
-                        ? 'border-[#0A0A0A] bg-white text-[#0A0A0A]'
-                        : 'border-transparent bg-[#F5F5F5] text-[#6B7280] hover:border-[#E5E5E5]',
-                    )}
-                  >
-                    {n.label}
-                  </button>
-                );
-              })}
+          <div className="space-y-2">
+            <div className="rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A]">
+              <p className="leading-relaxed">
+                You&apos;ll be charged{' '}
+                <span className="font-semibold">
+                  ≈ ₹
+                  {(depositAmountValid ? depositAmountNumber * USD_TO_INR_RATE : 0).toLocaleString(
+                    'en-IN',
+                    { maximumFractionDigits: 0 },
+                  )}
+                </span>{' '}
+                at 1 USD = ₹{USD_TO_INR_RATE.toLocaleString('en-IN')}. Your wallet is credited the
+                USD amount{depositAmountValid ? ` ($${depositAmountNumber.toLocaleString()})` : ''}.
+              </p>
+              <p className="mt-1 text-xs text-[#6B7280]">
+                Pay securely with cards, UPI, or netbanking via Razorpay.
+              </p>
             </div>
           </div>
         ) : (

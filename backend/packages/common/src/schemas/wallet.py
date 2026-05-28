@@ -97,41 +97,33 @@ class BankAccountCreate(BaseModel):
     max_amount: Decimal = Decimal("999999999")
 
 
-# ─── NOWPayments wallet-connect deposit flow ──────────────────────────────
+# ─── Razorpay deposit flow (cards / UPI / netbanking, charged in INR) ──────
 
 
-class WalletDepositRequest(BaseModel):
-    """On-site NOWPayments direct payment — no hosted-page redirect.
+class RazorpayOrderRequest(BaseModel):
+    """Create a Razorpay order. The user enters a USD amount; the backend
+    converts USD→INR at USD_TO_INR_RATE and charges INR via Checkout.
 
-    `target` lets the user pick where the credit should land when the
-    deposit eventually settles (webhook):
-      - "wallet" → wallet-bound trading account
-      - "main"   → legacy main_wallet_balance
-      - None / unset → server resolver picks (wallet-bound if present,
-        else main wallet) — preserves the auto-route default
+    `account_target` ("wallet" | "main" | None) chooses where the credited
+    USD lands when the payment settles.
     """
-    amount: Decimal
-    # Frontend asset id, e.g. "USDT_ERC", "USDT_TRC", "ETH".
-    crypto_currency: str
-    target: Optional[str] = None
+    amount: Decimal = Field(gt=0)
+    account_target: Optional[str] = None
+
+
+class RazorpayVerifyRequest(BaseModel):
+    """The three fields the Razorpay Checkout handler returns to the browser
+    on a successful payment. Posted back so the server can verify the HMAC
+    signature and idempotently credit the wallet."""
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
 
 
 class TxHashSaveRequest(BaseModel):
     """User-supplied on-chain tx hash. Purely informational; settlement
-    still gates on the NOWPayments IPN."""
+    still gates on the on-chain verifier."""
     tx_hash: str
-
-
-class HostedInvoiceDepositRequest(BaseModel):
-    """NOWPayments Mode B — server returns a hosted payment_url the
-    browser redirects to. `crypto_currency` is optional; when omitted
-    NOWPayments shows its full asset picker on the hosted page.
-
-    `target` — same semantics as WalletDepositRequest.
-    """
-    amount: Decimal
-    crypto_currency: Optional[str] = None
-    target: Optional[str] = None
 
 
 # ─── Decentralised on-chain USDT deposit + withdraw ───────────────────────
@@ -141,7 +133,7 @@ class OnchainDepositRequest(BaseModel):
     """User picks chain + amount, then signs a transfer in their own
     wallet. The chain_verifier_engine confirms the deposit on-chain.
 
-    `target` — same semantics as WalletDepositRequest.
+    `target` — "wallet" | "main" | None (auto-route at credit time).
     """
     network: str            # eth | bsc | tron
     amount: Decimal

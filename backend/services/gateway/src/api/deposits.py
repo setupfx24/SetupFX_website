@@ -7,14 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import get_db
 from packages.common.src.schemas import (
     DepositRequest,
-    HostedInvoiceDepositRequest,
     InternalWalletTransferRequest,
     OnchainDepositRequest,
     OnchainWithdrawRequest,
+    RazorpayOrderRequest,
+    RazorpayVerifyRequest,
     TransferMainToTradingRequest,
     TransferTradingToMainRequest,
     TxHashSaveRequest,
-    WalletDepositRequest,
     WithdrawalRequest,
 )
 from packages.common.src.auth import get_current_user
@@ -34,117 +34,61 @@ async def create_deposit(
     )
 
 
-# ─── On-site wallet-connect deposits (NOWPayments /v1/payment) ────────────
+# ─── Razorpay deposits (Checkout popup, charged in INR) ───────────────────
 
 
-@router.post("/deposit/wallet", status_code=201)
-async def create_wallet_deposit(
-    req: WalletDepositRequest,
+@router.post("/deposit/razorpay/order", status_code=201)
+async def create_razorpay_order(
+    req: RazorpayOrderRequest,
     request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a NOWPayments direct payment (no hosted-page redirect).
+    """Create a pending Deposit + a Razorpay order. The user enters a USD
+    amount; the order is charged in INR (USD_TO_INR_RATE). Returns the
+    fields the frontend Razorpay Checkout popup needs. Balance is credited
+    only on /deposit/razorpay/verify or the payment.captured webhook.
 
-    Returns the deposit row id + the pay_address / pay_amount / network /
-    expires_at the frontend needs to drive the on-site wallet-connect UI.
-    Settlement still happens via the same IPN webhook + handle_nowpayments_webhook
-    path — balance is never credited from this endpoint.
-
-    Honours the `Idempotency-Key` header — a network-blip retry of the
-    same key returns the same response without creating a second
-    NOWPayments invoice."""
+    Honours the `Idempotency-Key` header — a network-blip retry of the same
+    key returns the same order instead of creating a second Razorpay order."""
     from packages.common.src.idempotency import get_cached_response, store_response
 
     cached = await get_cached_response(
-        request, scope="deposit_wallet_create",
+        request, scope="deposit_razorpay_order",
         user_id=current_user["user_id"], db=db,
     )
     if cached is not None:
         return cached
 
-    result = await wallet_service.create_wallet_deposit(
+    result = await wallet_service.create_razorpay_deposit(
         amount=req.amount,
-        crypto_currency=req.crypto_currency,
+        account_target=req.account_target,
         user_id=current_user["user_id"],
         db=db,
     )
     await store_response(
-        request, scope="deposit_wallet_create",
+        request, scope="deposit_razorpay_order",
         user_id=current_user["user_id"], response_json=result,
         status_code=201, db=db,
     )
     return result
 
 
-@router.post("/deposit/hosted-invoice", status_code=201)
-async def create_hosted_invoice_deposit(
-    req: HostedInvoiceDepositRequest,
-    request: Request,
+@router.post("/deposit/razorpay/verify")
+async def verify_razorpay_deposit(
+    req: RazorpayVerifyRequest,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a NOWPayments hosted-invoice deposit (Mode B).
-
-    Returns ``{id, payment_url}``. The browser redirects to ``payment_url``;
-    NOWPayments hosts the pay page; the user pays there and is redirected
-    back via the success_url configured in create_payment(). Settlement
-    fires through the same IPN webhook as the on-site flow.
-
-    Idempotency-Key is honoured the same way as /deposit/wallet so a
-    network retry returns the same payment_url instead of spawning a
-    second invoice."""
-    from packages.common.src.idempotency import get_cached_response, store_response
-
-    cached = await get_cached_response(
-        request, scope="deposit_hosted_invoice_create",
-        user_id=current_user["user_id"], db=db,
-    )
-    if cached is not None:
-        return cached
-
-    result = await wallet_service.create_hosted_invoice_deposit(
-        amount=req.amount,
-        crypto_currency=req.crypto_currency,
+    """Verify the Razorpay Checkout signature and idempotently credit the
+    deposit. Safe to race with the webhook — whichever lands first credits
+    once, the other is a no-op."""
+    return await wallet_service.verify_and_credit_razorpay(
+        razorpay_order_id=req.razorpay_order_id,
+        razorpay_payment_id=req.razorpay_payment_id,
+        razorpay_signature=req.razorpay_signature,
         user_id=current_user["user_id"],
         db=db,
-    )
-    await store_response(
-        request, scope="deposit_hosted_invoice_create",
-        user_id=current_user["user_id"], response_json=result,
-        status_code=201, db=db,
-    )
-    return result
-
-
-@router.get("/deposit/{deposit_id}/status")
-async def get_wallet_deposit_status(
-    deposit_id: UUID,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Read-only status check for the wallet-connect UI's polling loop.
-    Combines local deposit status + a fresh NOWPayments status fetch so the
-    UI can show "waiting → confirming → finished" without waiting for the
-    IPN."""
-    return await wallet_service.get_wallet_deposit_status(
-        deposit_id=deposit_id, user_id=current_user["user_id"], db=db,
-    )
-
-
-@router.post("/deposit/{deposit_id}/tx-hash")
-async def save_wallet_deposit_tx_hash(
-    deposit_id: UUID,
-    req: TxHashSaveRequest,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """Record the on-chain tx hash the user's wallet returned. Purely
-    informational — settlement still gates on the NOWPayments IPN, never
-    on a client-supplied hash."""
-    return await wallet_service.save_wallet_deposit_tx_hash(
-        deposit_id=deposit_id, tx_hash=req.tx_hash,
-        user_id=current_user["user_id"], db=db,
     )
 
 

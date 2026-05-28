@@ -108,8 +108,8 @@ def verify_webhook_signature(raw_body: bytes, received_hmac: str) -> bool:
     Fails closed if the merchant key isn't configured — historically this
     function happily HMACed against an empty key, which let any caller
     forge a "valid" signature simply by computing HMAC-SHA512(b"", body).
-    A missing key now refuses every webhook, the same way NOWPayments
-    does (see nowpayments_service.verify_webhook_signature).
+    A missing key now refuses every webhook, the same way Razorpay
+    does (see razorpay_service.verify_webhook_signature).
     """
     settings = get_settings()
     key = (settings.OXAPAY_MERCHANT_KEY or "").strip()

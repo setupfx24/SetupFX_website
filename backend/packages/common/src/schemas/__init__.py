@@ -21,7 +21,8 @@ from .wallet import (
     TransferTradingToMainRequest, TransferMainToTradingRequest,
     InternalWalletTransferRequest,
     DepositResponse, WithdrawalResponse, BankAccountCreate,
-    WalletDepositRequest, TxHashSaveRequest, HostedInvoiceDepositRequest,
+    RazorpayOrderRequest, RazorpayVerifyRequest,
+    TxHashSaveRequest,
     OnchainDepositRequest, OnchainWithdrawRequest,
 )
 from .market import TickData, OHLCVBar, InstrumentResponse
@@ -48,7 +49,8 @@ __all__ = [
     "TransferTradingToMainRequest", "TransferMainToTradingRequest",
     "InternalWalletTransferRequest",
     "DepositResponse", "WithdrawalResponse", "BankAccountCreate",
-    "WalletDepositRequest", "TxHashSaveRequest", "HostedInvoiceDepositRequest",
+    "RazorpayOrderRequest", "RazorpayVerifyRequest",
+    "TxHashSaveRequest",
     "OnchainDepositRequest", "OnchainWithdrawRequest",
     # market
     "TickData", "OHLCVBar", "InstrumentResponse",
