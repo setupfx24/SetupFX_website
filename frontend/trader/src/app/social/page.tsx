@@ -1084,30 +1084,19 @@ function SocialPageInner() {
             </div>
           </div>
 
-          {/* ── Why Copy Top Traders? (DAG mockup) ── */}
-          <div className="mt-4 sm:mt-6 rounded-2xl bg-bg-secondary border border-border-glass/30 p-4 sm:p-5">
+          {/* ── Why Copy Top Traders? ── */}
+          <div className="mt-4 sm:mt-6 rounded-2xl bg-bg-card border border-border-primary p-4 sm:p-5">
             <h3 className="text-base font-bold text-text-primary mb-4">Why Copy Top Traders?</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {[
-                { icon: Clock, color: 'amber', title: 'Save Time', desc: 'No need to analyze the market' },
-                { icon: GraduationCap, color: 'emerald', title: 'Learn & Grow', desc: 'Learn strategies from top traders' },
-                { icon: ShieldCheck, color: 'red', title: 'Risk Management', desc: 'Diversified portfolio with top traders' },
-                { icon: BarChart2, color: 'purple', title: 'Transparent Performance', desc: 'Real-time results and performance tracking' },
+                { icon: Clock, tile: 'bg-amber-50', fg: 'text-amber-600', title: 'Save Time', desc: 'No need to analyze the market' },
+                { icon: GraduationCap, tile: 'bg-emerald-50', fg: 'text-emerald-600', title: 'Learn & Grow', desc: 'Learn strategies from top traders' },
+                { icon: ShieldCheck, tile: 'bg-red-50', fg: 'text-red-600', title: 'Risk Management', desc: 'Diversified portfolio with top traders' },
+                { icon: BarChart2, tile: 'bg-[#FCE6DD]', fg: 'text-[#E94E1B]', title: 'Transparent Performance', desc: 'Real-time results and performance tracking' },
               ].map((b) => (
                 <div key={b.title} className="flex items-start gap-3">
-                  <div className={clsx(
-                    'w-10 h-10 rounded-xl border flex items-center justify-center shrink-0',
-                    b.color === 'amber' && 'bg-amber-500/15 border-amber-500/30',
-                    b.color === 'emerald' && 'bg-emerald-500/15 border-emerald-500/30',
-                    b.color === 'red' && 'bg-red-500/15 border-red-500/30',
-                    b.color === 'purple' && 'bg-purple-500/15 border-purple-500/30',
-                  )}>
-                    <b.icon size={18} className={clsx(
-                      b.color === 'amber' && 'text-amber-400',
-                      b.color === 'emerald' && 'text-emerald-400',
-                      b.color === 'red' && 'text-red-400',
-                      b.color === 'purple' && 'text-purple-400',
-                    )} />
+                  <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', b.tile)}>
+                    <b.icon size={18} className={b.fg} />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-text-primary">{b.title}</p>
@@ -1119,27 +1108,18 @@ function SocialPageInner() {
           </div>
 
           {/* ── How Copy Trading Works? (3-step horizontal flow) ── */}
-          <div className="mt-3 sm:mt-4 rounded-2xl bg-bg-secondary border border-border-glass/30 p-4 sm:p-5">
+          <div className="mt-3 sm:mt-4 rounded-2xl bg-bg-card border border-border-primary p-4 sm:p-5">
             <h3 className="text-base font-bold text-text-primary mb-4">How Copy Trading Works?</h3>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
               {[
-                { icon: Search, color: 'cyan', title: 'Choose a Master', desc: 'Select a top trader' },
-                { icon: DollarSign, color: 'emerald', title: 'Set Your Amount', desc: 'Invest any amount' },
-                { icon: ArrowDownToLine, color: 'purple', title: 'Start Copying', desc: 'We copy trades for you' },
+                { icon: Search, tile: 'bg-blue-50', fg: 'text-[#1E66F5]', title: 'Choose a Master', desc: 'Select a top trader' },
+                { icon: DollarSign, tile: 'bg-emerald-50', fg: 'text-emerald-600', title: 'Set Your Amount', desc: 'Invest any amount' },
+                { icon: ArrowDownToLine, tile: 'bg-[#FCE6DD]', fg: 'text-[#E94E1B]', title: 'Start Copying', desc: 'We copy trades for you' },
               ].map((s, idx, arr) => (
                 <div key={s.title} className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={clsx(
-                      'w-12 h-12 rounded-xl border flex items-center justify-center shrink-0',
-                      s.color === 'cyan' && 'bg-cyan-500/15 border-cyan-500/30',
-                      s.color === 'emerald' && 'bg-emerald-500/15 border-emerald-500/30',
-                      s.color === 'purple' && 'bg-purple-500/15 border-purple-500/30',
-                    )}>
-                      <s.icon size={20} className={clsx(
-                        s.color === 'cyan' && 'text-cyan-400',
-                        s.color === 'emerald' && 'text-emerald-400',
-                        s.color === 'purple' && 'text-purple-400',
-                      )} />
+                    <div className={clsx('w-12 h-12 rounded-xl flex items-center justify-center shrink-0', s.tile)}>
+                      <s.icon size={20} className={s.fg} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-text-primary">{idx + 1}. {s.title}</p>
