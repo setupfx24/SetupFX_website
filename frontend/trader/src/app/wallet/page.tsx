@@ -469,6 +469,22 @@ function WalletPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when deep-linked
   }, [loading, searchParams, router, demoFundingBlocked]);
 
+  /** Open a specific tab via ?tab=history|transfer|withdrawal|deposit.
+   *  Used by the consolidated transaction history (/transactions now
+   *  redirects here with ?tab=history) and the account-card "Transfer
+   *  funds" action (?tab=transfer). */
+  const tabDeepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (tabDeepLinkHandled.current) return;
+    const t = searchParams.get('tab');
+    if (!t) return;
+    const valid: FundsTab[] = ['deposit', 'withdrawal', 'transfer', 'history'];
+    if ((valid as string[]).includes(t)) {
+      tabDeepLinkHandled.current = true;
+      setTab(t as FundsTab);
+    }
+  }, [searchParams]);
+
   // Lazy-load history items when the user lands on the History tab.
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -1337,13 +1353,6 @@ function WalletPageContent() {
       <div className="lg:col-span-2 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-[#0A0A0A]">Recent transactions</h2>
-          <button
-            type="button"
-            onClick={() => router.push('/transactions')}
-            className="text-xs font-semibold text-[#0A0A0A] hover:underline"
-          >
-            View all →
-          </button>
         </div>
         <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-white">
           <div className="grid grid-cols-[1fr_1fr_1fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">

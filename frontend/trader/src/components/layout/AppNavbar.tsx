@@ -77,7 +77,6 @@ const PRIMARY_ITEMS: readonly [NavItem, ...NavItem[]] = [
 /** Secondary nav items (live under the "More" dropdown on lg+). */
 const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Trade', href: '/trading', icon: LineChart },
-  { label: 'Transactions', href: '/transactions', icon: Receipt },
   { label: 'Portfolio', href: '/portfolio', icon: Receipt },
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },
