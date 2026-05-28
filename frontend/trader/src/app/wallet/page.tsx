@@ -10,8 +10,8 @@ import { formatCurrency } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api/client';
 // Automated deposits go through Razorpay Checkout (cards / UPI / netbanking).
-// The user enters a USD amount; the backend converts USD→INR at
-// USD_TO_INR_RATE, creates a Razorpay order, and we open the Razorpay
+// The user enters a USD amount; the backend converts USD→INR at the live
+// mid-market rate, creates a Razorpay order, and we open the Razorpay
 // Checkout popup (checkout.js). On success the handler posts the signature
 // to /wallet/deposit/razorpay/verify which credits the USD amount.
 import {
@@ -196,12 +196,11 @@ function fmtHistoryDate(iso: string | null): string {
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
 
-// USD→INR display rate. Razorpay charges in INR; the wallet is credited in
-// USD. This is a UI-only estimate so the user sees the rupee amount before
-// the Checkout popup opens — the authoritative conversion happens on the
-// backend (USD_TO_INR_RATE). Override via NEXT_PUBLIC_USD_TO_INR_RATE if the
-// backend rate is changed, so the preview matches the actual charge.
-const USD_TO_INR_RATE = (() => {
+// Fallback USD→INR display rate, used only until the live rate loads (or if
+// the rate endpoint is unreachable). The authoritative conversion always
+// happens on the backend at order time using the live mid-market rate; this
+// is just so the rupee preview isn't blank on first paint.
+const FALLBACK_USD_TO_INR_RATE = (() => {
   const raw = Number(process.env.NEXT_PUBLIC_USD_TO_INR_RATE);
   return Number.isFinite(raw) && raw > 0 ? raw : 83.0;
 })();
@@ -291,6 +290,7 @@ function WalletPageContent() {
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
   // True once checkout.js has loaded and window.Razorpay is available.
   const [razorpayReady, setRazorpayReady] = useState(false);
+  const [usdToInrRate, setUsdToInrRate] = useState(FALLBACK_USD_TO_INR_RATE);
 
   const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
   const [depositAmount, setDepositAmount] = useState('');
@@ -451,6 +451,22 @@ function WalletPageContent() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  // Pull the live USD→INR rate so the rupee preview matches what the backend
+  // will actually charge. Silent fallback to the static rate on failure.
+  useEffect(() => {
+    let active = true;
+    api
+      .get<{ rate?: number }>('/wallet/deposit/razorpay/rate')
+      .then((r) => {
+        const rate = Number(r?.rate);
+        if (active && Number.isFinite(rate) && rate > 0) setUsdToInrRate(rate);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Load the Razorpay Checkout script once. Guards against double-injection
   // (the page can re-mount under Suspense / fast refresh).
@@ -1124,12 +1140,14 @@ function WalletPageContent() {
                 You&apos;ll be charged{' '}
                 <span className="font-semibold">
                   ≈ ₹
-                  {(depositAmountValid ? depositAmountNumber * USD_TO_INR_RATE : 0).toLocaleString(
+                  {(depositAmountValid ? depositAmountNumber * usdToInrRate : 0).toLocaleString(
                     'en-IN',
                     { maximumFractionDigits: 0 },
                   )}
                 </span>{' '}
-                at 1 USD = ₹{USD_TO_INR_RATE.toLocaleString('en-IN')}. Your wallet is credited the
+                at 1 USD = ₹
+                {usdToInrRate.toLocaleString('en-IN', { maximumFractionDigits: 2 })}. Your wallet is
+                credited the
                 USD amount{depositAmountValid ? ` ($${depositAmountNumber.toLocaleString()})` : ''}.
               </p>
               <p className="mt-1 text-xs text-[#6B7280]">

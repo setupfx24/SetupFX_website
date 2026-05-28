@@ -37,6 +37,18 @@ async def create_deposit(
 # ─── Razorpay deposits (Checkout popup, charged in INR) ───────────────────
 
 
+@router.get("/deposit/razorpay/rate")
+async def get_razorpay_rate(
+    current_user: dict = Depends(get_current_user),
+):
+    """Live USD→INR rate the next Razorpay charge will use, so the trader UI
+    can preview an accurate rupee amount before opening the Checkout popup."""
+    from ..services import razorpay_service
+
+    rate = await razorpay_service.get_usd_to_inr_rate()
+    return {"rate": float(rate), "currency": "INR"}
+
+
 @router.post("/deposit/razorpay/order", status_code=201)
 async def create_razorpay_order(
     req: RazorpayOrderRequest,

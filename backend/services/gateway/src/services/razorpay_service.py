@@ -13,6 +13,7 @@ Python stdlib `hmac`/`hashlib`.
 import hashlib
 import hmac
 import logging
+import time
 from decimal import Decimal, ROUND_HALF_UP
 
 import httpx
@@ -23,6 +24,45 @@ logger = logging.getLogger("razorpay_service")
 
 RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
 
+# Live USD→INR rate feed (free, no API key). open.er-api refreshes ~once a
+# day, so an hour-long in-process cache keeps the charge fresh without
+# hammering the endpoint. Each uvicorn worker caches independently.
+FX_RATE_URL = "https://open.er-api.com/v6/latest/USD"
+_FX_TTL_SECONDS = 3600
+_fx_cache: dict[str, float] = {"rate": 0.0, "fetched_at": 0.0}
+
+
+async def get_usd_to_inr_rate() -> Decimal:
+    """Return the current USD→INR rate.
+
+    Fetches the live mid-market rate and caches it for an hour. Falls back to
+    the last good cached value, then to the configured `USD_TO_INR_RATE`, so a
+    deposit never fails just because the FX feed blipped. The configured value
+    is now only a safety net — the live rate is authoritative.
+    """
+    now = time.time()
+    cached = _fx_cache["rate"]
+    if cached > 0 and (now - _fx_cache["fetched_at"]) < _FX_TTL_SECONDS:
+        return Decimal(str(cached))
+
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(FX_RATE_URL)
+        data = resp.json()
+        rate = float(data.get("rates", {}).get("INR", 0) or 0)
+        if resp.status_code == 200 and rate > 0:
+            _fx_cache["rate"] = rate
+            _fx_cache["fetched_at"] = now
+            logger.info("USD→INR rate refreshed: %s", rate)
+            return Decimal(str(rate))
+        logger.warning("FX feed returned no INR rate: status=%s body=%s", resp.status_code, data)
+    except Exception as e:
+        logger.warning("FX feed fetch failed, falling back: %s", e)
+
+    if cached > 0:
+        return Decimal(str(cached))
+    return Decimal(str(get_settings().USD_TO_INR_RATE))
+
 
 def razorpay_configured() -> bool:
     """True when both the key id and key secret are set."""
@@ -30,13 +70,12 @@ def razorpay_configured() -> bool:
     return bool(s.RAZORPAY_KEY_ID and s.RAZORPAY_KEY_SECRET)
 
 
-def usd_to_inr_paise(amount_usd: Decimal) -> int:
-    """Convert a USD amount to INR paise (INR × 100).
+def usd_to_inr_paise(amount_usd: Decimal, rate: Decimal) -> int:
+    """Convert a USD amount to INR paise (INR × 100) at `rate`.
 
     Razorpay amounts are integer paise. Uses ROUND_HALF_UP so the charged
     amount never silently truncates a fraction of a paisa.
     """
-    rate = Decimal(str(get_settings().USD_TO_INR_RATE))
     paise = (amount_usd * rate * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
     return int(paise)
 
@@ -55,7 +94,8 @@ async def create_order(amount_usd: Decimal, receipt: str, notes: dict) -> dict:
     if not razorpay_configured():
         raise HTTPException(status_code=503, detail="Razorpay is not configured")
 
-    amount_paise = usd_to_inr_paise(amount_usd)
+    rate = await get_usd_to_inr_rate()
+    amount_paise = usd_to_inr_paise(amount_usd, rate)
     payload = {
         "amount": amount_paise,
         "currency": "INR",
@@ -92,6 +132,7 @@ async def create_order(amount_usd: Decimal, receipt: str, notes: dict) -> dict:
         "amount_paise": amount_paise,
         "amount_inr": float(Decimal(amount_paise) / Decimal("100")),
         "currency": "INR",
+        "usd_to_inr_rate": float(rate),
         "key_id": s.RAZORPAY_KEY_ID,
     }
 
