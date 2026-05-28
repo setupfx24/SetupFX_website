@@ -218,26 +218,26 @@ function BrokerHome() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Balance</p>
-              <p className="text-2xl font-bold mt-1 font-mono tabular-nums truncate text-text-primary">{fmtUsd(totalBalance)}</p>
-              <p className="text-xs mt-0.5 text-text-secondary">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
+              <p className="text-2xl font-bold mt-3 font-mono tabular-nums truncate text-text-primary">{fmtUsd(totalBalance)}</p>
+              <p className="text-xs mt-1.5 text-text-secondary">Across {realAccounts.length} {realAccounts.length === 1 ? 'account' : 'accounts'}</p>
             </div>
           </div>
         </div>
 
-        {/* Open P/L — green when up, red when down */}
+        {/* Open P/L — value stays green/up red/down; icon tile is brand orange */}
         <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
           <div className="flex items-start gap-3">
-            <div className={clsx('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', todaysPnl >= 0 ? 'bg-emerald-50' : 'bg-red-50')}>
+            <div className="w-11 h-11 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
               {todaysPnl >= 0
-                ? <TrendingUp size={20} className="text-emerald-600" />
-                : <TrendingDown size={20} className="text-red-600" />}
+                ? <TrendingUp size={20} className="text-[#E94E1B]" />
+                : <TrendingDown size={20} className="text-[#E94E1B]" />}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Open P/L</p>
-              <p className={clsx('text-2xl font-bold mt-1 font-mono tabular-nums truncate', todaysPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+              <p className={clsx('text-2xl font-bold mt-3 font-mono tabular-nums truncate', todaysPnl >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                 {todaysPnl >= 0 ? '+' : ''}{fmtUsd(todaysPnl)}
               </p>
-              <p className="text-xs mt-0.5 text-text-secondary">
+              <p className="text-xs mt-1.5 text-text-secondary">
                 {todaysPnlPct >= 0 ? '+' : ''}{todaysPnlPct.toFixed(2)}% unrealized
               </p>
             </div>
@@ -287,16 +287,16 @@ function BrokerHome() {
         <button
           type="button"
           onClick={() => router.push('/wallet')}
-          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-emerald-500 transition-colors flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-            <WalletIcon size={22} className="text-emerald-600" />
+          <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+            <WalletIcon size={22} className="text-[#E94E1B]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold text-text-primary truncate">Add Funds</p>
             <p className="text-xs text-text-secondary mt-0.5">Deposit Now</p>
           </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:text-emerald-600 group-hover:translate-x-1 transition-all shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
       </div>
 
