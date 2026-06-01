@@ -111,11 +111,8 @@ export default function AdminSidebar() {
         {collapsed ? (
           <img src="/logo.png" alt="SwissCresta" className="w-7 h-7 object-contain mx-auto" />
         ) : (
-          <Link href="/" className="flex items-center gap-2 min-w-0">
-            <img src="/logo.png" alt="SwissCresta" className="w-7 h-7 object-contain shrink-0" />
-            <span className="font-bold tracking-tight text-sm select-none">
-              <span className="text-text-primary">FX</span><span className="text-[#6366F1]">Artha</span>
-            </span>
+          <Link href="/" className="flex items-center min-w-0">
+            <img src="/swisscresta-logo.png" alt="SwissCresta" className="h-7 w-auto object-contain shrink-0" />
           </Link>
         )}
         <button
