@@ -745,6 +745,19 @@ async def create_razorpay_deposit(
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
+    # KYC gate (Razorpay-only). Verified identity is contractually required to
+    # process card / UPI payments, so this is the one path where we hard-block
+    # unverified users. Every other deposit / withdraw / trade method runs
+    # without this check.
+    user_row = (
+        await db.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
+    if user_row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    kyc = (user_row.kyc_status or "").lower()
+    if kyc not in ("approved", "verified"):
+        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
+
     # Honour the user's chosen credit target (wallet-bound account vs main
     # wallet). Stored on the row so the webhook/verify path credits the
     # right bucket via _credit_from_deposit_row.

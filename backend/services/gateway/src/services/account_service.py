@@ -124,14 +124,10 @@ async def open_live_account(
     if not group:
         raise HTTPException(status_code=400, detail="Invalid or inactive account type")
 
-    # Live accounts require KYC approval. Demo users skip this gate.
-    if not user_is_demo:
-        kyc = (user.kyc_status or "pending").lower()
-        if kyc not in ("approved", "verified"):
-            raise HTTPException(
-                status_code=403,
-                detail="KYC_REQUIRED",
-            )
+    # KYC is NOT required to open a live trading account. The only KYC gate
+    # we keep is on Razorpay (Card/UPI) deposits, where the payment processor
+    # contractually requires verified identity. Trading, account creation,
+    # bank/crypto deposits, and withdrawals all run without this check.
 
     min_d = Decimal(str(group.minimum_deposit or 0))
 

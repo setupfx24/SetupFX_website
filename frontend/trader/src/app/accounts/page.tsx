@@ -111,7 +111,6 @@ export default function AccountsPage() {
   const loadGen = useRef(0);
 
   const [accountPickerOpen, setAccountPickerOpen] = useState(false);
-  const [kycGateOpen, setKycGateOpen] = useState(false);
   const [demoUpgradeOpen, setDemoUpgradeOpen] = useState(false);
   /** After creating an account, open-account sets sessionStorage; expand that card on Accounts. */
   const [expandAccountId, setExpandAccountId] = useState<string | null>(null);
@@ -259,14 +258,10 @@ export default function AccountsPage() {
   const newAccountCtaClass =
     'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#E94E1B] text-[#E94E1B] text-sm font-bold hover:bg-[#E94E1B]/10 transition-colors shrink-0';
 
-  /** Open the live account picker only if KYC is approved; otherwise show the KYC gate modal. */
+  /** Live account creation no longer gates on KYC — the only KYC gate left is
+   *  on Razorpay (Card / UPI) deposits. Everything else (open account, trade,
+   *  manual / crypto deposits, withdrawals) is unblocked. */
   const handleOpenNewAccount = () => {
-    const kyc = (user?.kyc_status || '').toLowerCase();
-    const approved = kyc === 'approved' || kyc === 'verified';
-    if (!approved) {
-      setKycGateOpen(true);
-      return;
-    }
     setAccountPickerOpen(true);
   };
 
@@ -277,57 +272,6 @@ export default function AccountsPage() {
         onClose={() => setAccountPickerOpen(false)}
         onCreated={() => void fetchAccounts()}
       />
-      <Modal
-        open={kycGateOpen}
-        onClose={() => setKycGateOpen(false)}
-        title="Complete KYC to open a live account"
-        width="md"
-        className="border border-border-primary bg-bg-card shadow-2xl"
-      >
-        <div className="space-y-4 p-1">
-          <p className="text-sm text-text-secondary leading-relaxed">
-            Live trading accounts are only available after your identity verification is approved. Submit your KYC documents and wait for review to continue.
-          </p>
-          {(() => {
-            const kyc = (user?.kyc_status || 'pending').toLowerCase();
-            const label =
-              kyc === 'pending' || !kyc
-                ? 'Not started'
-                : kyc === 'submitted' || kyc === 'under_review'
-                  ? 'Under review'
-                  : kyc === 'rejected' || kyc === 'failed'
-                    ? 'Rejected — please resubmit'
-                    : kyc;
-            const color =
-              kyc === 'rejected' || kyc === 'failed'
-                ? 'text-sell bg-sell/10 border-sell/30'
-                : kyc === 'submitted' || kyc === 'under_review'
-                  ? 'text-warning bg-warning/10 border-warning/30'
-                  : 'text-text-secondary bg-bg-tertiary border-border-primary';
-            return (
-              <div className={clsx('rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wider inline-flex', color)}>
-                KYC status: {label}
-              </div>
-            );
-          })()}
-          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border-primary">
-            <button
-              type="button"
-              onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg border border-border-primary bg-bg-card text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"
-            >
-              Close
-            </button>
-            <Link
-              href="/kyc"
-              onClick={() => setKycGateOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-sm font-bold hover:bg-[#C73E11] transition-colors text-center"
-            >
-              Complete KYC
-            </Link>
-          </div>
-        </div>
-      </Modal>
       <Modal
         open={demoUpgradeOpen}
         onClose={() => setDemoUpgradeOpen(false)}

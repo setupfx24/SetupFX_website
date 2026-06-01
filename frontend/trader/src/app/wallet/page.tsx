@@ -259,6 +259,10 @@ function WalletPageContent() {
   const linkedWalletAddress = useAuthStore((s) => s.user?.wallet_address || '');
   // Prefill the Razorpay Checkout email field.
   const userEmail = useAuthStore((s) => s.user?.email || '');
+  // KYC gate (Card / UPI only). Read here so we can both block submit and
+  // surface an inline notice in the Card / UPI panel.
+  const kycStatus = useAuthStore((s) => (s.user?.kyc_status || '').toLowerCase());
+  const kycApproved = kycStatus === 'approved' || kycStatus === 'verified';
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountFromUrl = searchParams.get('account');
@@ -761,6 +765,11 @@ function WalletPageContent() {
       // Razorpay Checkout path: create the order on the backend (charged in
       // INR), then open the Checkout popup. The handler posts the signature
       // to /verify which credits the USD amount to the wallet.
+      if (!kycApproved) {
+        toast.error('Complete KYC verification to deposit via Card / UPI.');
+        router.push('/kyc');
+        return;
+      }
       if (!razorpayReady || typeof window === 'undefined' || !window.Razorpay) {
         toast.error('Secure payment is still loading — please wait a moment and retry.');
         return;
@@ -942,7 +951,10 @@ function WalletPageContent() {
     !demoFundingBlocked &&
     !depositSubmitting &&
     !!depositAccountId &&
-    depositAmountValid;
+    depositAmountValid &&
+    // Card / UPI route requires KYC; the panel surfaces a "Complete KYC"
+    // banner so the gate is obvious before the user types an amount.
+    (depositUiSection !== 'crypto' || kycApproved);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1162,6 +1174,20 @@ function WalletPageContent() {
         {/* Channel-specific extras ------------------------------ */}
         {depositUiSection === 'crypto' ? (
           <div className="space-y-2">
+            {!kycApproved && (
+              <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-[#0A0A0A] flex flex-wrap items-center justify-between gap-3">
+                <span className="leading-relaxed">
+                  Card / UPI deposits require <span className="font-semibold">verified KYC</span>.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/kyc')}
+                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                >
+                  Complete KYC
+                </button>
+              </div>
+            )}
             <div className="rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A]">
               <p className="leading-relaxed">
                 You&apos;ll be charged{' '}
