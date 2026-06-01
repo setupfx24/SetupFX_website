@@ -3,15 +3,15 @@ export const metadata = { title: 'Privacy Policy — SwissCresta' }
 export default function PrivacyPage() {
   return (
     <div className="bg-white text-gray-900">
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
+      <section className="bg-white pt-16 pb-12">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Privacy Policy</h1>
           <p className="text-gray-500">Last updated: March 2026</p>
         </div>
       </section>
 
       <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
+        <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
           <Section title="1. Introduction">
             SwissCresta ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.

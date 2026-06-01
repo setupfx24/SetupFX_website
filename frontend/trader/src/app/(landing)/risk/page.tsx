@@ -5,15 +5,15 @@ export const metadata = { title: 'Risk Disclosure — SwissCresta' }
 export default function RiskPage() {
   return (
     <div className="bg-white text-gray-900">
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-12">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
+      <section className="bg-white pt-16 pb-12">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Risk Disclosure</h1>
           <p className="text-gray-500">Last updated: March 2026</p>
         </div>
       </section>
 
       <section className="py-12 bg-white">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 space-y-10">
+        <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
           {/* Warning banner */}
           <div className="bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-4">

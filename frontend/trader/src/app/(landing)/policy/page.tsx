@@ -56,8 +56,8 @@ const REGULATORY = [
 export default function PolicyPage() {
   return (
     <div className="bg-white text-gray-900">
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-24 pb-16 md:pt-28 md:pb-20">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
+      <section className="bg-white pt-24 pb-16 md:pt-28 md:pb-20">
+        <div className="w-full px-3 sm:px-6 lg:px-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#E94E1B]">
             Policies & Legal
           </p>
