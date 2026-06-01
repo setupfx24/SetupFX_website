@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/Button';
 
-import { Card } from '@/components/ui/Card';
 
 import { Tabs } from '@/components/ui/Tabs';
 
@@ -590,7 +589,7 @@ function PortfolioPageContent() {
 
         {tab === 'overview' && (
 
-          <Card variant="glass" padding="none">
+          <div className="rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden">
 
             {/* Mobile card layout */}
             <div className="md:hidden p-2 space-y-2">
@@ -720,7 +719,7 @@ function PortfolioPageContent() {
 
             </div>
 
-          </Card>
+          </div>
 
         )}
 
@@ -730,7 +729,7 @@ function PortfolioPageContent() {
 
           <>
 
-            <Card variant="glass" padding="none">
+            <div className="rounded-2xl border border-[#E5E5E5] bg-white overflow-hidden">
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-b border-border-glass">
 
@@ -904,7 +903,7 @@ function PortfolioPageContent() {
 
               </div>
 
-            </Card>
+            </div>
 
             {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-center gap-1.5">
