@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, Globe, Menu, X } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
 import { useLang } from '@/landing/i18n/LangProvider'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Comprehensive SwissCresta marketing Navbar, ported from the legacy
@@ -298,6 +299,21 @@ export default function MarketingNavbar({
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
   const { lang, toggleLang, t } = useLang()
 
+  // Marketing pages don't live inside an auth provider, so the store
+  // starts unauthenticated even when the cookie is present. Kick off
+  // loadUser() once on mount so /auth/me decides the navbar's CTA.
+  // `mounted` guards against the hydration-time flash of Login/Signup
+  // for users who are actually logged in.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isInitialized = useAuthStore((s) => s.isInitialized)
+  const loadUser = useAuthStore((s) => s.loadUser)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+    if (!isInitialized) void loadUser()
+  }, [isInitialized, loadUser])
+  const showAppLink = mounted && isAuthenticated
+
   const labelFor = (key: ActivePage, fallback: string) =>
     t(`nav.${key}`) === `nav.${key}` ? fallback : t(`nav.${key}`)
   const ctaLabel = activePage === 'partners' ? t('nav.partners') : t('nav.signup')
@@ -337,7 +353,15 @@ export default function MarketingNavbar({
         </ul>
 
         <div className="hidden md:flex items-center gap-3 ml-auto shrink-0">
-          {showCta && (
+          {showCta && (showAppLink ? (
+            <Button
+              variant="primary"
+              href="/dashboard"
+              className="px-5 py-2 rounded-full"
+            >
+              Open App
+            </Button>
+          ) : (
             <>
               <Link
                 href="/auth/login"
@@ -353,7 +377,7 @@ export default function MarketingNavbar({
                 {ctaLabel}
               </Button>
             </>
-          )}
+          ))}
           <button
             type="button"
             onClick={toggleLang}
@@ -446,20 +470,32 @@ export default function MarketingNavbar({
             )}
             {showCta && (
               <li className="flex items-center gap-3 pt-3 border-t border-gray-200">
-                <Link
-                  href="/auth/login"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold"
-                >
-                  Login
-                </Link>
-                <Button
-                  variant="primary"
-                  href="/auth/register"
-                  className="px-5 py-2 rounded-full"
-                >
-                  {ctaLabel}
-                </Button>
+                {showAppLink ? (
+                  <Button
+                    variant="primary"
+                    href="/dashboard"
+                    className="px-5 py-2 rounded-full"
+                  >
+                    Open App
+                  </Button>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setOpen(false)}
+                      className="inline-flex items-center justify-center px-5 py-2 rounded-full border border-gray-900 text-gray-900 text-sm font-semibold"
+                    >
+                      Login
+                    </Link>
+                    <Button
+                      variant="primary"
+                      href="/auth/register"
+                      className="px-5 py-2 rounded-full"
+                    >
+                      {ctaLabel}
+                    </Button>
+                  </>
+                )}
               </li>
             )}
           </ul>
