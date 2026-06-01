@@ -28,13 +28,15 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* SwissCresta gold accent — matches trader */
+        /* SwissCresta brand orange — every generic UI accent in admin
+         * resolves through `accent.*`. `buy` keeps the trading-context
+         * blue convention (buy = blue) and is independent of the brand. */
         buy: {
-          DEFAULT: '#6366F1',
-          light: '#818CF8',
-          dark: '#4F46E5',
-          bg: 'rgba(99,102,241,0.08)',
-          glow: 'rgba(99,102,241,0.25)',
+          DEFAULT: '#1E66F5',
+          light: '#4D87F9',
+          dark: '#0E4FCF',
+          bg: 'rgba(30,102,245,0.08)',
+          glow: 'rgba(30,102,245,0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -42,7 +44,7 @@ const config: Config = {
           dark: '#dc2626',
           bg: 'rgba(239,68,68,0.07)',
         },
-        accent: { DEFAULT: '#6366F1', light: '#818CF8', dark: '#4F46E5' },
+        accent: { DEFAULT: '#E94E1B', light: '#FB7B4E', dark: '#C73E11' },
         success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',

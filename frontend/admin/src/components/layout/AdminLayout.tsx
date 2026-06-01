@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import AdminSidebar from './AdminSidebar';
 import { useAuthStore } from '@/stores/authStore';
 import { Search, User, LogOut, Loader2 } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
 import { useAuthRehydrated } from '@/hooks/useAuthRehydrated';
 
 type Gate = 'boot' | 'ready' | 'redirect';
@@ -91,7 +90,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             />
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <ThemeToggle />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-primary/40 border border-border-primary/30">
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent/60 to-accent/20 flex items-center justify-center">
                 <User size={12} className="text-white" />
