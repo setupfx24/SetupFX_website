@@ -3,13 +3,41 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   SwissCresta Admin — Dark-first premium theme
-   Matches trader dashboard: gold accent, glassmorphism,
-   skeuomorphic buttons, smooth animations.
+   SwissCresta Admin — light + orange (matches the trader app's
+   Vantage palette). The dark token block is preserved as a
+   fallback for anything that explicitly opts in via .dark, but
+   :root is light by default so the whole admin renders white.
    ═══════════════════════════════════════════════════════════ */
 
-/* —— Dark theme (default) —— */
+/* —— Light theme (default) —— */
 :root {
+  color-scheme: light;
+  --c-bg-page: 255 255 255;
+  --c-bg-primary: 255 255 255;
+  --c-bg-secondary: 248 248 248;
+  --c-bg-tertiary: 245 245 245;
+  --c-bg-hover: 240 240 240;
+  --c-bg-active: 229 229 229;
+  --c-bg-input: 255 255 255;
+  --c-bg-card: 255 255 255;
+  --c-border-primary: 229 229 229;
+  --c-border-secondary: 210 210 210;
+  --c-border-accent: 180 180 180;
+  --c-border-glass: 0 0 0;
+  --c-text-primary: 10 10 10;
+  --c-text-secondary: 80 80 80;
+  --c-text-tertiary: 107 114 128;
+  --c-text-inverse: 255 255 255;
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.12);
+  --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+html.light, [data-theme='light'] {
+  color-scheme: light;
+}
+
+/* —— Dark theme (preserved fallback, opt-in via class) —— */
+html.dark, [data-theme='dark'] {
   color-scheme: dark;
   --c-bg-page: 5 7 7;
   --c-bg-primary: 10 10 10;
@@ -29,29 +57,6 @@
   --c-text-inverse: 10 10 10;
   --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
   --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.5);
-}
-
-/* —— Light theme —— */
-html.light, [data-theme='light'] {
-  color-scheme: light;
-  --c-bg-page: 242 239 233;
-  --c-bg-primary: 255 255 255;
-  --c-bg-secondary: 248 248 248;
-  --c-bg-tertiary: 242 242 242;
-  --c-bg-hover: 235 235 235;
-  --c-bg-active: 225 225 225;
-  --c-bg-input: 255 255 255;
-  --c-bg-card: 255 255 255;
-  --c-border-primary: 230 230 230;
-  --c-border-secondary: 210 210 210;
-  --c-border-accent: 180 180 180;
-  --c-border-glass: 0 0 0;
-  --c-text-primary: 20 20 20;
-  --c-text-secondary: 80 80 80;
-  --c-text-tertiary: 130 130 130;
-  --c-text-inverse: 255 255 255;
-  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.12);
-  --shadow-dropdown: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -86,16 +91,16 @@ input, select, textarea {
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: rgba(233, 78, 27, 0.5);
+  box-shadow: 0 0 0 3px rgba(233, 78, 27, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-::selection { background-color: rgba(99, 102, 241, 0.2); }
+::selection { background-color: rgba(233, 78, 27, 0.2); }
 
 /* ── Utility ── */
 .transition-fast { transition: all 150ms ease; }
-.focus-ring:focus { outline: 1px solid #6366F1; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid #E94E1B; outline-offset: -1px; }
 
 /* ═══════════════════════════════════════════════════════════
    Glassmorphism
@@ -128,16 +133,16 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .skeu-btn-accent {
-  background: linear-gradient(180deg, #818CF8 0%, #6366F1 40%, #4F46E5 100%);
-  border: 1px solid rgba(99,102,241,0.5);
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3), 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-  color: #1a1408;
+  background: linear-gradient(180deg, #FB7B4E 0%, #E94E1B 50%, #C73E11 100%);
+  border: 1px solid rgba(233,78,27,0.5);
+  box-shadow: 0 2px 8px rgba(233,78,27,0.3), 0 1px 2px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.2);
+  color: #ffffff;
   font-weight: 700;
   border-radius: 10px;
   transition: all 200ms ease;
 }
 .skeu-btn-accent:hover {
-  box-shadow: 0 4px 16px rgba(99,102,241,0.4), 0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 4px 16px rgba(233,78,27,0.4), 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.25);
   transform: translateY(-1px);
 }
 .skeu-btn-danger {
@@ -161,8 +166,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.15); }
-  50%      { box-shadow: 0 0 20px rgba(99,102,241,0.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(233,78,27,0.15); }
+  50%      { box-shadow: 0 0 20px rgba(233,78,27,0.3); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
@@ -182,10 +187,10 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Sidebar nav glow for active item
    ═══════════════════════════════════════════════════════════ */
 .nav-active {
-  background: rgba(99,102,241,0.08);
-  border-left: 2px solid #6366F1;
-  color: #6366F1;
-  box-shadow: inset 3px 0 12px rgba(99,102,241,0.06);
+  background: rgba(233,78,27,0.08);
+  border-left: 2px solid #E94E1B;
+  color: #E94E1B;
+  box-shadow: inset 3px 0 12px rgba(233,78,27,0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -203,8 +208,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    Stat glow badge
    ═══════════════════════════════════════════════════════════ */
 .stat-glow {
-  box-shadow: 0 0 0 1px rgba(99,102,241,0.1), 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 1px rgba(233,78,27,0.1), 0 2px 12px rgba(0,0,0,0.3);
 }
 .stat-glow:hover {
-  box-shadow: 0 0 0 1px rgba(99,102,241,0.2), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 1px rgba(233,78,27,0.2), 0 4px 20px rgba(0,0,0,0.4);
 }

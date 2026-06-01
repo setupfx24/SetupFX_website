@@ -1,23 +1,18 @@
 import Script from 'next/script';
 
+// Admin runs in light-orange mode only — matches the trader app's Vantage
+// palette. The persisted toggle is ignored; we always set `light` here so a
+// stale localStorage value can't drag the user back to the dark theme.
 const INIT = `
 (function(){
   try {
     var d=document.documentElement;
-    var raw = localStorage.getItem('admin-theme');
-    var t='dark';
-    if(raw){var p=JSON.parse(raw);t=(p&&p.state&&p.state.theme)||'dark';}
-    if(t==='light'){
-      d.classList.add('light');d.classList.remove('dark');
-      d.style.backgroundColor='#f2efe9';d.style.color='#141414';
-    }else{
-      d.classList.add('dark');d.classList.remove('light');
-      d.style.backgroundColor='#050707';d.style.color='#f0f0f0';
-    }
-  } catch(e){
-    document.documentElement.classList.add('dark');
-    document.documentElement.style.backgroundColor='#050707';
-  }
+    d.classList.add('light');
+    d.classList.remove('dark');
+    d.setAttribute('data-theme','light');
+    d.style.backgroundColor='#ffffff';
+    d.style.color='#141414';
+  } catch(e){}
 })();
 `;
 
