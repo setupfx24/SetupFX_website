@@ -7,7 +7,10 @@ from __future__ import annotations
 from html import escape
 
 
-_GOLD = "#d6a93d"
+# Brand orange replaces the old gold accent so every transactional email
+# matches the platform's Vantage palette. The rest of the surface stays
+# dark — clients on dark/light Gmail / Outlook both read fine on it.
+_ACCENT = "#E94E1B"
 _BG = "#0a0a0a"
 _CARD = "#141414"
 _KV_BG = "#0d0d0d"
@@ -16,6 +19,11 @@ _TEXT = "#f5f5f5"
 _TEXT_DIM = "#9a9a9a"
 _BORDER = "#2a2a2a"
 _BORDER_BRIGHT = "#3a3a3a"
+
+# Logo served from the marketing site (no auth, no CORS). Same PNG the
+# navbar uses, so the wordmark in the inbox matches what the user just
+# saw on the site.
+_LOGO_URL = "https://swisscresta.com/marketing/swisscresta-logo.png"
 
 
 def render_layout(
@@ -44,7 +52,7 @@ def render_layout(
         <div style="text-align:center;margin:32px 0 8px;">
           <a href="{escape(cta_url, quote=True)}"
              style="display:inline-block;padding:14px 28px;border-radius:8px;
-                    background:{_GOLD};color:#1a1408;text-decoration:none;
+                    background:{_ACCENT};color:#ffffff;text-decoration:none;
                     font-weight:700;font-size:14px;letter-spacing:0.2px;">
             {escape(cta_label)}
           </a>
@@ -75,10 +83,10 @@ def render_layout(
                style="max-width:600px;width:100%;background:{_CARD};
                       border:1px solid {_BORDER};border-radius:12px;overflow:hidden;">
           <tr>
-            <td style="padding:28px 32px 12px;border-bottom:1px solid {_BORDER};">
-              <span style="font-weight:700;font-size:20px;letter-spacing:0.2px;">
-                <span style="color:{_TEXT};">FX</span><span style="color:{_GOLD};">Artha</span>
-              </span>
+            <td style="padding:24px 32px;border-bottom:1px solid {_BORDER};">
+              <img src="{_LOGO_URL}" alt="SwissCresta"
+                   height="36"
+                   style="display:block;height:36px;width:auto;border:0;outline:none;text-decoration:none;" />
             </td>
           </tr>
           <tr>
@@ -100,7 +108,7 @@ def render_layout(
               SwissCresta — Trade without giving your money to any broker.<br>
               You received this because of activity on your SwissCresta account.
               Need help? Reply to this email or contact
-              <a href="mailto:support@swisscresta.com" style="color:{_GOLD};text-decoration:none;">
+              <a href="mailto:support@swisscresta.com" style="color:{_ACCENT};text-decoration:none;">
                 support@swisscresta.com</a>.
             </td>
           </tr>
