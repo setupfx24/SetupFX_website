@@ -366,7 +366,7 @@ export default function RiskCalculatorPage() {
 
   return (
     <DashboardShell>
-      <div className="max-w-5xl mx-auto w-full space-y-5">
+      <div className="w-full space-y-5">
         {/* Page header */}
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-text-primary flex items-center gap-2">

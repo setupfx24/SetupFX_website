@@ -312,7 +312,7 @@ export default function ProfilePage() {
             <div key={tab} className="bg-card-nested p-4 md:p-6 animate-wallet-fund-enter-lg min-h-[200px]">
         {/* ── Profile tab ── */}
         {tab === 'profile' && (
-          <div className="max-w-2xl mx-auto space-y-5">
+          <div className="w-full space-y-5">
             <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
               <h2 className="text-sm font-semibold text-text-primary mb-5">Profile Information</h2>
 
@@ -643,7 +643,7 @@ export default function ProfilePage() {
 
         {/* ── Sessions tab ── */}
         {tab === 'sessions' && (
-          <div className="max-w-2xl mx-auto">
+          <div className="w-full">
             <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
               <h3 className="text-base font-semibold text-text-primary mb-4">Active Sessions</h3>
               {sessions.length === 0 ? (

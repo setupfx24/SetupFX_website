@@ -196,7 +196,7 @@ function BrokerHome() {
   const firstName = user?.first_name || (user?.email ? user.email.split('@')[0] : 'Trader');
 
   return (
-    <div className="space-y-5 pb-8 max-w-[1200px] mx-auto w-full">
+    <div className="space-y-5 pb-8 w-full">
       {/* ── Greeting header (DAG mockup) ── */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2">
