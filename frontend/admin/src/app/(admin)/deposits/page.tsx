@@ -639,21 +639,30 @@ export default function DepositsPage() {
                                       </button>
                                     </>
                                   )}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setActionModal({
-                                        type: 'approve',
-                                        target: 'deposit',
-                                        id: d.id,
-                                        userName: d.user_name,
-                                        amount: d.amount,
-                                      })
-                                    }
-                                    className="px-2 py-1 rounded-md text-xxs font-medium bg-success/15 text-success border border-success/30 hover:bg-success/25 transition-fast"
-                                  >
-                                    Approve
-                                  </button>
+                                  {/* Standalone Approve is the manual mark-paid
+                                      path for proof-uploaded deposits (crypto,
+                                      manual UPI, etc.). Hidden for fresh
+                                      local_banking requests where the admin
+                                      should pick Approve & Razorpay or Custom
+                                      link instead — those two flows manage the
+                                      approval lifecycle themselves. */}
+                                  {!(d.method === 'local_banking' && !d.payment_link) && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionModal({
+                                          type: 'approve',
+                                          target: 'deposit',
+                                          id: d.id,
+                                          userName: d.user_name,
+                                          amount: d.amount,
+                                        })
+                                      }
+                                      className="px-2 py-1 rounded-md text-xxs font-medium bg-success/15 text-success border border-success/30 hover:bg-success/25 transition-fast"
+                                    >
+                                      Approve
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() =>

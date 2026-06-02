@@ -847,12 +847,13 @@ function WalletPageContent() {
       toast.error(DEMO_FUNDING_MSG);
       return;
     }
-    // Crypto needs a real amount up-front (user pays to admin's QR and
-    // uploads proof for that exact amount). Local Banking is a permission
-    // request — admin works out the amount with the user out of band, so
-    // we accept 0 here as a sentinel.
-    const amt = depositUiSection === 'local_banking' ? 0 : parseFloat(depositAmount);
-    if (depositUiSection !== 'local_banking' && (!amt || amt <= 0)) {
+    // Both chips need a real amount up-front:
+    //  - Crypto: user pays to admin's QR and uploads proof for that
+    //    exact amount.
+    //  - Local Banking: amount is locked at request time so the admin's
+    //    Approve & Razorpay can create a Razorpay order with it.
+    const amt = parseFloat(depositAmount);
+    if (!amt || amt <= 0) {
       toast.error('Enter a valid amount');
       return;
     }
@@ -1103,9 +1104,9 @@ function WalletPageContent() {
     !demoFundingBlocked &&
     !depositSubmitting &&
     !!depositAccountId &&
-    // Amount is required only for Crypto. Local Banking submits without
-    // an amount — admin works it out with the user after the request.
-    (depositUiSection === 'local_banking' ? kycApproved : depositAmountValid);
+    depositAmountValid &&
+    // LB is KYC-gated; Crypto is not.
+    (depositUiSection === 'local_banking' ? kycApproved : true);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1237,11 +1238,12 @@ function WalletPageContent() {
           />
         </div>
 
-        {/* Amount — only shown for Crypto. Local Banking is a permission
-            request: user just asks for access, admin reviews KYC and shares
-            payment details out of band, and the actual amount is determined
-            after the admin confirms the bank transfer. */}
-        {depositUiSection === 'crypto' && (
+        {/* Amount — required for both Crypto and Local Banking. The LB
+            flow locks this amount onto the deposit row at request time
+            so the admin's "Approve & Razorpay" can create an order with
+            it (Razorpay needs an amount); also gives the user clarity
+            on what they're committing to before the admin reviews KYC. */}
+        {(depositUiSection === 'crypto' || depositUiSection === 'local_banking') && (
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
             <input
