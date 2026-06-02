@@ -106,23 +106,36 @@ async def set_deposit_payment_link(
     )
 
 
+class ApproveRazorpayRequest(BaseModel):
+    """Admin-supplied amount overrides whatever the user typed at LB
+    request time. Optional — if omitted we fall back to the user's
+    requested amount, and 400 if neither is set."""
+    amount: float | None = None
+
+
 @router.post("/deposits/{deposit_id}/approve-razorpay")
 async def approve_deposit_with_razorpay(
     deposit_id: uuid.UUID,
     request: Request,
+    body: ApproveRazorpayRequest | None = None,
     admin: User = Depends(require_permission("deposits.approve")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Local Banking stage-2 (auto path): admin clicks Approve, we create
-    a Razorpay order server-side for the user's locked requested amount
-    and notify the user. They tap the deposit row in their wallet to open
-    the Razorpay checkout and pay; the existing Razorpay webhook credits
-    the deposit on payment.captured — admin never touches it again."""
+    """Local Banking stage-2 (auto path): admin clicks Approve & Razorpay,
+    enters the amount in the modal, server creates the Razorpay order
+    for that amount and notifies the user. They tap the deposit row in
+    their wallet to open the Razorpay checkout and pay; the existing
+    Razorpay webhook credits the deposit on payment.captured."""
+    from decimal import Decimal
+    amount = None
+    if body is not None and body.amount is not None and body.amount > 0:
+        amount = Decimal(str(body.amount))
     return await deposit_service.approve_with_razorpay(
         deposit_id=deposit_id,
         admin_id=admin.id,
         ip_address=request.client.host if request.client else None,
         db=db,
+        amount_override=amount,
     )
 
 

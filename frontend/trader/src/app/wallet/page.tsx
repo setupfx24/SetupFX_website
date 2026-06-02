@@ -847,13 +847,13 @@ function WalletPageContent() {
       toast.error(DEMO_FUNDING_MSG);
       return;
     }
-    // Both chips need a real amount up-front:
-    //  - Crypto: user pays to admin's QR and uploads proof for that
-    //    exact amount.
-    //  - Local Banking: amount is locked at request time so the admin's
-    //    Approve & Razorpay can create a Razorpay order with it.
-    const amt = parseFloat(depositAmount);
-    if (!amt || amt <= 0) {
+    // Crypto requires a real amount (user pays exactly that to admin's
+    // QR). Local Banking is a permission request — admin sets the
+    // final amount at approval time, so 0 is OK here.
+    const amt = depositUiSection === 'local_banking'
+      ? (parseFloat(depositAmount) || 0)
+      : parseFloat(depositAmount);
+    if (depositUiSection !== 'local_banking' && (!amt || amt <= 0)) {
       toast.error('Enter a valid amount');
       return;
     }
@@ -1104,9 +1104,8 @@ function WalletPageContent() {
     !demoFundingBlocked &&
     !depositSubmitting &&
     !!depositAccountId &&
-    depositAmountValid &&
-    // LB is KYC-gated; Crypto is not.
-    (depositUiSection === 'local_banking' ? kycApproved : true);
+    // Crypto needs amount; LB is KYC-gated and amount is optional.
+    (depositUiSection === 'local_banking' ? kycApproved : depositAmountValid);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1238,14 +1237,15 @@ function WalletPageContent() {
           />
         </div>
 
-        {/* Amount — required for both Crypto and Local Banking. The LB
-            flow locks this amount onto the deposit row at request time
-            so the admin's "Approve & Razorpay" can create an order with
-            it (Razorpay needs an amount); also gives the user clarity
-            on what they're committing to before the admin reviews KYC. */}
+        {/* Amount — required for Crypto, optional for Local Banking. LB
+            users submit a permission request; the admin sets the final
+            Razorpay charge amount at approval time so the user can leave
+            this blank or use it as a suggestion. */}
         {(depositUiSection === 'crypto' || depositUiSection === 'local_banking') && (
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
+            <label className="text-sm font-medium text-[#0A0A0A]">
+              Amount{depositUiSection === 'local_banking' ? ' (optional)' : ''}
+            </label>
             <input
               type="number"
               inputMode="decimal"

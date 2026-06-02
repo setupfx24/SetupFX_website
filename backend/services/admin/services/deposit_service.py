@@ -836,23 +836,20 @@ async def approve_with_razorpay(
     admin_id: uuid.UUID,
     ip_address: str | None,
     db: AsyncSession,
+    amount_override: Decimal | None = None,
 ) -> dict:
     """Local Banking stage-2 (auto path): admin approves the request and
-    we create a Razorpay order server-side for the user's locked amount.
+    we create a Razorpay order server-side for the deposit amount.
 
-    Differences from set_payment_link:
-      - No manual link entry — admin just hits Approve.
-      - The Razorpay order_id is stored on deposit.transaction_id so the
-        existing Razorpay webhook / verify path picks it up unchanged.
-      - deposit.payment_link gets a sentinel "razorpay:<order_id>" so the
-        trader UI knows to open the Razorpay popup instead of opening an
-        external URL.
-      - Deposit stays "pending" until the Razorpay webhook fires
-        payment.captured, which the existing handler credits idempotently.
+    Amount precedence (highest wins):
+      1. amount_override — admin enters it in the approval modal
+      2. deposit.amount — what the user typed at request time, if any
+      Otherwise we 400 so the admin gets a clear "enter an amount"
+      message instead of silently creating a zero-rupee order.
 
-    The trader's requested amount is locked at request time — admin
-    cannot change it here. If a refund or adjustment is needed they can
-    reject and the user re-requests.
+    The picked amount is also stamped onto deposit.amount so the
+    existing crediting code knows what to add to the wallet when
+    Razorpay's webhook fires payment.captured.
     """
     result = await db.execute(
         select(Deposit).where(Deposit.id == deposit_id).with_for_update()
@@ -867,16 +864,24 @@ async def approve_with_razorpay(
         )
     if deposit.status != "pending":
         raise HTTPException(status_code=400, detail="Deposit is not pending")
-    if (deposit.amount or Decimal("0")) <= 0:
+
+    # Resolve the charge amount.
+    final_amount: Decimal | None = None
+    if amount_override is not None and amount_override > 0:
+        final_amount = Decimal(str(amount_override))
+    elif (deposit.amount or Decimal("0")) > 0:
+        final_amount = Decimal(str(deposit.amount))
+    if final_amount is None or final_amount <= 0:
         raise HTTPException(
             status_code=400,
-            detail="Deposit amount is missing — ask the user to resubmit with an amount",
+            detail="Enter an amount to charge the user.",
         )
+    deposit.amount = final_amount
 
     # Create the Razorpay order via the same helper the legacy flow used.
     from services.razorpay_service import create_order as rzp_create_order
     order = await rzp_create_order(
-        amount_usd=Decimal(str(deposit.amount)),
+        amount_usd=final_amount,
         receipt=str(deposit.id)[:40],
         notes={
             "deposit_id": str(deposit.id),

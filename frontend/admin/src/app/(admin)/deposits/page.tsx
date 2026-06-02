@@ -242,6 +242,11 @@ export default function DepositsPage() {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkMessage, setLinkMessage] = useState('');
   const [linkSubmitting, setLinkSubmitting] = useState(false);
+
+  // "Approve & Razorpay" modal — admin enters the amount to charge.
+  const [rzpModal, setRzpModal] = useState<{ id: string; userName: string; suggested: number } | null>(null);
+  const [rzpAmount, setRzpAmount] = useState('');
+  const [rzpSubmitting, setRzpSubmitting] = useState(false);
   const [actionNote, setActionNote] = useState('');
   const [actionReason, setActionReason] = useState('');
   const [actionTxHash, setActionTxHash] = useState('');
@@ -607,17 +612,15 @@ export default function DepositsPage() {
                                     <>
                                       <button
                                         type="button"
-                                        onClick={async () => {
-                                          try {
-                                            await adminApi.post(`/finance/deposits/${d.id}/approve-razorpay`, {});
-                                            toast.success('Razorpay order created — user can now pay');
-                                            await fetchDeposits();
-                                          } catch (e: any) {
-                                            toast.error(e?.message || 'Failed to create Razorpay order');
-                                          }
+                                        onClick={() => {
+                                          // Pre-fill the modal with the user's requested
+                                          // amount when they typed one at LB request time;
+                                          // otherwise leave empty so the admin types it in.
+                                          setRzpAmount(d.amount > 0 ? String(d.amount) : '');
+                                          setRzpModal({ id: d.id, userName: d.user_name, suggested: d.amount });
                                         }}
                                         className="px-2 py-1 rounded-md text-xxs font-medium bg-buy/15 text-buy border border-buy/30 hover:bg-buy/25 transition-fast"
-                                        title={`Auto-create a Razorpay order for $${d.amount.toFixed(2)} and notify the user`}
+                                        title="Enter the amount to charge the user, then create the Razorpay order"
                                       >
                                         Approve & Razorpay
                                       </button>
@@ -1182,6 +1185,89 @@ export default function DepositsPage() {
               >
                 {linkSubmitting && <Loader2 size={12} className="animate-spin" />}
                 Send link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve & Razorpay modal — admin enters the amount to charge.
+          Pre-fills from the user's requested amount when present. */}
+      {rzpModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => !rzpSubmitting && setRzpModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-md bg-bg-card border border-border-primary shadow-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-border-primary">
+              <h3 className="text-sm font-semibold text-text-primary">
+                Approve & open Razorpay
+              </h3>
+              <p className="text-xxs text-text-tertiary mt-0.5">
+                {rzpModal.userName}
+                {rzpModal.suggested > 0 && ` · user requested $${rzpModal.suggested.toLocaleString()}`}
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-xxs text-text-tertiary mb-1">
+                  Amount to charge (USD) <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={rzpAmount}
+                  onChange={(e) => setRzpAmount(e.target.value)}
+                  placeholder="e.g. 100"
+                  className="w-full px-3 py-2 text-xs bg-bg-input border border-border-primary rounded-md placeholder:text-text-tertiary transition-fast focus:border-accent"
+                  autoFocus
+                />
+                <p className="text-[10px] text-text-tertiary mt-1">
+                  Razorpay will charge this amount in INR at the current FX rate. The user pays the converted INR; their wallet credits this USD amount on payment.captured.
+                </p>
+              </div>
+            </div>
+            <div className="px-4 py-3 border-t border-border-primary flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRzpModal(null)}
+                className="px-3 py-1.5 text-xs text-text-secondary border border-border-primary rounded-md hover:bg-bg-hover transition-fast"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={rzpSubmitting || !(parseFloat(rzpAmount) > 0)}
+                onClick={async () => {
+                  if (!rzpModal) return;
+                  const amt = parseFloat(rzpAmount);
+                  if (!Number.isFinite(amt) || amt <= 0) {
+                    toast.error('Enter a valid amount');
+                    return;
+                  }
+                  setRzpSubmitting(true);
+                  try {
+                    await adminApi.post(`/finance/deposits/${rzpModal.id}/approve-razorpay`, { amount: amt });
+                    toast.success('Razorpay order created — user can now pay');
+                    setRzpModal(null);
+                    await fetchDeposits();
+                  } catch (e: any) {
+                    toast.error(e?.message || 'Failed to create Razorpay order');
+                  } finally {
+                    setRzpSubmitting(false);
+                  }
+                }}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium rounded-md transition-fast inline-flex items-center gap-1.5 bg-buy text-white hover:bg-buy/80',
+                  (rzpSubmitting || !(parseFloat(rzpAmount) > 0)) && 'opacity-50 pointer-events-none',
+                )}
+              >
+                {rzpSubmitting && <Loader2 size={12} className="animate-spin" />}
+                Create Razorpay order
               </button>
             </div>
           </div>
