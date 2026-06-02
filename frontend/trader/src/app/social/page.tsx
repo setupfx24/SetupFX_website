@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -1593,6 +1593,9 @@ function MyDashboardTab() {
         </div>
       </div>
 
+      {/* Transaction History — commissions + withdrawals + transfers */}
+      <MasterTransactionHistory />
+
       {/* Followers Modal */}
       {showFollowers && createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-bg-base/75 backdrop-blur-sm p-4" onClick={() => setShowFollowers(false)}>
@@ -1665,6 +1668,315 @@ function MyDashboardTab() {
         </div>,
         document.body,
       )}
+    </div>
+  );
+}
+
+type MasterTxnFollower = { user_id: string; name: string; email: string };
+type MasterTxn = {
+  id: string;
+  created_at: string | null;
+  type: string;
+  amount: number;
+  balance_after: number | null;
+  description: string | null;
+  follower: MasterTxnFollower | null;
+  symbol: string | null;
+  side: 'buy' | 'sell' | null;
+  lots: number | null;
+  gross_profit: number | null;
+  performance_fee_pct: number | null;
+  performance_fee_gross: number | null;
+  admin_commission_pct: number | null;
+  admin_fee: number | null;
+  master_net: number | null;
+};
+type MasterTxnResponse = {
+  items: MasterTxn[];
+  page: number;
+  per_page: number;
+  total: number;
+  pages: number;
+  summary: {
+    total_commission: number;
+    total_withdrawn: number;
+    total_transferred: number;
+    total_deposit: number;
+  };
+};
+
+const TXN_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'commission', label: 'Commission' },
+  { id: 'withdrawal', label: 'Withdrawals' },
+  { id: 'transfer', label: 'Transfers' },
+  { id: 'deposit', label: 'Deposits' },
+] as const;
+
+function MasterTransactionHistory() {
+  const [filter, setFilter] = useState<(typeof TXN_FILTERS)[number]['id']>('all');
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<MasterTxnResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const perPage = 15;
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await api.get<MasterTxnResponse>('/social/master/transactions', {
+          page: String(page),
+          per_page: String(perPage),
+          filter_type: filter,
+        });
+        if (alive) setData(res);
+      } catch (e) {
+        if (alive) toast.error(getErrorMessage(e, 'Failed to load transaction history'));
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [filter, page]);
+
+  const fmt = (n: number) =>
+    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const typeLabel = (t: string) => {
+    switch (t) {
+      case 'ib_commission':
+        return { text: 'Commission', cls: 'bg-buy/15 text-buy border-buy/30' };
+      case 'withdrawal':
+        return { text: 'Withdrawal', cls: 'bg-sell/15 text-sell border-sell/30' };
+      case 'transfer':
+        return { text: 'Transfer', cls: 'bg-accent/15 text-accent border-accent/30' };
+      case 'deposit':
+        return { text: 'Deposit', cls: 'bg-success/15 text-success border-success/30' };
+      case 'bonus':
+        return { text: 'Bonus', cls: 'bg-warning/15 text-warning border-warning/30' };
+      default:
+        return { text: t, cls: 'bg-bg-tertiary text-text-secondary border-border-primary' };
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-text-primary">Transaction History</h3>
+          <p className="text-xxs text-text-tertiary mt-0.5">
+            Commissions per follower, withdrawals, transfers to main wallet — all in one place
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {TXN_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => {
+                setFilter(f.id);
+                setPage(1);
+              }}
+              className={clsx(
+                'px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
+                filter === f.id
+                  ? 'bg-accent/15 border-accent/40 text-accent'
+                  : 'bg-bg-secondary border-border-primary text-text-secondary hover:bg-bg-hover',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {data && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-4 py-3 border-b border-border-primary bg-bg-tertiary/30">
+          <div>
+            <p className="text-xxs text-text-tertiary">Total Commission</p>
+            <p className="text-sm font-bold font-mono tabular-nums text-buy">
+              ${fmt(data.summary.total_commission)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Total Withdrawn</p>
+            <p className="text-sm font-bold font-mono tabular-nums text-sell">
+              ${fmt(data.summary.total_withdrawn)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Net Transferred</p>
+            <p className="text-sm font-bold font-mono tabular-nums text-text-primary">
+              {data.summary.total_transferred >= 0 ? '+' : ''}${fmt(data.summary.total_transferred)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Total Deposits</p>
+            <p className="text-sm font-bold font-mono tabular-nums text-success">
+              ${fmt(data.summary.total_deposit)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="p-4">
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !data || data.items.length === 0 ? (
+          <div className="text-center py-10 text-sm text-text-tertiary">No transactions yet</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border-glass">
+                  <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Date</th>
+                  <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Type</th>
+                  <th className="text-left px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Source / Details</th>
+                  <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Amount</th>
+                  <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase">Balance</th>
+                  <th className="text-right px-3 py-2 text-xxs font-semibold text-text-tertiary uppercase w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((t) => {
+                  const lbl = typeLabel(t.type);
+                  const isExpandable = t.type === 'ib_commission';
+                  const isOpen = expanded === t.id;
+                  return (
+                    <Fragment key={t.id}>
+                      <tr
+                        className={clsx(
+                          'border-b border-border-glass/50 transition-colors',
+                          isExpandable ? 'cursor-pointer hover:bg-bg-hover/30' : 'hover:bg-bg-hover/15',
+                        )}
+                        onClick={() => isExpandable && setExpanded(isOpen ? null : t.id)}
+                      >
+                        <td className="px-3 py-3 text-xxs text-text-secondary whitespace-nowrap">
+                          {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className={clsx('px-2 py-0.5 rounded text-[9px] font-bold uppercase border', lbl.cls)}>
+                            {lbl.text}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-xs text-text-primary">
+                          {t.type === 'ib_commission' ? (
+                            t.follower ? (
+                              <div>
+                                <p className="font-medium">{t.follower.name}</p>
+                                <p className="text-xxs text-text-tertiary">
+                                  {t.symbol ? `${t.symbol} ${t.side?.toUpperCase() ?? ''} ${t.lots ?? ''} lots` : t.follower.email}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-text-tertiary">Copy trade</span>
+                            )
+                          ) : (
+                            <span className="text-text-secondary">{t.description || '—'}</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <span
+                            className={clsx(
+                              'text-xs font-mono font-bold tabular-nums',
+                              t.amount >= 0 ? 'text-buy' : 'text-sell',
+                            )}
+                          >
+                            {t.amount >= 0 ? '+' : ''}${fmt(Math.abs(t.amount))}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right text-xxs text-text-tertiary font-mono tabular-nums">
+                          {t.balance_after != null ? `$${fmt(t.balance_after)}` : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          {isExpandable && (
+                            <span
+                              className={clsx(
+                                'inline-block text-text-tertiary transition-transform',
+                                isOpen && 'rotate-180',
+                              )}
+                            >
+                              ▾
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      {isExpandable && isOpen && (
+                        <tr className="bg-bg-tertiary/40">
+                          <td colSpan={6} className="px-3 py-3">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xxs">
+                              <div>
+                                <p className="text-text-tertiary uppercase tracking-wider mb-0.5">Follower P/L (Gross)</p>
+                                <p className={clsx('font-mono font-bold text-sm', (t.gross_profit ?? 0) >= 0 ? 'text-buy' : 'text-sell')}>
+                                  {(t.gross_profit ?? 0) >= 0 ? '+' : ''}${fmt(t.gross_profit ?? 0)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-text-tertiary uppercase tracking-wider mb-0.5">Perf Fee {t.performance_fee_pct?.toFixed(0)}%</p>
+                                <p className="font-mono font-bold text-sm text-text-primary">
+                                  ${fmt(t.performance_fee_gross ?? 0)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-text-tertiary uppercase tracking-wider mb-0.5">Platform Cut {t.admin_commission_pct?.toFixed(0)}%</p>
+                                <p className="font-mono font-bold text-sm text-sell">
+                                  −${fmt(t.admin_fee ?? 0)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-text-tertiary uppercase tracking-wider mb-0.5">You Earned</p>
+                                <p className="font-mono font-bold text-sm text-buy">
+                                  +${fmt(t.master_net ?? 0)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-text-tertiary uppercase tracking-wider mb-0.5">Follower ID</p>
+                                <p className="font-mono text-text-secondary truncate text-xs">{t.follower?.user_id ?? '—'}</p>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {data && data.pages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-1">
+            <p className="text-xxs text-text-tertiary">
+              Page {data.page} of {data.pages} · {data.total} entries
+            </p>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={data.page <= 1 || loading}
+                className="px-3 py-1 rounded-md text-xxs font-semibold border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
+                disabled={data.page >= data.pages || loading}
+                className="px-3 py-1 rounded-md text-xxs font-semibold border border-border-primary text-text-secondary hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

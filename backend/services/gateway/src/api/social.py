@@ -260,3 +260,17 @@ async def master_performance(
     return await social_service.master_performance(
         user_id=current_user["user_id"], db=db,
     )
+
+
+@router.get("/master/transactions")
+async def master_transactions(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    filter_type: str = Query("all"),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await social_service.master_transactions(
+        user_id=current_user["user_id"], db=db,
+        page=page, per_page=per_page, filter_type=filter_type,
+    )

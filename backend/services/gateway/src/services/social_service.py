@@ -1847,3 +1847,161 @@ async def master_performance(user_id: UUID, db: AsyncSession) -> dict:
         "description": master.description,
         "monthly_breakdown": monthly_breakdown,
     }
+
+
+async def master_transactions(
+    user_id: UUID,
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 20,
+    filter_type: str = "all",
+) -> dict:
+    """Paginated transaction history for a Trade Master.
+
+    Returns commission earnings (with the originating follower + symbol),
+    withdrawals, account transfers, deposits and bonuses — everything that
+    moves money in or out of the master's wallets — in one ordered feed
+    so the master can audit earnings against payouts in a single place.
+    """
+    from packages.common.src.models import Instrument
+
+    master_q = await db.execute(
+        select(MasterAccount).where(MasterAccount.user_id == user_id)
+    )
+    master = master_q.scalar_one_or_none()
+    if not master or master.status != "approved":
+        raise HTTPException(status_code=404, detail="You are not an approved Trade Master")
+
+    page = max(1, page)
+    per_page = max(1, min(per_page, 100))
+
+    type_filters: dict[str, list[str]] = {
+        "all": ["ib_commission", "withdrawal", "transfer", "deposit", "bonus"],
+        "commission": ["ib_commission"],
+        "withdrawal": ["withdrawal"],
+        "transfer": ["transfer"],
+        "deposit": ["deposit", "bonus"],
+    }
+    allowed_types = type_filters.get(filter_type, type_filters["all"])
+
+    count_q = await db.execute(
+        select(func.count()).select_from(Transaction).where(
+            Transaction.user_id == user_id,
+            Transaction.type.in_(allowed_types),
+        )
+    )
+    total = int(count_q.scalar() or 0)
+
+    rows_q = await db.execute(
+        select(Transaction).where(
+            Transaction.user_id == user_id,
+            Transaction.type.in_(allowed_types),
+        ).order_by(Transaction.created_at.desc())
+        .limit(per_page).offset((page - 1) * per_page)
+    )
+    txns = list(rows_q.scalars().all())
+
+    # Pre-resolve follower + symbol enrichment for commission rows in one
+    # shot — Transaction.reference_id on an ib_commission row points to
+    # the investor's position, so we can walk position → copy_trade →
+    # investor_allocation → user, plus position → instrument → symbol.
+    commission_refs = [t.reference_id for t in txns if t.type == "ib_commission" and t.reference_id]
+    follower_by_ref: dict[UUID, dict] = {}
+    symbol_by_ref: dict[UUID, dict] = {}
+    if commission_refs:
+        copy_q = await db.execute(
+            select(CopyTrade, InvestorAllocation, User)
+            .join(InvestorAllocation, InvestorAllocation.id == CopyTrade.investor_allocation_id)
+            .join(User, User.id == InvestorAllocation.investor_user_id)
+            .where(CopyTrade.investor_position_id.in_(commission_refs))
+        )
+        for ct, alloc, follower in copy_q.all():
+            follower_by_ref[ct.investor_position_id] = {
+                "user_id": str(follower.id),
+                "name": follower.full_name or follower.email,
+                "email": follower.email,
+            }
+
+        pos_q = await db.execute(
+            select(Position, Instrument)
+            .join(Instrument, Instrument.id == Position.instrument_id)
+            .where(Position.id.in_(commission_refs))
+        )
+        for pos, inst in pos_q.all():
+            symbol_by_ref[pos.id] = {
+                "symbol": inst.symbol,
+                "side": str(pos.side).lower() if pos.side else None,
+                "lots": float(pos.lots) if pos.lots is not None else None,
+                "gross_profit": float(pos.profit) if pos.profit is not None else None,
+            }
+
+    perf_pct = float(master.performance_fee_pct or 0)
+    admin_pct = float(master.admin_commission_pct or 0)
+
+    items: list[dict] = []
+    for t in txns:
+        row = {
+            "id": str(t.id),
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+            "type": t.type,
+            "amount": float(t.amount or 0),
+            "balance_after": float(t.balance_after) if t.balance_after is not None else None,
+            "description": t.description,
+            "follower": None,
+            "symbol": None,
+            "side": None,
+            "lots": None,
+            "gross_profit": None,
+            "performance_fee_pct": None,
+            "performance_fee_gross": None,
+            "admin_commission_pct": None,
+            "admin_fee": None,
+            "master_net": None,
+        }
+        if t.type == "ib_commission":
+            ref = t.reference_id
+            row["follower"] = follower_by_ref.get(ref)
+            sym = symbol_by_ref.get(ref) if ref else None
+            if sym:
+                row["symbol"] = sym["symbol"]
+                row["side"] = sym["side"]
+                row["lots"] = sym["lots"]
+                row["gross_profit"] = sym["gross_profit"]
+            # Reconstruct the fee chain using the master's current settings.
+            # These can drift if the master edits their % after the fact;
+            # we surface the % so the trader can see exactly how their
+            # number was derived rather than just a flat amount.
+            master_net = float(t.amount or 0)
+            row["master_net"] = master_net
+            row["performance_fee_pct"] = perf_pct
+            row["admin_commission_pct"] = admin_pct
+            if admin_pct < 100:
+                gross_fee = master_net / (1 - admin_pct / 100) if admin_pct else master_net
+                row["performance_fee_gross"] = round(gross_fee, 4)
+                row["admin_fee"] = round(gross_fee - master_net, 4)
+        items.append(row)
+
+    # Lightweight summary so the dashboard can show totals without a
+    # second round-trip. Sums are over the FULL set (not just this
+    # page) so they survive pagination.
+    summary_q = await db.execute(
+        select(Transaction.type, func.coalesce(func.sum(Transaction.amount), 0))
+        .where(Transaction.user_id == user_id)
+        .group_by(Transaction.type)
+    )
+    summary_raw = {row[0]: float(row[1] or 0) for row in summary_q.all()}
+    summary = {
+        "total_commission": summary_raw.get("ib_commission", 0),
+        "total_withdrawn": abs(summary_raw.get("withdrawal", 0)),
+        "total_transferred": summary_raw.get("transfer", 0),
+        "total_deposit": summary_raw.get("deposit", 0) + summary_raw.get("bonus", 0),
+    }
+
+    return {
+        "items": items,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "pages": (total + per_page - 1) // per_page if per_page else 1,
+        "summary": summary,
+    }
