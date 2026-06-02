@@ -101,6 +101,29 @@ async def create_local_banking_request(
     )
 
 
+@router.post("/deposit/local-banking/{deposit_id}/confirm-payment", status_code=200)
+async def confirm_local_banking_payment(
+    deposit_id: UUID,
+    amount: Decimal = Form(...),
+    transaction_id: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 3 of the local banking flow — user has paid via the admin's
+    link and is uploading proof + the actual amount they paid. The Deposit
+    row's amount / transaction_id / screenshot_url are populated; status
+    stays pending so the admin can verify and approve."""
+    return await wallet_service.confirm_local_banking_payment(
+        deposit_id=deposit_id,
+        user_id=current_user["user_id"],
+        amount=amount,
+        transaction_id=transaction_id,
+        file=file,
+        db=db,
+    )
+
+
 # ─── Razorpay deposits (Checkout popup, charged in INR) ───────────────────
 
 

@@ -279,6 +279,14 @@ function WalletPageContent() {
   // the user a place to find the admin-issued payment link once it's been
   // attached. Refreshed on tab change + after submitting a new request.
   const [localBankingRequests, setLocalBankingRequests] = useState<WalletListItem[]>([]);
+  // "I've Paid" inline confirmation: which request's form is open, and the
+  // form fields. Kept local so multiple requests can have their own state
+  // without an awkward outer modal.
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmAmount, setConfirmAmount] = useState('');
+  const [confirmTxId, setConfirmTxId] = useState('');
+  const [confirmFile, setConfirmFile] = useState<File | null>(null);
+  const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
   // History tab — recent ledger items rendered as a compact table.
   const [historyItems, setHistoryItems] = useState<WalletListItem[]>([]);
@@ -814,6 +822,67 @@ function WalletPageContent() {
   };
 
   /**
+   * "I've Paid" — the user has paid via the admin's payment link and is
+   * uploading their proof so the admin can confirm and credit the wallet.
+   */
+  const submitLocalBankingProof = async (depositId: string) => {
+    const amt = parseFloat(confirmAmount);
+    if (!amt || amt <= 0) {
+      toast.error('Enter the amount you paid');
+      return;
+    }
+    if (!confirmTxId.trim()) {
+      toast.error('Enter the UTR / UPI reference of your payment');
+      return;
+    }
+    if (!confirmFile) {
+      toast.error('Upload a screenshot or PDF of your payment');
+      return;
+    }
+    setConfirmSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append('amount', String(amt));
+      fd.append('transaction_id', confirmTxId.trim());
+      fd.append('file', confirmFile);
+      const token = api.getToken();
+      const res = await fetch(
+        `${getApiBase()}/wallet/deposit/local-banking/${depositId}/confirm-payment`,
+        {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+          credentials: 'include',
+        },
+      );
+      const raw = await res.text();
+      let json: { detail?: unknown } = {};
+      try { json = raw ? JSON.parse(raw) : {}; } catch { throw new Error(raw.slice(0, 200) || `Request failed (${res.status})`); }
+      if (!res.ok) {
+        const d = json.detail;
+        const msg =
+          typeof d === 'string'
+            ? d
+            : Array.isArray(d)
+              ? d.map((x: { msg?: string }) => x.msg).join(', ')
+              : 'Could not submit proof';
+        throw new Error(msg);
+      }
+      toast.success("Proof submitted. We'll confirm and credit your wallet shortly.");
+      setConfirmingId(null);
+      setConfirmAmount('');
+      setConfirmTxId('');
+      setConfirmFile(null);
+      void loadLocalBankingRequests();
+      void fetchData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not submit proof');
+    } finally {
+      setConfirmSubmitting(false);
+    }
+  };
+
+  /**
    * Submit a transfer between two accounts. The backend only exposes
    * main↔trading transfers, so this resolves the picked source/destination
    * pair into one of those two endpoints. trading↔trading transfers aren't
@@ -1176,37 +1245,102 @@ function WalletPageContent() {
                     const isApproved = status === 'approved' || status === 'auto_approved';
                     const isRejected = status === 'rejected' || status === 'failed';
                     const hasLink = !!r.payment_link;
+                    const proofSubmitted = Number(r.amount || 0) > 0;
+                    const isConfirming = confirmingId === r.id;
+                    const stage = isApproved
+                      ? 'Credited'
+                      : isRejected
+                        ? 'Rejected'
+                        : proofSubmitted
+                          ? 'Proof submitted — admin verifying'
+                          : hasLink
+                            ? 'Payment link ready'
+                            : 'Awaiting admin review';
                     return (
                       <li
                         key={r.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm"
+                        className="rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm space-y-2"
                       >
-                        <div className="min-w-0">
-                          <div className="font-semibold text-[#0A0A0A] tabular-nums">
-                            {Number(r.amount || 0) > 0
-                              ? `$${Number(r.amount || 0).toLocaleString()}`
-                              : 'Deposit request'}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-[#0A0A0A] tabular-nums">
+                              {proofSubmitted
+                                ? `$${Number(r.amount || 0).toLocaleString()}`
+                                : 'Deposit request'}
+                            </div>
+                            <div className="text-[11px] text-[#6B7280]">
+                              {r.created_at ? new Date(r.created_at).toLocaleString() : ''} · {stage}
+                            </div>
                           </div>
-                          <div className="text-[11px] text-[#6B7280]">
-                            {r.created_at ? new Date(r.created_at).toLocaleString() : ''} ·{' '}
-                            {isApproved
-                              ? 'Credited'
-                              : isRejected
-                                ? 'Rejected'
-                                : hasLink
-                                  ? 'Payment link ready'
-                                  : 'Awaiting admin review'}
-                          </div>
+                          {hasLink && !isApproved && !isRejected && !proofSubmitted && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <a
+                                href={r.payment_link as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                              >
+                                Pay now
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setConfirmingId(isConfirming ? null : r.id);
+                                  setConfirmAmount('');
+                                  setConfirmTxId('');
+                                  setConfirmFile(null);
+                                }}
+                                className="inline-flex items-center justify-center rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-xs font-semibold px-3 py-1.5 hover:bg-[#0A0A0A] hover:text-white transition-colors"
+                              >
+                                {isConfirming ? 'Cancel' : "I've Paid"}
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        {hasLink && !isApproved && !isRejected && (
-                          <a
-                            href={r.payment_link as string}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
-                          >
-                            Pay now
-                          </a>
+
+                        {/* Inline "I've Paid" form — collapses back when closed. */}
+                        {isConfirming && (
+                          <div className="space-y-2 rounded-lg bg-white border border-[#E5E5E5] p-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-[#0A0A0A]">Amount paid (USD)</label>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                value={confirmAmount}
+                                onChange={(e) => setConfirmAmount(e.target.value)}
+                                placeholder="e.g. 100"
+                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-[#0A0A0A]">UTR / UPI reference</label>
+                              <input
+                                type="text"
+                                value={confirmTxId}
+                                onChange={(e) => setConfirmTxId(e.target.value)}
+                                placeholder="Transaction reference from your bank / UPI app"
+                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium text-[#0A0A0A]">Payment proof (screenshot / PDF)</label>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => setConfirmFile(e.target.files?.[0] ?? null)}
+                                className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-xs file:mr-3 file:rounded file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => void submitLocalBankingProof(r.id)}
+                              disabled={confirmSubmitting}
+                              className="w-full rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] disabled:opacity-60 text-white text-sm font-semibold py-2 transition-colors"
+                            >
+                              {confirmSubmitting ? 'Submitting…' : 'Submit proof'}
+                            </button>
+                          </div>
                         )}
                       </li>
                     );

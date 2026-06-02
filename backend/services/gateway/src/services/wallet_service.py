@@ -792,6 +792,123 @@ async def create_local_banking_request(
     }
 
 
+async def confirm_local_banking_payment(
+    *,
+    deposit_id: UUID,
+    user_id: UUID,
+    amount: Decimal,
+    transaction_id: str,
+    file: UploadFile,
+    db: AsyncSession,
+) -> dict:
+    """Stage-3 of the local-banking flow: after the admin has shared a payment
+    link, the user pays externally and confirms the payment here by entering
+    the actual amount paid and uploading proof (UPI screenshot / bank receipt).
+
+    Updates the existing Deposit row in place — amount goes from 0 to the real
+    figure, screenshot_url + transaction_id are populated. Status stays
+    'pending' so the admin still has the final approval step; this just gives
+    them the evidence to do it.
+
+    Idempotent against the same deposit_id being confirmed twice — we refuse
+    if the deposit is already approved/rejected, or if it was never given a
+    payment link in the first place.
+    """
+    deposit_q = await db.execute(
+        select(Deposit).where(
+            Deposit.id == deposit_id,
+            Deposit.user_id == user_id,
+            Deposit.method == "local_banking",
+        ).with_for_update()
+    )
+    deposit = deposit_q.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    if deposit.status != "pending":
+        raise HTTPException(status_code=400, detail="Deposit already finalised")
+    if not deposit.payment_link:
+        raise HTTPException(
+            status_code=400,
+            detail="Wait for the admin to share payment details before confirming.",
+        )
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Enter the amount you paid")
+
+    tid = (transaction_id or "").strip()
+    if not tid:
+        raise HTTPException(
+            status_code=400,
+            detail="Transaction reference (UTR / UPI reference) is required",
+        )
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Payment proof file is required")
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in DEPOSIT_PROOF_EXT:
+        raise HTTPException(status_code=400, detail="Allowed file types: JPG, PNG, PDF, WEBP")
+    content = await file.read()
+    if len(content) > MAX_PROOF_BYTES:
+        raise HTTPException(status_code=400, detail="File too large (max 10 MB)")
+
+    from packages.common.src.file_validation import validate_upload
+    try:
+        suffix = validate_upload(
+            content, suffix,
+            allowed_extensions=DEPOSIT_PROOF_EXT,
+            label="Payment proof",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    try:
+        user_dir = safe_join_under_base(_wallet_upload_root(), "deposits", str(user_id))
+    except PathTraversalError:
+        raise HTTPException(status_code=400, detail="Invalid upload path")
+    user_dir.mkdir(parents=True, exist_ok=True)
+    safe = f"local_banking_{uuid_lib.uuid4().hex}{suffix}"
+    try:
+        out_path = safe_join_under_base(user_dir, safe)
+    except PathTraversalError:
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    try:
+        out_path.write_bytes(content)
+    except OSError as e:
+        logger.exception("local banking proof write failed: %s", out_path)
+        raise HTTPException(status_code=503, detail="Could not save file") from e
+
+    deposit.amount = amount
+    deposit.transaction_id = tid
+    deposit.screenshot_url = str(out_path.resolve())
+
+    await create_notification(
+        db, user_id,
+        title="Payment proof received",
+        message=(
+            f"We received your proof of payment for ${float(amount):,.2f}. "
+            "Our team will verify and credit your wallet shortly."
+        ),
+        notif_type="deposit",
+        action_url="/wallet?tab=deposit",
+        commit=False,
+    )
+
+    await db.commit()
+    await db.refresh(deposit)
+
+    logger.info(
+        "Local banking payment confirmed: deposit=%s user=%s amount=%s",
+        deposit.id, user_id, amount,
+    )
+
+    return {
+        "deposit_id": str(deposit.id),
+        "amount": float(deposit.amount or 0),
+        "status": deposit.status,
+        "message": "Payment proof submitted — awaiting admin confirmation.",
+    }
+
+
 # ─── Razorpay deposit (Checkout popup, charged in INR) ─────────────────────
 
 
