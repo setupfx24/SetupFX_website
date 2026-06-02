@@ -1627,7 +1627,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="close-position-title"
-                className="pointer-events-auto relative w-full max-w-[280px] rounded-xl border border-border-primary p-3.5 shadow-2xl overflow-hidden"
+                className="pointer-events-auto relative w-full max-w-[420px] rounded-xl border border-border-primary p-3.5 shadow-2xl overflow-hidden"
                 style={{ background: 'var(--bg-card)' }}
                 onMouseDown={(e) => e.stopPropagation()}
               >
