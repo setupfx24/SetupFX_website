@@ -105,14 +105,24 @@ async def become_provider(
     management_fee_pct: Decimal = Query(Decimal("0"), ge=0, le=10),
     min_investment: Decimal = Query(Decimal("100"), gt=0),
     max_investors: int = Query(100, ge=1, le=1000),
+    account_id: str | None = Query(None),
     strategy_info: dict | None = Body(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # account_id removed — server auto-creates a dedicated master trading
-    # account so the user's personal live accounts stay separate.
+    # account_id is optional:
+    #   - None  → admin will auto-create a dedicated master pool account on approval
+    #   - UUID  → user wants to make an existing live account the master account
+    parsed_account_id = None
+    if account_id:
+        try:
+            from uuid import UUID
+            parsed_account_id = UUID(account_id)
+        except ValueError:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Invalid account_id")
     return await social_service.become_provider(
-        account_id=None, master_type=master_type, description=description,
+        account_id=parsed_account_id, master_type=master_type, description=description,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors,
         strategy_info=strategy_info,

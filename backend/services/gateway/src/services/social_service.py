@@ -1047,13 +1047,31 @@ async def become_provider(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="You already have a provider application of this type")
 
-    # Pool trading account is created on admin approval, not here — otherwise
-    # a pending row would leave an orphan CT/PM/MM account if the admin
-    # rejects, and approve_master_request() would create a second one and
-    # overwrite master.account_id, stranding the first. Keep account_id=None
-    # until approved.
+    # If the user picked an existing live account as the master account,
+    # validate ownership and constraints up-front. Demo accounts can't be
+    # master accounts, and an account already used by another master row
+    # is off-limits. When account_id is None the admin auto-creates a
+    # dedicated pool account at approval time.
+    if account_id is not None:
+        acc_q = await db.execute(
+            select(TradingAccount).where(TradingAccount.id == account_id)
+        )
+        acc = acc_q.scalar_one_or_none()
+        if not acc or acc.user_id != user_id:
+            raise HTTPException(status_code=400, detail="Account not found or not yours")
+        if acc.is_demo:
+            raise HTTPException(status_code=400, detail="Demo accounts can't be used as a master account")
+        in_use_q = await db.execute(
+            select(MasterAccount.id).where(
+                MasterAccount.account_id == account_id,
+                MasterAccount.status.in_(["pending", "approved", "active"]),
+            )
+        )
+        if in_use_q.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="This account is already linked to another master application")
+
     master = MasterAccount(
-        user_id=user_id, account_id=None, status="pending",
+        user_id=user_id, account_id=account_id, status="pending",
         master_type=normalized_type,
         performance_fee_pct=performance_fee_pct, management_fee_pct=management_fee_pct,
         min_investment=min_investment, max_investors=max_investors, description=description,

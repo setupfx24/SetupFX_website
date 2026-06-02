@@ -1202,6 +1202,13 @@ function BecomeProviderTab() {
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Master trading account selection — "new" (admin auto-creates a dedicated
+  // CT pool account on approval) vs "existing" (reuse one of the user's
+  // live accounts).
+  const [accountMode, setAccountMode] = useState<'new' | 'existing'>('new');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [accounts, setAccounts] = useState<Array<{ id: string; account_number: string; balance: number; is_demo: boolean }>>([]);
+
   // Strategy Info fields
   const [strategyName, setStrategyName] = useState('');
   const [market, setMarket] = useState('');
@@ -1219,11 +1226,27 @@ function BecomeProviderTab() {
         let provRes = null;
         try { provRes = await api.get<any>('/social/my-provider?master_type=signal_provider'); } catch {}
         if (provRes) setExisting(provRes);
+        try {
+          const accRes = await api.get<any>('/accounts');
+          const items: any[] = Array.isArray(accRes) ? accRes : (accRes?.items ?? []);
+          // Only live accounts are eligible — demo accounts can't host
+          // master strategies (no real fee chain).
+          setAccounts(items.filter((a) => !a.is_demo).map((a) => ({
+            id: a.id,
+            account_number: a.account_number,
+            balance: Number(a.balance) || 0,
+            is_demo: !!a.is_demo,
+          })));
+        } catch {}
       } catch {} finally { setLoading(false); }
     })();
   }, []);
 
   const handleSubmit = async () => {
+    if (accountMode === 'existing' && !selectedAccountId) {
+      toast.error('Pick a trading account or switch to "Create new"');
+      return;
+    }
     setSubmitting(true);
     try {
       const strategyInfo: Record<string, string> = {};
@@ -1242,6 +1265,7 @@ function BecomeProviderTab() {
         min_investment: minInvest,
         max_investors: maxInvestors,
         ...(description ? { description } : {}),
+        ...(accountMode === 'existing' && selectedAccountId ? { account_id: selectedAccountId } : {}),
       });
       const res = await api.post<{ account_number?: string }>(
         `/social/become-provider?${params.toString()}`,
@@ -1303,9 +1327,85 @@ function BecomeProviderTab() {
           <a href="/pamm" className="text-buy underline underline-offset-2 whitespace-nowrap">Apply on PAMM page →</a>
         </div>
 
-        <div className="p-3 rounded-xl border border-accent/30 bg-accent/5 text-xxs text-text-secondary">
-          <p className="font-semibold text-accent mb-1">Dedicated Master Trading Account</p>
-          <p>When approved, a dedicated master trading account will be created for you automatically. Fund it from your main wallet to start trading — your followers will mirror only this account.</p>
+        {/* Master trading account picker */}
+        <div className="p-3 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-accent">Master Trading Account</p>
+            <p className="text-xxs text-text-secondary mt-0.5">
+              Which account will your followers mirror? Pick a fresh dedicated one, or reuse a live account you already trade well.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <label
+              className={clsx(
+                'cursor-pointer rounded-lg border p-3 text-xxs transition-colors',
+                accountMode === 'new'
+                  ? 'border-accent/60 bg-accent/10'
+                  : 'border-border-glass bg-bg-secondary hover:border-accent/30',
+              )}
+            >
+              <input
+                type="radio"
+                name="acct-mode"
+                value="new"
+                checked={accountMode === 'new'}
+                onChange={() => {
+                  setAccountMode('new');
+                  setSelectedAccountId('');
+                }}
+                className="sr-only"
+              />
+              <p className="font-semibold text-text-primary">Create new dedicated account</p>
+              <p className="text-text-tertiary mt-0.5 leading-snug">
+                A fresh CT account is opened on approval. Keeps your personal trading separate.
+              </p>
+            </label>
+            <label
+              className={clsx(
+                'cursor-pointer rounded-lg border p-3 text-xxs transition-colors',
+                accountMode === 'existing'
+                  ? 'border-accent/60 bg-accent/10'
+                  : 'border-border-glass bg-bg-secondary hover:border-accent/30',
+                accounts.length === 0 && 'opacity-60 cursor-not-allowed',
+              )}
+            >
+              <input
+                type="radio"
+                name="acct-mode"
+                value="existing"
+                checked={accountMode === 'existing'}
+                disabled={accounts.length === 0}
+                onChange={() => setAccountMode('existing')}
+                className="sr-only"
+              />
+              <p className="font-semibold text-text-primary">Use an existing account</p>
+              <p className="text-text-tertiary mt-0.5 leading-snug">
+                {accounts.length === 0
+                  ? 'No live accounts available — open one first.'
+                  : 'Make one of your live accounts the master. Followers mirror it from day one.'}
+              </p>
+            </label>
+          </div>
+          {accountMode === 'existing' && accounts.length > 0 && (
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Pick the account</label>
+              <select
+                value={selectedAccountId}
+                onChange={(e) => setSelectedAccountId(e.target.value)}
+                className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs font-mono"
+              >
+                <option value="">— Select —</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.account_number} · ${a.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-warning mt-1.5 leading-snug">
+                Note: every trade you place on this account will be mirrored to followers once approved.
+              </p>
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -303,26 +303,36 @@ async def approve_master_request(
     if user:
         user.role = "master_trader"
 
-    # ── Auto-create a dedicated pool trading account for the master ──
-    effective_type = (master.master_type or "signal_provider").lower()
-    prefix = "PM" if effective_type == "pamm" else ("MM" if effective_type == "mamm" else "CT")
-    pool_account = TradingAccount(
-        user_id=master.user_id,
-        account_number=_generate_pool_account_number(prefix),
-        balance=Decimal("0"),
-        equity=Decimal("0"),
-        free_margin=Decimal("0"),
-        margin_used=Decimal("0"),
-        leverage=500,
-        currency="USD",
-        is_demo=False,
-        is_active=True,
-    )
-    db.add(pool_account)
-    await db.flush()  # get pool_account.id
-
-    # Link the pool account to the master
-    master.account_id = pool_account.id
+    # ── Pool trading account ──
+    # If the applicant picked an existing live account at apply time, reuse
+    # it as the master pool. Otherwise auto-create a dedicated CT/PM/MM
+    # account so the master's mirror activity stays separate from their
+    # personal trading.
+    if master.account_id:
+        existing_q = await db.execute(
+            select(TradingAccount).where(TradingAccount.id == master.account_id)
+        )
+        pool_account = existing_q.scalar_one_or_none()
+        if not pool_account:
+            raise HTTPException(status_code=400, detail="Linked account no longer exists")
+    else:
+        effective_type = (master.master_type or "signal_provider").lower()
+        prefix = "PM" if effective_type == "pamm" else ("MM" if effective_type == "mamm" else "CT")
+        pool_account = TradingAccount(
+            user_id=master.user_id,
+            account_number=_generate_pool_account_number(prefix),
+            balance=Decimal("0"),
+            equity=Decimal("0"),
+            free_margin=Decimal("0"),
+            margin_used=Decimal("0"),
+            leverage=500,
+            currency="USD",
+            is_demo=False,
+            is_active=True,
+        )
+        db.add(pool_account)
+        await db.flush()  # get pool_account.id
+        master.account_id = pool_account.id
 
     await write_audit_log(
         db, admin_id, "approve_master_request", "master_account", master_id,
