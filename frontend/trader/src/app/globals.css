@@ -667,6 +667,15 @@ html {
  * to the SwissCresta dark surface with proper padding, gap, and typography so
  * single-line errors don't wrap mid-word and the icon doesn't crash into
  * the text. */
+/* The container the lib generates also needs to be clamped — it sits
+ * fixed at the top and absolutely-positions each toast, so if its width
+ * is unbounded the toasts can spill past the modal regardless of the
+ * inner max-width. */
+.swisscresta-toaster,
+.swisscresta-toaster > div {
+  max-width: min(440px, calc(100vw - 32px)) !important;
+}
+
 .swisscresta-hot-toast {
   background: var(--toast-bg) !important;
   color: var(--toast-fg) !important;
