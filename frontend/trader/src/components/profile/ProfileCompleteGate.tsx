@@ -184,12 +184,12 @@ export default function ProfileCompleteGate() {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-bg-base/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="profile-gate-title"
     >
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-border-primary bg-bg-elevated shadow-2xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-border-primary bg-bg-secondary shadow-2xl">
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border-primary">
           <div className="flex items-center gap-3 mb-3">
