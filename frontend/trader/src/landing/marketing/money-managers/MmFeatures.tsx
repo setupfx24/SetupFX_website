@@ -2,7 +2,7 @@ import { Check, Clock } from 'lucide-react'
 import { HEADING_SECTION } from '../ui/headings'
 
 const FEATURES = [
-  'MAM, LAMM & PAMM systems for all platforms',
+  'Trade Master, copy-trading & PAMM systems for all platforms',
   'Comprehensive reporting and monitoring tools',
   'Flexible compensation structures',
   'Aggregated liquidity pool from over 15 Tier 1 providers',

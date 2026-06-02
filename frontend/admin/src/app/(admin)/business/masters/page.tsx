@@ -75,7 +75,7 @@ export default function MastersPage() {
           <div>
             <h1 className="text-lg font-semibold text-text-primary">Copy-Trade Masters</h1>
             <p className="text-xxs text-text-tertiary mt-0.5">
-              Manage signal providers, PAMM & MAMM managers. Deleting a master closes all follower copies and refunds their allocations.
+              Manage signal providers, PAMM & Trade Masters. Deleting a master closes all follower copies and refunds their allocations.
             </p>
           </div>
           <button

@@ -75,7 +75,7 @@ interface PaginatedResponse<T> {
 const TABS: { id: TabId; label: string }[] = [
   { id: 'leaderboard', label: 'Leaderboard' },
   { id: 'my-copies', label: 'My Subscriptions' },
-  { id: 'become-provider', label: 'Become MAM Master' },
+  { id: 'become-provider', label: 'Become Trade Master' },
   { id: 'my-dashboard', label: 'My Dashboard' },
 ];
 
@@ -457,7 +457,7 @@ function CopyModal({
         </div>
 
         <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
-          A dedicated trading account will be auto-created for this MAM subscription. Mirrored trades will appear there.
+          A dedicated trading account will be auto-created for this Trade Master subscription. Mirrored trades will appear there.
         </div>
 
         <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
@@ -791,7 +791,7 @@ function MyCopiesTab() {
 
   if (loading) return <Spinner />;
   if (error) return <ErrorBanner message={error} onRetry={fetchCopies} />;
-  if (copies.length === 0) return <EmptyState message="No active MAM subscriptions yet" />;
+  if (copies.length === 0) return <EmptyState message="No active Trade Master subscriptions yet" />;
 
   return (
     <div className="space-y-3">
@@ -955,8 +955,8 @@ function SocialPageInner() {
     return (
       <DashboardShell>
         <DemoLockGate
-          feature="MAMM Trading"
-          description="MAMM trading and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
+          feature="Trade Master"
+          description="Trade Master and becoming a provider require a real trading account. Register a live account to follow top traders or share your strategy."
         >
           <></>
         </DemoLockGate>
@@ -1193,7 +1193,7 @@ function StrategyInfoCard({ info }: { info: Record<string, string> }) {
 function BecomeProviderTab() {
   const [loading, setLoading] = useState(false);
   const [existing, setExisting] = useState<any>(null);
-  // MAMM Trading section — applies as signal_provider (the master_type that
+  // Trade Master section — applies as signal_provider (the master_type that
   // drives copy/mirror trading). PAMM applications live on /pamm.
   const masterType = 'signal_provider';
   const [perfFee, setPerfFee] = useState('20');
@@ -1289,12 +1289,12 @@ function BecomeProviderTab() {
     <div className="max-w-lg mx-auto space-y-4">
       <MasterEligibilityBanner />
       <div className="glass-card rounded-xl p-5 noise-texture space-y-4">
-        <h3 className="text-sm font-semibold text-text-primary">Apply to Become a MAM Master</h3>
+        <h3 className="text-sm font-semibold text-text-primary">Apply to Become a Trade Master</h3>
         <p className="text-xxs text-text-tertiary">Choose your provider type, set your fees, and start earning from followers.</p>
 
         {/* Provider Type */}
         <div className="p-3 rounded-xl border border-buy/30 bg-buy/5">
-          <p className="text-xs font-semibold text-buy">MAM Master</p>
+          <p className="text-xs font-semibold text-buy">Trade Master</p>
           <p className="text-xxs text-text-tertiary mt-0.5">Individual accounts — your followers automatically mirror your trades in real time (proportional lot size per investor)</p>
         </div>
 
@@ -1417,7 +1417,7 @@ function MyDashboardTab() {
   };
 
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
-  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved MAM master. Apply in the &ldquo;Become MAM Master&rdquo; tab.</div>;
+  if (!data || data.status !== 'approved') return <div className="text-center py-16 text-xs text-text-tertiary">You are not an approved Trade Master. Apply in the &ldquo;Become Trade Master&rdquo; tab.</div>;
 
   const fmt = (n: number) => (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

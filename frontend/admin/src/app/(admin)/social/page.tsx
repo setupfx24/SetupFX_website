@@ -171,7 +171,7 @@ export default function SocialPage() {
       <div className="p-6 space-y-4">
         <div>
           <h1 className="text-lg font-semibold text-text-primary">Social Trading Management</h1>
-          <p className="text-xxs text-text-tertiary mt-0.5">MAMM, PAMM, and Signal Provider management</p>
+          <p className="text-xxs text-text-tertiary mt-0.5">Trade Master, PAMM, and Signal Provider management</p>
         </div>
 
         {/* Summary cards */}
@@ -202,7 +202,7 @@ export default function SocialPage() {
             {[
               { id: 'requests' as Tab, label: 'Pending Requests', badge: requests.length },
               { id: 'masters' as Tab, label: 'Active Masters', badge: masters.length },
-              { id: 'pamm' as Tab, label: 'PAMM / MAM', badge: 0 },
+              { id: 'pamm' as Tab, label: 'PAMM / Trade Master', badge: 0 },
             ].map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-fast', tab === t.id ? 'bg-bg-hover text-text-primary border border-border-primary' : 'text-text-secondary hover:text-text-primary')}>
                 {t.label}
@@ -302,7 +302,7 @@ export default function SocialPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     { label: 'PAMM Pools', value: String(pammAnalytics.summary.total_pamm_pools), icon: BarChart2, color: 'text-buy' },
-                    { label: 'MAM Managers', value: String(pammAnalytics.summary.total_mam_managers), icon: Users, color: 'text-text-primary' },
+                    { label: 'Trade Masters', value: String(pammAnalytics.summary.total_mam_managers), icon: Users, color: 'text-text-primary' },
                     { label: 'Total Investor Capital', value: `$${fmt(pammAnalytics.summary.total_investor_capital)}`, icon: DollarSign, color: 'text-success' },
                     { label: 'Admin Fee Revenue', value: `$${fmt(pammAnalytics.summary.admin_fee_revenue)}`, icon: TrendingUp, color: 'text-warning' },
                   ].map(c => {
@@ -356,11 +356,11 @@ export default function SocialPage() {
                   )}
                 </div>
 
-                {/* MAM Managers */}
+                {/* Trade Masters */}
                 <div>
-                  <h3 className="text-xs font-semibold text-text-primary mb-2">MAM Managers</h3>
+                  <h3 className="text-xs font-semibold text-text-primary mb-2">Trade Masters</h3>
                   {pammAnalytics.mam_managers.length === 0 ? (
-                    <p className="text-xxs text-text-tertiary py-6 text-center">No MAM managers yet</p>
+                    <p className="text-xxs text-text-tertiary py-6 text-center">No Trade Masters yet</p>
                   ) : (
                     <div className="overflow-x-auto rounded-md border border-border-primary">
                       <table className="w-full">
@@ -439,7 +439,7 @@ export default function SocialPage() {
                 <select value={approveType} onChange={e => setApproveType(e.target.value)} className="w-full text-xs py-2 pl-3 pr-8 appearance-none bg-bg-input border border-border-primary rounded-md text-text-primary">
                   <option value="signal_provider">Signal Provider (Copy Trading)</option>
                   <option value="pamm">PAMM (Proportional Allocation)</option>
-                  <option value="mamm">MAMM (Multi-Account)</option>
+                  <option value="mamm">Trade Master (Multi-Account)</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

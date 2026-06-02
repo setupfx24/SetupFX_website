@@ -111,7 +111,7 @@ function tradeSourceBadge(tradeType: string | null | undefined, accountNumber?: 
   const acct = (accountNumber || '').toUpperCase();
   const looksInvestor = acct.startsWith('CF') || acct.startsWith('IF');
   if (t === 'copy_trade' || t === 'mam' || t === 'pamm' || looksInvestor) {
-    return { label: 'MAM', className: 'bg-info/15 text-info border border-info/30' };
+    return { label: 'Copy', className: 'bg-info/15 text-info border border-info/30' };
   }
   return { label: 'Real', className: 'bg-success/15 text-success border border-success/30' };
 }
@@ -444,8 +444,8 @@ export default function TradesSection() {
                         {tab === 'open' && (
                           <td className="px-3 py-3 text-right">
                             {isMamFollower ? (
-                              <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="This is a MAM mirrored trade — only the master can close it">
-                                MAM · Master closes
+                              <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="This is a copied trade — only the Trade Master can close it">
+                                Copy · Master closes
                               </span>
                             ) : (
                               <button
@@ -547,8 +547,8 @@ export default function TradesSection() {
                       </span>
                       {tab === 'open' && (
                         isMamFollower ? (
-                          <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="MAM trade — only master can close">
-                            MAM · Master closes
+                          <span className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase bg-info/15 text-info border border-info/30" title="Copy trade — only the Trade Master can close it">
+                            Copy · Master closes
                           </span>
                         ) : (
                           <button

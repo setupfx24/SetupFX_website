@@ -570,7 +570,7 @@ export default function PammPage() {
                   // Style label derived from master_type.
                   const styleLabel =
                     a.master_type === 'pamm' ? 'PAMM Manager'
-                    : a.master_type === 'mam' ? 'MAM Manager'
+                    : a.master_type === 'mam' ? 'Trade Master'
                     : 'Signal Provider';
                   const aum = a.aum || 0;
                   const totalReturnUsd = aum * (a.total_return_pct / 100);
