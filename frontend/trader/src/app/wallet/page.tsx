@@ -944,6 +944,20 @@ function WalletPageContent() {
     //   in the panel, then uploads proof + reference. Existing manual
     //   deposit endpoint handles the row + admin review.
     if (depositUiSection === 'crypto') {
+      // If admin hasn't configured any manual destination, the user has
+      // no place to send funds outside the gateway — they should use
+      // "Pay with crypto gateway" instead of hitting Continue.
+      const hasManualDestination = !!(
+        manualBankInfo &&
+        (manualBankInfo.bank_name ||
+          manualBankInfo.upi_id ||
+          manualBankInfo.qr_code_url ||
+          manualBankInfo.wallet_address)
+      );
+      if (!hasManualDestination) {
+        toast.error('No manual payment destination configured — use "Pay with crypto gateway".');
+        return;
+      }
       if (!depositTxId.trim()) {
         toast.error('Enter your transaction reference / tx hash');
         return;
@@ -1468,9 +1482,7 @@ function WalletPageContent() {
             {/* Automated crypto checkout via the OxaPay gateway. Opens a
                 hosted page where the user picks a coin/network, pays, and
                 the OxaPay webhook auto-credits the deposit — no manual
-                tx-hash entry required. The manual fields below remain as
-                a fallback for users who already paid directly to the
-                admin QR/address. */}
+                tx-hash entry required. */}
             <button
               type="button"
               onClick={() => void openCryptoGatewayCheckout()}
@@ -1479,29 +1491,43 @@ function WalletPageContent() {
             >
               {cryptoGatewayBusy ? 'Opening gateway…' : 'Pay with crypto gateway →'}
             </button>
-            <p className="text-[11px] text-[#6B7280] leading-snug text-center">
-              Or pay manually to the address above and submit your transaction hash below.
-            </p>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">Transaction reference / tx hash</label>
-              <input
-                type="text"
-                value={depositTxId}
-                onChange={(e) => setDepositTxId(e.target.value)}
-                placeholder="On-chain tx hash, UTR, or transfer reference"
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">Payment proof</label>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
-              />
-            </div>
+            {/* Manual proof submission — only show when admin has actually
+                configured a bank/UPI/QR/wallet to pay TO. If nothing is
+                configured the user has nowhere to send funds manually, so
+                hide the tx-hash + proof fields rather than show empty
+                inputs that lead to a stuck request. */}
+            {manualBankInfo && (
+              manualBankInfo.bank_name ||
+              manualBankInfo.upi_id ||
+              manualBankInfo.qr_code_url ||
+              manualBankInfo.wallet_address
+            ) && (
+              <>
+                <p className="text-[11px] text-[#6B7280] leading-snug text-center">
+                  Or pay manually to the address above and submit your transaction hash below.
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0A]">Transaction reference / tx hash</label>
+                  <input
+                    type="text"
+                    value={depositTxId}
+                    onChange={(e) => setDepositTxId(e.target.value)}
+                    placeholder="On-chain tx hash, UTR, or transfer reference"
+                    className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-[#0A0A0A]">Payment proof</label>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
+                    className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+                  />
+                </div>
+              </>
+            )}
           </>
         ) : (
           <div className="space-y-2">
