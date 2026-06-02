@@ -46,7 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // error.tsx. Trading pages are the worst hit because they re-render on
     // every price tick. Hard-opting the page out of translation is the
     // canonical fix for that React/Translate collision.
-    <html lang="fr" translate="no" suppressHydrationWarning className={fontVariableClass}>
+    // lang="en" matches the actual copy on every page. Earlier this was
+    // "fr" — a leftover from the original French marketing scaffold — which
+    // made Chrome think every English screen needed translating and triggered
+    // the auto-translate prompt on the trading terminal. The `translate="no"`
+    // attributes below are still the belt-and-suspenders guard against
+    // standalone Translate extensions.
+    <html lang="en" translate="no" suppressHydrationWarning className={fontVariableClass}>
       <head>
         <meta name="google" content="notranslate" />
         <script
