@@ -50,6 +50,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [leverage, setLeverage] = useState<number | null>(null);
+  // Real users can open either a real or a demo (practice) account.
+  // Demo users are locked to demo. Default tracks the user's own status.
+  const [requestedType, setRequestedType] = useState<'real' | 'demo'>(
+    userIsDemo ? 'demo' : 'real',
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -59,7 +64,8 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     setLoading(true);
     (async () => {
       try {
-        const res = await api.get<{ items: AvailableAccountGroup[] }>('/accounts/available-groups');
+        const url = `/accounts/available-groups?type=${requestedType}`;
+        const res = await api.get<{ items: AvailableAccountGroup[] }>(url);
         if (cancelled) return;
         const list = Array.isArray(res.items) ? res.items : [];
         setGroups(list);
@@ -74,7 +80,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       }
     })();
     return () => { cancelled = true; };
-  }, [open]);
+  }, [open, requestedType]);
 
   const selected = useMemo(
     () => groups.find((g) => g.id === selectedId) || null,
@@ -114,6 +120,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       const res = await api.post<{ id: string; account_number: string }>('/accounts/open', {
         account_group_id: selected.id,
         leverage: leverage ?? selected.leverage_default,
+        is_demo: requestedType === 'demo',
       });
       toast.success('Trading account created');
       onClose();
@@ -148,8 +155,18 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
         {/* Account-type segmented toggle */}
         <Section label="Account type">
           <div className="inline-flex p-1 rounded-lg" style={{ background: 'var(--bg-card-nested)', border: '1px solid var(--border-primary)' }}>
-            <TypePill active={!userIsDemo} disabled={userIsDemo} label="Real" />
-            <TypePill active={userIsDemo} disabled={!userIsDemo} label="Demo" />
+            <TypePill
+              active={requestedType === 'real'}
+              disabled={userIsDemo}
+              label="Real"
+              onClick={() => setRequestedType('real')}
+            />
+            <TypePill
+              active={requestedType === 'demo'}
+              disabled={false}
+              label="Demo"
+              onClick={() => setRequestedType('demo')}
+            />
           </div>
           {userIsDemo && (
             <p className="mt-2 text-xs text-text-tertiary">
@@ -284,19 +301,33 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function TypePill({ active, disabled, label }: { active: boolean; disabled: boolean; label: string }) {
+function TypePill({
+  active,
+  disabled,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  disabled: boolean;
+  label: string;
+  onClick?: () => void;
+}) {
   return (
-    <span
-      className="px-4 py-1.5 text-sm font-semibold rounded-md transition-colors select-none"
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className="px-4 py-1.5 text-sm font-semibold rounded-md transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94E1B]/40"
       style={{
         background: active ? '#E94E1B' : 'transparent',
-        color: active ? '#1a1408' : 'var(--text-secondary)',
+        color: active ? '#ffffff' : 'var(--text-secondary)',
         opacity: disabled ? 0.55 : 1,
-        cursor: disabled ? 'not-allowed' : 'default',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        border: 'none',
       }}
     >
       {label}
-    </span>
+    </button>
   );
 }
 

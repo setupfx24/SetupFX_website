@@ -81,6 +81,9 @@ class WalletVerifyRequest(BaseModel):
 class OpenLiveAccountRequest(BaseModel):
     account_group_id: UUID
     leverage: Optional[int] = Field(default=None, ge=1, le=2000)
+    # Real users can additionally open practice / demo accounts. Demo users
+    # are still locked to demo regardless of what they send here.
+    is_demo: Optional[bool] = None
 
 
 class TokenResponse(BaseModel):

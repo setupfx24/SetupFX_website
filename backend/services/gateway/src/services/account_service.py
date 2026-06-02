@@ -63,17 +63,25 @@ async def _user_effective_leverage_cap(
     }
 
 
-async def list_openable_account_groups(db: AsyncSession, user_id: UUID) -> dict:
+async def list_openable_account_groups(
+    db: AsyncSession, user_id: UUID, requested_type: str | None = None,
+) -> dict:
     u = await db.execute(select(User).where(User.id == user_id))
     user = u.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Demo users see only demo-type groups; live users see only live groups.
+    # Demo users are locked to demo groups regardless of `requested_type`.
+    # Real users can ask for the demo set via `?type=demo` to spin up a
+    # practice account alongside their live ones.
+    if bool(user.is_demo):
+        want_demo = True
+    else:
+        want_demo = (requested_type or "").strip().lower() == "demo"
     result = await db.execute(
         select(AccountGroup)
         .where(
             AccountGroup.is_active == True,
-            AccountGroup.is_demo == bool(user.is_demo),
+            AccountGroup.is_demo == want_demo,
         )
         .order_by(AccountGroup.name)
     )
@@ -111,7 +119,12 @@ async def open_live_account(
     user = u.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user_is_demo = bool(user.is_demo)
+    # Demo users are locked to demo accounts. Real users can also open
+    # demo accounts (practice) by passing is_demo=True in the request.
+    if bool(user.is_demo):
+        user_is_demo = True
+    else:
+        user_is_demo = bool(getattr(req, "is_demo", False) or False)
 
     gq = await db.execute(
         select(AccountGroup).where(

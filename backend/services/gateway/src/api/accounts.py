@@ -19,12 +19,17 @@ router = APIRouter()
 
 @router.get("/available-groups")
 async def list_openable_account_groups(
+    type: str | None = None,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Account types the broker exposes (admin-managed AccountGroup rows). Filtered by user's demo/live status."""
+    """Account types the broker exposes. By default returns the set matching
+    the user's own status (live users see live groups, demo users see demo).
+    Real users can pass `?type=demo` to fetch the demo set so they can spin
+    up practice accounts alongside their live one. Demo users still always
+    see demo groups regardless of the param."""
     return await account_service.list_openable_account_groups(
-        db=db, user_id=current_user["user_id"],
+        db=db, user_id=current_user["user_id"], requested_type=type,
     )
 
 
