@@ -32,11 +32,20 @@ export default function EmailOtpStep({
   isPlaceholder: boolean;
   onVerified: () => void;
 }) {
-  const [phase, setPhase] = useState<'enter-email' | 'enter-otp'>('enter-email');
+  // Skip the "enter email" step when we already know the address. On
+  // fresh signup the register flow has already fired start-verification
+  // against the user's real email, so the only thing left for the user
+  // to do is type the 6-digit code that's already in their inbox. The
+  // "Use a different email" link in the OTP phase still gives them an
+  // escape hatch if they need to switch addresses.
+  const hasRealEmail = !isPlaceholder && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentEmail);
+  const [phase, setPhase] = useState<'enter-email' | 'enter-otp'>(
+    hasRealEmail ? 'enter-otp' : 'enter-email',
+  );
   const [email, setEmail] = useState(isPlaceholder ? '' : currentEmail);
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
+  const [resendIn, setResendIn] = useState(hasRealEmail ? RESEND_COOLDOWN_SECONDS : 0);
   const [error, setError] = useState<string | null>(null);
 
   // Resend cooldown timer.

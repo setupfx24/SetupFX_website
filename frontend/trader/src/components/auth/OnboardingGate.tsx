@@ -84,9 +84,7 @@ export default function OnboardingGate() {
             Verify your email
           </h2>
           <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-            We need a verified email on file before you can use the
-            platform. Enter the address you want to use and we&apos;ll
-            send you a one-time code.
+            We sent a 6-digit code to your inbox. Enter it below to finish setting up your account.
           </p>
         </header>
 
