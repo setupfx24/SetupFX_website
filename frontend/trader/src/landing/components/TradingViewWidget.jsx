@@ -6,8 +6,9 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
   const container = useRef(null)
 
   useEffect(() => {
-    if (!container.current) return
-    container.current.innerHTML = ''
+    const host = container.current
+    if (!host) return
+    host.innerHTML = ''
 
     const script = document.createElement('script')
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
@@ -41,8 +42,19 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
     widgetContainer.style.height = `${CHART_HEIGHT}px`
     widgetContainer.style.width = '100%'
 
-    container.current.appendChild(widgetContainer)
-    container.current.appendChild(script)
+    host.appendChild(widgetContainer)
+    host.appendChild(script)
+
+    /* Cleanup is critical here. TradingView's external script mutates this
+     * DOM subtree directly (it injects iframes / divs that React has no
+     * idea about). Without wiping the container on unmount, React's
+     * reconciler will later try to insertBefore / removeChild on a tree
+     * whose shape no longer matches its fiber — surfaces as the page-
+     * level "Something broke on our end." after navigating away from a
+     * page that mounted this widget. */
+    return () => {
+      try { host.innerHTML = '' } catch { /* element already detached */ }
+    }
   }, [symbol])
 
   return (
