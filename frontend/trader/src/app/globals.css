@@ -675,12 +675,14 @@ html {
   border-radius: 12px !important;
   padding: 12px 16px !important;
   min-height: 44px;
-  min-width: 280px;
-  max-width: min(420px, calc(100vw - 32px));
+  min-width: 0 !important;
+  max-width: min(420px, calc(100vw - 32px)) !important;
   font-size: 13.5px !important;
   line-height: 1.45 !important;
   font-weight: 500 !important;
   letter-spacing: 0.1px;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -693,12 +695,18 @@ html {
   margin-right: 2px;
 }
 
-/* The text container — react-hot-toast wraps content in a child div; make
- * sure long error strings flow nicely instead of orphaning a single word. */
+/* The text container — react-hot-toast wraps content in a child div. Flex
+ * children default to min-width:auto which means they refuse to shrink
+ * below the intrinsic width of their content — that's exactly what was
+ * letting long backend error strings stretch the whole toast past its
+ * max-width. min-width:0 + overflow-wrap fixes it for good. */
 .swisscresta-hot-toast > div:not([role="status"]) {
   flex: 1 1 auto;
+  min-width: 0 !important;
   margin: 0 !important;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */
