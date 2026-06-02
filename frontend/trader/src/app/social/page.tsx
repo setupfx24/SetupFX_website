@@ -1419,6 +1419,22 @@ function BecomeProviderTab() {
           <a href="/pamm" className="text-buy underline underline-offset-2 whitespace-nowrap">Apply on PAMM page →</a>
         </div>
 
+        {/* Zero-accounts warning. Followers literally can't mirror anything
+            if the applicant has no live account, so block the submission
+            with a clear call-to-action instead of silently allowing a
+            broken application through. */}
+        {accounts.length === 0 && (
+          <div className="p-3 rounded-xl border border-warning/40 bg-warning/10 text-xxs text-text-primary">
+            <p className="font-semibold text-warning mb-1">No live trading account yet</p>
+            <p className="text-text-secondary leading-snug">
+              You need at least one live (non-demo) trading account before applying — it&apos;s the account your followers will mirror.
+            </p>
+            <a href="/accounts" className="inline-block mt-2 text-accent font-semibold hover:underline">
+              Open a live account →
+            </a>
+          </div>
+        )}
+
         {/* Master trading account picker */}
         <div className="p-3 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
           <div>
@@ -1568,8 +1584,21 @@ function BecomeProviderTab() {
           </div>
         </div>
 
-        <button onClick={handleSubmit} disabled={submitting} className={clsx('w-full py-3 rounded-xl text-sm font-semibold text-white transition-all', submitting ? 'opacity-50' : 'skeu-btn-buy')}>
-          {submitting ? 'Submitting...' : 'Submit Application'}
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || accounts.length === 0}
+          className={clsx(
+            'w-full py-3 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-accent/25',
+            submitting || accounts.length === 0
+              ? 'bg-accent/50 cursor-not-allowed shadow-none'
+              : 'bg-accent hover:bg-accent/90 active:scale-[0.98]',
+          )}
+        >
+          {accounts.length === 0
+            ? 'Open a live account first'
+            : submitting
+              ? 'Submitting...'
+              : 'Submit Application'}
         </button>
       </div>
     </div>
