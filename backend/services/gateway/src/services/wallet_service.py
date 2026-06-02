@@ -723,13 +723,15 @@ async def create_local_banking_request(
     user_id: UUID,
     db: AsyncSession,
 ) -> dict:
-    """Stage-1 of the local-banking flow: user submits only an amount.
+    """Stage-1 of the local-banking flow: user submits a request, no amount.
 
     A Deposit row is created with method='local_banking', status='pending',
-    payment_link=NULL. Admin reviews the user's KYC and then attaches a
-    payment_link (Razorpay payment-link / UPI VPA / bank instructions —
-    admin's choice per case) through the admin panel. User then pays
-    externally and the admin marks the deposit 'approved', which credits
+    amount=0 (the user doesn't specify upfront — admin works it out with
+    them and updates the amount before marking the deposit approved).
+    Admin reviews the user's KYC and then attaches a payment_link
+    (Razorpay payment-link / UPI VPA / bank instructions — admin's choice
+    per case) through the admin panel. User pays externally and the admin
+    marks the deposit 'approved' with the actual paid amount, crediting
     the main wallet through the standard manual-approval flow.
 
     KYC is required: card / UPI / bank rails contractually need a verified
@@ -743,7 +745,9 @@ async def create_local_banking_request(
     if not await get_bool_setting("allow_deposits", True):
         raise HTTPException(status_code=403, detail="Deposits are currently disabled")
 
-    if amount <= 0:
+    # Negative amounts are still invalid, but zero is the new normal — the
+    # user just signalled intent to deposit; admin fills in the figure.
+    if amount < 0:
         raise HTTPException(status_code=400, detail="Invalid amount")
 
     # KYC gate — same semantics as the old Razorpay path.
@@ -771,9 +775,8 @@ async def create_local_banking_request(
         db, user_id,
         title="Deposit request submitted",
         message=(
-            f"Your ${float(amount):,.2f} local banking deposit request has been "
-            "submitted. Our team will review your KYC and share payment "
-            "details with you shortly."
+            "Your local banking deposit request has been submitted. Our team "
+            "will review your KYC and share payment details with you shortly."
         ),
         notif_type="deposit",
         action_url="/wallet?tab=deposit",

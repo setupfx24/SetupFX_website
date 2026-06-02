@@ -692,8 +692,12 @@ function WalletPageContent() {
       toast.error(DEMO_FUNDING_MSG);
       return;
     }
-    const amt = parseFloat(depositAmount);
-    if (!amt || amt <= 0) {
+    // Crypto needs a real amount up-front (user pays to admin's QR and
+    // uploads proof for that exact amount). Local Banking is a permission
+    // request — admin works out the amount with the user out of band, so
+    // we accept 0 here as a sentinel.
+    const amt = depositUiSection === 'local_banking' ? 0 : parseFloat(depositAmount);
+    if (depositUiSection !== 'local_banking' && (!amt || amt <= 0)) {
       toast.error('Enter a valid amount');
       return;
     }
@@ -797,7 +801,7 @@ function WalletPageContent() {
         throw new Error(msg);
       }
       toast.success(
-        `Request for $${amt.toLocaleString()} submitted. We'll share payment details shortly.`,
+        "Deposit request submitted. Our team will review your KYC and share payment details with you shortly.",
       );
       setDepositAmount('');
       void fetchData(true);
@@ -883,10 +887,9 @@ function WalletPageContent() {
     !demoFundingBlocked &&
     !depositSubmitting &&
     !!depositAccountId &&
-    depositAmountValid &&
-    // Local Banking requires KYC; the panel surfaces a "Complete KYC"
-    // banner so the gate is obvious before the user types an amount.
-    (depositUiSection !== 'local_banking' || kycApproved);
+    // Amount is required only for Crypto. Local Banking submits without
+    // an amount — admin works it out with the user after the request.
+    (depositUiSection === 'local_banking' ? kycApproved : depositAmountValid);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1018,33 +1021,38 @@ function WalletPageContent() {
           />
         </div>
 
-        {/* Amount */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            min={depositMinDeposit > 0 ? depositMinDeposit : 0}
-            step="0.01"
-            value={depositAmount}
-            onChange={(e) => setDepositAmount(e.target.value)}
-            placeholder="Enter an amount"
-            className={clsx(
-              'w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none transition-shadow',
-              'focus:ring-2 focus:ring-[#E94E1B]/40',
+        {/* Amount — only shown for Crypto. Local Banking is a permission
+            request: user just asks for access, admin reviews KYC and shares
+            payment details out of band, and the actual amount is determined
+            after the admin confirms the bank transfer. */}
+        {depositUiSection === 'crypto' && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[#0A0A0A]">Amount</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={depositMinDeposit > 0 ? depositMinDeposit : 0}
+              step="0.01"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              placeholder="Enter an amount"
+              className={clsx(
+                'w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none transition-shadow',
+                'focus:ring-2 focus:ring-[#E94E1B]/40',
+              )}
+            />
+            {depositAmount && !depositAmountValid && depositMinDeposit > 0 && (
+              <p className="text-xs text-red-600">
+                Minimum deposit for this account is {formatCurrency(depositMinDeposit, depositAccount?.currency || wallet?.currency || 'USD')}.
+              </p>
             )}
-          />
-          {depositAmount && !depositAmountValid && depositMinDeposit > 0 && (
-            <p className="text-xs text-red-600">
-              Minimum deposit for this account is {formatCurrency(depositMinDeposit, depositAccount?.currency || wallet?.currency || 'USD')}.
-            </p>
-          )}
-          {depositMinDeposit > 0 && depositAmountValid && (
-            <p className="text-xs text-[#6B7280]">
-              Minimum deposit: {formatCurrency(depositMinDeposit, depositAccount?.currency || wallet?.currency || 'USD')}
-            </p>
-          )}
-        </div>
+            {depositMinDeposit > 0 && depositAmountValid && (
+              <p className="text-xs text-[#6B7280]">
+                Minimum deposit: {formatCurrency(depositMinDeposit, depositAccount?.currency || wallet?.currency || 'USD')}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Payment method chips: Crypto (admin's QR shown, user pays + uploads
             proof) and Local Banking (request flow, admin sends back link). */}
@@ -1175,7 +1183,9 @@ function WalletPageContent() {
                       >
                         <div className="min-w-0">
                           <div className="font-semibold text-[#0A0A0A] tabular-nums">
-                            ${Number(r.amount || 0).toLocaleString()}
+                            {Number(r.amount || 0) > 0
+                              ? `$${Number(r.amount || 0).toLocaleString()}`
+                              : 'Deposit request'}
                           </div>
                           <div className="text-[11px] text-[#6B7280]">
                             {r.created_at ? new Date(r.created_at).toLocaleString() : ''} ·{' '}
@@ -1212,7 +1222,7 @@ function WalletPageContent() {
           disabled={!depositCanContinue}
           busy={depositSubmitting}
           onClick={() => void submitDeposit()}
-          label="Continue"
+          label={depositUiSection === 'local_banking' ? 'Send Request' : 'Continue'}
         />
       </div>
 
