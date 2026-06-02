@@ -127,12 +127,18 @@ def kv_row(label: str, value: str, *, last: bool = False) -> str:
     `last=True` skips the bottom row separator so the last row sits flush
     against the table border instead of doubling up."""
     border_bottom = "" if last else f"border-bottom:1px solid {_KV_ROW_BORDER};"
+    # Label gets ~38% of the row, value gets the rest. The previous
+    # width:180px broke mobile renderers — at ~360px viewports it left
+    # only ~30-40px for the value, so even "$100.00" wrapped one
+    # character per line. Percentage widths scale with the email card so
+    # short values stay on one line and long ones (wallet addresses,
+    # tx hashes) still wrap cleanly via overflow-wrap:anywhere.
     return f"""
     <tr>
       <td style="padding:14px 20px;color:{_TEXT_DIM};font-size:13px;
-                 width:180px;vertical-align:top;{border_bottom}">{escape(label)}</td>
+                 width:38%;vertical-align:top;white-space:nowrap;{border_bottom}">{escape(label)}</td>
       <td style="padding:14px 20px;color:{_TEXT};font-size:14px;font-weight:600;
-                 font-variant-numeric:tabular-nums;word-break:break-word;{border_bottom}">
+                 font-variant-numeric:tabular-nums;overflow-wrap:anywhere;word-break:normal;{border_bottom}">
         {escape(value)}
       </td>
     </tr>
