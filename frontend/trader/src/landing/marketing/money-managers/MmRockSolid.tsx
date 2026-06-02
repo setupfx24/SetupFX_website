@@ -27,16 +27,8 @@ const COLUMNS: Column[] = [
     title: 'Security',
     body: (
       <>
-        SwissCresta Bank Ltd has held a banking and securities trading license since 2001, is
-        supervised by FINMA and applies the highest Swiss banking standards of security and
-        service quality. For more information, see the section{' '}
-        <a
-          href="#"
-          className="text-[#E94E1B] hover:underline underline-offset-2 font-semibold"
-        >
-          About Us
-        </a>
-        .
+        SwissCresta applies modern security practices end-to-end — segregated client funds,
+        encrypted infrastructure, and continuous monitoring against fraud and abuse.
       </>
     ),
   },
@@ -44,9 +36,8 @@ const COLUMNS: Column[] = [
     title: 'Transparency',
     body: (
       <>
-        SwissCresta Group (SQN) has been listed on the SIX Swiss Exchange since May 2000. This
-        means that we are held to higher standards of transparency than most of our FX
-        competitors, which aren&apos;t publicly listed.
+        We hold ourselves to high standards of transparency and operational rigor across every
+        product on the platform — clean pricing, predictable execution, and clear policies.
       </>
     ),
   },

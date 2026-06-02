@@ -18,11 +18,7 @@ export default function LandingFooter() {
               />
             </Link>
             <p className="text-gray-500 text-sm leading-relaxed mb-3 max-w-sm">
-              Professional multi-asset trading platform. Licensed under Investment Dealer Licence No. MAK21098161, St. Lucia.
-            </p>
-            <p className="text-gray-500 text-sm">
-              <span className="font-medium text-gray-900">Headquarters:</span><br />
-              Rue de la Tour-de-l&apos;Île 4, 1204 Genève, Switzerland
+              Professional multi-asset trading platform for serious traders.
             </p>
           </div>
 

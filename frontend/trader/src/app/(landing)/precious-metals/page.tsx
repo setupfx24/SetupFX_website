@@ -14,7 +14,7 @@ const FEATURES = [
   {
     icon: Shield,
     title: 'Vaulted in Switzerland',
-    body: 'Physical-backed exposure with safekeeping handled by FINMA-supervised partner vaults — auditable, allocated, insured.',
+    body: 'Physical-backed exposure with safekeeping handled by professional partner vaults — auditable, allocated, insured.',
   },
   {
     icon: Clock,

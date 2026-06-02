@@ -36,20 +36,12 @@ const DOCS = [
 
 const REGULATORY = [
   {
-    label: 'Swiss prudential supervision',
-    body: 'SwissCresta Bank Ltd is regulated by the Swiss Federal Financial Market Supervisory Authority (FINMA).',
-  },
-  {
-    label: 'Investment dealer licence',
-    body: 'Investment Dealer Licence No. MAK21098161 (St. Lucia) covers the multi-asset brokerage operations.',
-  },
-  {
     label: 'Client funds segregation',
-    body: 'Client money is held in segregated accounts at Tier-1 banking partners, separated from corporate funds.',
+    body: 'Client money is held in segregated accounts at our banking partners, separated from corporate funds.',
   },
   {
     label: 'AML / KYC',
-    body: 'Onboarding, transaction monitoring, and politically-exposed-person screening aligned with Swiss AML standards.',
+    body: 'Onboarding, transaction monitoring, and politically-exposed-person screening aligned with industry standards.',
   },
 ]
 

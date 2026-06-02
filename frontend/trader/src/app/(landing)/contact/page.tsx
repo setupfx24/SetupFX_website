@@ -96,42 +96,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Office Locations */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Our Offices</h2>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                city: 'Geneva Headquarters',
-                address: 'Rue de la Tour-de-l’Île 4, 1204 Genève, Switzerland',
-                hours: 'Mon–Fri: 09:00 – 18:00 CET',
-              },
-              {
-                city: 'St. Lucia Office',
-                address: 'Rodney Bay, Gros Islet, St. Lucia',
-                hours: 'Mon–Fri: 09:00 – 17:00 AST',
-              },
-            ].map(({ city, address, hours }) => (
-              <div key={city} className="bg-white rounded-xl p-8 border border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{city}</h3>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <p className="text-gray-600">{address}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <p className="text-gray-600">{hours}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

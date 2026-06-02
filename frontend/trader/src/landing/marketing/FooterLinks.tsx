@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Phone } from 'lucide-react'
+import { Phone } from 'lucide-react'
 import { useLang } from '@/landing/i18n/LangProvider'
 
 const COL_IDS = ['client', 'partner', 'help'] as const
@@ -61,11 +61,6 @@ export default function FooterLinks() {
             <Phone className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
             +33 7 59 15 99 87
           </a>
-          <span className="hidden sm:inline w-px h-4 bg-gray-300" aria-hidden="true" />
-          <span className="inline-flex items-center gap-2 text-center">
-            <MapPin className="w-4 h-4 text-[#E94E1B] shrink-0" strokeWidth={2} />
-            Rue de la Tour-de-l&apos;Île 4, 1204 Genève, Switzerland
-          </span>
         </div>
       </div>
     </section>

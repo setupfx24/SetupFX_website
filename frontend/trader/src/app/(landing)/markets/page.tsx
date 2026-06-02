@@ -50,8 +50,8 @@ export default function MarketsPage() {
           </h1>
           <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
             From precious metals that have anchored wealth for centuries to crypto that
-            settles in seconds — SwissCresta gives you Swiss-grade access to the assets
-            that matter, backed by FINMA-regulated infrastructure.
+            settles in seconds — SwissCresta gives you reliable access to the assets that
+            matter, backed by enterprise-grade infrastructure.
           </p>
         </div>
       </section>
@@ -77,10 +77,6 @@ export default function MarketsPage() {
             ))}
           </div>
 
-          <p className="mt-12 max-w-3xl mx-auto text-xs italic text-gray-500 text-center">
-            *Securities and Crypto products are offered by SwissCresta Bank Ltd, regulated
-            by the Swiss Federal Financial Market Supervisory Authority (FINMA).
-          </p>
         </div>
       </section>
     </div>

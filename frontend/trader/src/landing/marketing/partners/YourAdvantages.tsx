@@ -2,7 +2,7 @@ import { Check } from 'lucide-react'
 import { HEADING_SECTION } from '../ui/headings'
 
 const ADVANTAGES = [
-  'Complement your skill set with the reliability of a stock-listed, FINMA-regulated Swiss bank.',
+  'Complement your skill set with the reliability of a professional multi-asset trading platform.',
   "The efficiency-boosting features of our platforms are designed to lighten your and your clients' daily business.",
   'Offer your clients access to a wide range of Forex & CFD products, plus sophisticated trading tools.',
 ] as const

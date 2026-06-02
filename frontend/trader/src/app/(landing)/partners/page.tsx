@@ -39,8 +39,8 @@ const HIGHLIGHTS = [
 const WHY = [
   {
     icon: ShieldCheck,
-    title: 'Swiss-regulated counterparty',
-    body: 'Your clients trade with a FINMA-supervised institution. Easier to onboard, easier to retain.',
+    title: 'Professional counterparty',
+    body: 'Your clients trade with a platform that takes security and compliance seriously. Easier to onboard, easier to retain.',
   },
   {
     icon: Globe2,

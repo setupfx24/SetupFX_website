@@ -24,9 +24,9 @@ export default function GoodForBusiness() {
           A bank that is good for your business is good for you
         </h2>
         <p className="mt-5 max-w-2xl text-gray-600 leading-relaxed">
-          Since 1996, FINMA-regulated and a partner of the OpenWealth, SwissCresta offers
-          solutions and corporations the guarantee of a prime bank that boasts strength, security
-          and transparency.
+          SwissCresta offers institutional clients and corporations a platform built for
+          strength, security and transparency — with the operational rigor serious traders
+          expect.
         </p>
 
         <div className="mt-10 grid md:grid-cols-2 gap-5">
@@ -72,14 +72,11 @@ export default function GoodForBusiness() {
             <div className="p-6 flex flex-col gap-3 flex-1">
               <h3 className="text-base font-bold text-gray-900">Security</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                SwissCresta Bank Ltd holds a banking and securities trading license since 2001,
-                is supervised by FINMA and applies to the highest Swiss banking standards of
-                security and service quality.
+                SwissCresta applies modern security practices end-to-end — segregated client
+                funds, encrypted infrastructure, and continuous monitoring against fraud and
+                abuse.
               </p>
-              <ExploreLink>See the website</ExploreLink>
-            </div>
-            <div className="md:w-1/3 bg-white border-l border-gray-200 flex items-center justify-center p-6">
-              <span className="text-gray-600 text-sm font-semibold tracking-wider">finma</span>
+              <ExploreLink>Learn more</ExploreLink>
             </div>
           </div>
         </div>

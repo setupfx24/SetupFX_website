@@ -73,7 +73,7 @@ export const dict: Dict = {
       titleA: 'L’arsenal complet pour un',
       titleB: 'portefeuille qui travaille',
       lead: 'Actions, ETF, obligations, options, contrats à terme, dérivés. Chaque pierre angulaire du trading — à portée pour un portefeuille qui travaille aussi dur que vous.',
-      regulated: '*Les produits sur titres sont proposés par SwissCresta Bank Ltd, régulée par l’Autorité fédérale de surveillance des marchés financiers (FINMA).',
+      regulated: '',
       explore: 'Explorer',
     },
     crypto: {
@@ -81,7 +81,7 @@ export const dict: Dict = {
       titleA: '52 cryptos.',
       titleB: 'Sécurité de qualité suisse.',
       lead: '52 cryptomonnaies sur notre propre échange SQX. Du Bitcoin à celles dont votre cousin n’a jamais entendu parler. Tradez 24/7 avec une sécurité de qualité suisse.',
-      regulated: '*Les produits crypto sont proposés par SwissCresta Bank Ltd, régulée par l’Autorité fédérale de surveillance des marchés financiers (FINMA).',
+      regulated: '',
       explore: 'Explorer',
     },
     steps: {
@@ -116,9 +116,9 @@ export const dict: Dict = {
       p1: 'Le trading de produits à effet de levier — y compris le change, les métaux précieux au comptant et les contrats sur la différence (CFD) — comporte un risque de perte significatif. L’effet de levier amplifie aussi bien les gains que les pertes, et ce type de trading peut ne pas convenir à tous les investisseurs. Vous pouvez perdre plus que votre dépôt initial et être amené à effectuer des versements supplémentaires si le solde de votre compte tombe sous la marge requise. Les positions ouvertes à effet de levier engagent également des frais de roll-over, de financement et autres frais applicables.',
       p2: 'Avant d’ouvrir un compte chez SwissCresta, évaluez attentivement votre niveau d’expérience, vos objectifs d’investissement, vos ressources financières, vos revenus et votre tolérance personnelle au risque. Les pertes peuvent théoriquement être illimitées. Les performances passées ne préjugent pas des résultats futurs. Les données de marché présentées le sont à titre informatif uniquement, provenant de tiers réputés fiables ; SwissCresta n’en garantit pas l’exactitude et se réserve le droit de différer ou d’interrompre la diffusion sans préavis. Les clôtures de position sont exécutées sous forme d’ordres au marché au cours acheteur ou vendeur en vigueur ; un slippage peut survenir, notamment lors de fortes volatilités.',
       p3: 'Si vous n’êtes pas sûr que le trading à effet de levier convienne à votre situation, veuillez consulter un conseiller financier indépendant avant de poursuivre. Pour tous les détails sur l’effet de levier, les frais, les exigences de marge et les coûts de trading, référez-vous à notre documentation officielle.',
-      p4: 'Les produits proposés par SwissCresta Bank Ltd sont régulés par l’Autorité fédérale de surveillance des marchés financiers (FINMA). SwissCresta opère également sous la Licence de Courtier en Investissement N° MAK21098161, Sainte-Lucie.',
-      hq: 'Siège social :',
-      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève, Suisse',
+      p4: '',
+      hq: '',
+      hqAddr: '',
       copyright: '© 2026 SwissCresta. Tous droits réservés.',
       links: {
         privacy: 'Politique de confidentialité',
@@ -191,7 +191,7 @@ export const dict: Dict = {
       titleA: 'The full arsenal for a',
       titleB: 'portfolio that works',
       lead: 'Stocks, ETFs, bonds, options, futures, derivatives. Every keystone of the trading realm — within reach for a portfolio that works as hard as you do.',
-      regulated: '*Securities products are offered by SwissCresta Bank Ltd, regulated by the Swiss Federal Financial Market Supervisory Authority (FINMA).',
+      regulated: '',
       explore: 'Explore',
     },
     crypto: {
@@ -199,7 +199,7 @@ export const dict: Dict = {
       titleA: '52 cryptos.',
       titleB: 'Swiss-grade security.',
       lead: '52 cryptocurrencies on our own SQX exchange. From Bitcoin to the ones your cousin hasn’t heard of yet. Trade 24/7 with Swiss-grade security.',
-      regulated: '*Crypto products are offered by SwissCresta Bank Ltd, regulated by the Swiss Federal Financial Market Supervisory Authority (FINMA).',
+      regulated: '',
       explore: 'Explore',
     },
     steps: {
@@ -234,9 +234,9 @@ export const dict: Dict = {
       p1: 'Trading leveraged products — including foreign exchange, spot precious metals, and Contracts for Difference (CFDs) — carries a significant risk of loss. Leverage amplifies both gains and losses, and this type of trading may not be suitable for all investors. You could lose more than your initial deposit, and you may be required to make additional payments if your account balance falls below the required margin. Open leveraged positions also incur rolling, financing, and other applicable fees.',
       p2: 'Before opening an account with SwissCresta, carefully assess your level of experience, investment objectives, financial resources, income, and personal risk tolerance. Losses can theoretically be unlimited. Past performance is not indicative of future results. Market data displayed on this site is provided for informational purposes only, sourced from third parties believed to be reliable; SwissCresta does not guarantee its accuracy and reserves the right to delay or interrupt data delivery without prior notice. Position closures are executed as market orders at the prevailing bid or ask price; slippage may occur, particularly during periods of high volatility.',
       p3: 'If you are unsure whether leveraged trading is appropriate for your situation, please consult an independent financial adviser before proceeding. For full details on leverage, fees, margin requirements, and trading costs, refer to our official documentation.',
-      p4: 'Products offered by SwissCresta Bank Ltd are regulated by the Swiss Federal Financial Market Supervisory Authority (FINMA). SwissCresta also operates under Investment Dealer Licence No. MAK21098161, St. Lucia.',
-      hq: 'Headquarters:',
-      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève, Switzerland',
+      p4: '',
+      hq: '',
+      hqAddr: '',
       copyright: '© 2026 SwissCresta. All rights reserved.',
       links: {
         privacy: 'Privacy Policy',

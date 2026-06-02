@@ -6,15 +6,15 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     title: 'Strength',
-    body: "SwissCresta Group boasts a Tier 1 Capital Ratio among the highest in the industry, ensuring its financial strength and resilience. View SwissCresta's latest financial reports.",
+    body: "Modern infrastructure built to handle institutional-grade volume — designed for resilience across volatile market conditions.",
   },
   {
     title: 'Security',
-    body: 'SwissCresta Bank Ltd holds a banking and securities trading license since 2001, is supervised by FINMA and applies the highest Swiss banking standards of security and service quality. For more information, see the section About Us.',
+    body: 'SwissCresta applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
   },
   {
     title: 'Transparency',
-    body: 'SwissCresta Group (SQN) is listed on the SIX Swiss Exchange since May 2000. This means that we hold to higher standards of transparency than most of our FX competitors, not publicly listed.',
+    body: 'We hold ourselves to high standards of transparency and operational rigor across every product on the platform — clean pricing, predictable execution, and clear policies.',
   },
 ]
 

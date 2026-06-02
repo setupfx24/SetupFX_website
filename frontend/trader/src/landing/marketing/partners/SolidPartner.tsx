@@ -17,11 +17,11 @@ const FEATURES: Feature[] = [
   },
   {
     title: 'Transparency',
-    body: 'SwissCresta Group (SQN) is listed on the SIX Swiss Exchange since May 2000. This means that we hold to higher standards of transparency than most of our Forex competitors not publicly listed.',
+    body: 'We hold ourselves to high standards of transparency and operational rigor across every product on the platform.',
   },
   {
     title: 'Security',
-    body: 'SwissCresta Bank Ltd holds a banking and securities trading license since 2001, is supervised by FINMA and applies to the highest Swiss banking standards of security and service quality.',
+    body: 'SwissCresta applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
   },
   {
     title: 'Trust',
