@@ -809,6 +809,21 @@ function WalletPageContent() {
       const depItems = dep.status === 'fulfilled' ? dep.value?.items || [] : [];
       const wdItems = wd.status === 'fulfilled' ? wd.value?.items || [] : [];
       const txnItems = txn.status === 'fulfilled' ? txn.value?.items || [] : [];
+      // Transaction History should only surface SETTLED activity. A
+      // Razorpay popup that was opened and closed without paying, or
+      // an LB request still awaiting admin review, are in-progress
+      // states — they belong in the Deposit tab's "Your requests"
+      // panel, not here.
+      const SETTLED_STATUSES = new Set([
+        'approved', 'auto_approved', 'completed', 'paid',
+        'rejected', 'failed', 'cancelled',
+      ]);
+      const settledDeposits = depItems.filter((d) =>
+        SETTLED_STATUSES.has(String(d.status || '').toLowerCase()),
+      );
+      const settledWithdrawals = wdItems.filter((w) =>
+        SETTLED_STATUSES.has(String(w.status || '').toLowerCase()),
+      );
       // Internal transfer legs (trading ↔ main wallet). Deposits/withdrawals
       // are already fetched above, so we pull only the 'transfer' rows here to
       // avoid double-listing. Each transfer surfaces both legs (out of one
@@ -816,7 +831,7 @@ function WalletPageContent() {
       const transferItems: WalletListItem[] = txnItems
         .filter((t) => (t.type || '').toLowerCase() === 'transfer')
         .map((t) => ({ ...t, method: t.description || t.method }));
-      const merged = [...depItems, ...wdItems, ...transferItems].sort((a, b) => {
+      const merged = [...settledDeposits, ...settledWithdrawals, ...transferItems].sort((a, b) => {
         const ad = a.created_at ? Date.parse(a.created_at) : 0;
         const bd = b.created_at ? Date.parse(b.created_at) : 0;
         return bd - ad;

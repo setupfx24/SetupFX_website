@@ -1829,7 +1829,10 @@ async def transfer_main_to_trading(req, user_id: UUID, db: AsyncSession) -> dict
 # ─── Queries ──────────────────────────────────────────────────────────────
 
 async def list_deposits(user_id: UUID, db: AsyncSession) -> dict:
-    # Exclude 'initiated' deposits (OxaPay payments that were never started)
+    # Exclude 'initiated' deposits (OxaPay payments that were never started).
+    # Pending rows ARE returned because the trader's "Your requests" panel
+    # on the Deposit tab needs them; the Transaction History view filters
+    # them out client-side.
     query = (
         select(Deposit)
         .where(
