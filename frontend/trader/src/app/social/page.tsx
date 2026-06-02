@@ -566,7 +566,13 @@ function CopyModal({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={submitting || accounts.length === 0}
+          disabled={
+            submitting ||
+            // In "new account" mode the backend creates a fresh CF account
+            // from main wallet, so no existing account is needed. Only the
+            // "existing" mode requires accounts.length > 0 + a selected id.
+            (destMode === 'existing' && (accounts.length === 0 || !selectedAccountId))
+          }
           className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-black transition-all hover:bg-accent/90 disabled:opacity-50"
         >
           {submitting ? 'Processing…' : 'Start Following'}
