@@ -47,7 +47,7 @@ interface ClosedTrade {
   trade_type?: string;
 }
 
-type CloseModal = { id: string; symbol: string; side: string; lots: number; closeLots: string } | null;
+type CloseModal = { id: string; symbol: string; side: string; lots: number; closeLots: string; selectedPct: number | null } | null;
 type SltpEdit = { positionId: string; sl: string; tp: string } | null;
 type BulkCloseType = 'all' | 'profit' | 'loss';
 
@@ -949,6 +949,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   side: pos.side,
                                   lots: pos.lots,
                                   closeLots: String(pos.lots),
+                                  selectedPct: 100,
                                 })
                               }
                               onPartialClose={() => {
@@ -963,6 +964,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   side: pos.side,
                                   lots: pos.lots,
                                   closeLots: String(partLots),
+                                  selectedPct: null,
                                 });
                               }}
                             />
@@ -1039,7 +1041,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   COPY
                                 </span>
                               ) : (
-                                <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots) })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
+                                <button type="button" onClick={() => setCloseModal({ id: pos.id, symbol: pos.symbol, side: pos.side, lots: pos.lots, closeLots: String(pos.lots), selectedPct: 100 })} className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 active:bg-sell/25">
                                   Close
                                 </button>
                               )}
@@ -1196,6 +1198,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                         side: pos.side,
                                         lots: pos.lots,
                                         closeLots: String(pos.lots),
+                                        selectedPct: 100,
                                       })
                                     }
                                     className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-sell/15 text-sell border border-sell/30 hover:bg-sell/25"
@@ -1706,32 +1709,33 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     Lots to close
                   </label>
                   {(() => {
-                    // Per-percentage preview: snap value AND whether each chip
-                    // would actually reduce the position. For a min-lot trade
-                    // (0.01 of 0.01) every fraction snaps back to full size,
-                    // so we disable those chips to make it clear they're not
-                    // reasonable choices instead of letting clicks feel dead.
-                    const inst = instruments.find((i) => i.symbol === closeModal.symbol);
-                    const minL = inst?.min_lot ?? 0.01;
-                    const partialPossible = closeModal.lots > minL + 1e-9;
+                    // Per-percentage chips. We always let the user click any
+                    // chip and always show the corresponding partial P&L —
+                    // even for a 0.01-lot trade where the broker can't
+                    // physically split the lot, the trader can still see
+                    // what 25%/50%/75% of the current P&L *would* be. If the
+                    // lot snap forces a full close we surface that as a note
+                    // below the input so the trader knows what'll actually
+                    // happen when they hit Close.
                     return (
                       <div className="flex flex-wrap gap-1.5 mb-2">
                         {([25, 50, 75] as const).map((pct) => {
                           const v = snapLotsForCloseFraction(closeModal.lots, closeModal.symbol, instruments, pct / 100);
-                          const disabled = !partialPossible || v >= closeModal.lots - 1e-9;
+                          const active = closeModal.selectedPct === pct;
                           return (
                             <button
                               key={pct}
                               type="button"
-                              disabled={disabled}
-                              title={disabled ? 'Position too small for partial close' : undefined}
                               onClick={() => {
-                                setCloseModal((m) => (m ? { ...m, closeLots: formatLotsInput(v) } : m));
+                                setCloseModal((m) =>
+                                  m ? { ...m, closeLots: formatLotsInput(v), selectedPct: pct } : m,
+                                );
                               }}
                               className={clsx(
                                 'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                                'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-hover',
-                                disabled && 'opacity-40 cursor-not-allowed hover:bg-bg-secondary',
+                                active
+                                  ? 'bg-accent/10 border-accent/40 text-accent'
+                                  : 'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-hover',
                               )}
                             >
                               {pct}%
@@ -1742,12 +1746,14 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                           type="button"
                           onClick={() => {
                             setCloseModal((m) =>
-                              m ? { ...m, closeLots: formatLotsInput(m.lots) } : m,
+                              m ? { ...m, closeLots: formatLotsInput(m.lots), selectedPct: 100 } : m,
                             );
                           }}
                           className={clsx(
                             'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                            'bg-accent/10 border-accent/25 text-accent hover:bg-accent/15',
+                            closeModal.selectedPct === 100
+                              ? 'bg-accent/15 border-accent/50 text-accent'
+                              : 'bg-accent/5 border-accent/20 text-accent hover:bg-accent/10',
                           )}
                         >
                           Full
@@ -1761,37 +1767,58 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     min="0.01"
                     max={closeModal.lots}
                     value={closeModal.closeLots}
-                    onChange={(e) => setCloseModal({ ...closeModal, closeLots: e.target.value })}
+                    onChange={(e) => setCloseModal({ ...closeModal, closeLots: e.target.value, selectedPct: null })}
                     className={clsx(
                       'w-full px-3 py-2 rounded-lg font-mono text-sm outline-none transition-all border',
                       'bg-bg-secondary border-border-primary text-text-primary focus:border-sell',
                     )}
                   />
                   {(() => {
-                    // Estimated P&L for the chosen close size. Scales the live
-                    // total P/L by closeLots/openLots so the trader sees what
-                    // hits the balance the moment they confirm.
+                    // Estimated P&L for the chosen close size. When a chip is
+                    // selected we honor the *requested* percentage (so the
+                    // trader sees 25% of P/L when they clicked 25%, even if
+                    // the actual broker-side close has to round up to the
+                    // minimum lot). When no chip is selected we fall back to
+                    // closeLots/openLots from the manual input.
                     const pos = positions.find((p) => p.id === closeModal.id);
                     if (!pos) return null;
-                    const closeLots = parseFloat(closeModal.closeLots);
-                    if (!Number.isFinite(closeLots) || closeLots <= 0 || closeModal.lots <= 0) return null;
-                    const frac = Math.min(1, closeLots / closeModal.lots);
+                    const closeLotsNum = parseFloat(closeModal.closeLots);
+                    let frac: number;
+                    if (closeModal.selectedPct != null) {
+                      frac = closeModal.selectedPct / 100;
+                    } else if (Number.isFinite(closeLotsNum) && closeLotsNum > 0 && closeModal.lots > 0) {
+                      frac = Math.min(1, closeLotsNum / closeModal.lots);
+                    } else {
+                      return null;
+                    }
                     const partPnl = (pos.profit ?? 0) * frac;
                     const partCharges = (pos.commission ?? 0) * frac;
                     const net = partPnl - partCharges;
                     const pct = Math.round(frac * 100);
+                    // Will the broker actually close less than the full lot?
+                    const willClose = Number.isFinite(closeLotsNum) && closeLotsNum > 0
+                      ? Math.min(closeLotsNum, closeModal.lots)
+                      : closeModal.lots;
+                    const forcedFull = pct < 100 && willClose >= closeModal.lots - 1e-9;
                     return (
-                      <div className="mt-2 flex items-center justify-between px-3 py-2 rounded-lg bg-bg-secondary border border-border-primary">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-                          Est. P&amp;L {pct < 100 ? `(${pct}%)` : ''}
-                        </span>
-                        <span
-                          className="font-mono text-sm font-bold tabular-nums"
-                          style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}
-                        >
-                          {net >= 0 ? '+' : ''}${net.toFixed(2)}
-                        </span>
-                      </div>
+                      <>
+                        <div className="mt-2 flex items-center justify-between px-3 py-2 rounded-lg bg-bg-secondary border border-border-primary">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                            Est. P&amp;L {pct < 100 ? `(${pct}%)` : ''}
+                          </span>
+                          <span
+                            className="font-mono text-sm font-bold tabular-nums"
+                            style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}
+                          >
+                            {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                          </span>
+                        </div>
+                        {forcedFull && (
+                          <p className="mt-1.5 text-[10px] text-text-tertiary leading-tight">
+                            Lot size too small to partial-close — Close will exit the full position.
+                          </p>
+                        )}
+                      </>
                     );
                   })()}
                 </div>
