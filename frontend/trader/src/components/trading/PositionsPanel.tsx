@@ -436,18 +436,41 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const executeBulkClose = async (type: BulkCloseType) => {
     setBulkConfirm(null);
     setBulkBusy(true);
-    const rawTargets =
-      type === 'all' ? positions : type === 'profit' ? profitPositions : lossPositions;
-    // Optimistic rows (id prefix "optim-") haven't been reconciled to their
-    // server UUID yet — calling /positions/optim-xxx/close trips Pydantic's
-    // UUID validator. Skip them; refreshPositions below will pick up real
-    // UUIDs on the next poll so a retry closes them.
-    const targets = rawTargets.filter((p) => !p.id.startsWith('optim-'));
-    const skipped = rawTargets.length - targets.length;
+
+    // Reconcile any optimistic rows (id prefix "optim-") into real server
+    // UUIDs before sending the close batch. Calling /positions/optim-xxx/
+    // close trips Pydantic's UUID validator. We force-refresh and poll the
+    // store for up to ~3s; almost always the next refresh swaps the id.
+    const pickTargets = () => {
+      const fresh = useTradingStore.getState().positions;
+      const filtered =
+        type === 'profit'
+          ? fresh.filter((p) => (p.profit || 0) > 0)
+          : type === 'loss'
+            ? fresh.filter((p) => (p.profit || 0) < 0)
+            : fresh;
+      return filtered;
+    };
+
+    let candidates = pickTargets();
+    if (candidates.some((p) => p.id.startsWith('optim-'))) {
+      const deadline = Date.now() + 3000;
+      while (Date.now() < deadline && candidates.some((p) => p.id.startsWith('optim-'))) {
+        try {
+          await refreshPositions();
+        } catch {}
+        candidates = pickTargets();
+        if (candidates.every((p) => !p.id.startsWith('optim-'))) break;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
+
+    const targets = candidates.filter((p) => !p.id.startsWith('optim-'));
+    const stillUnsettled = candidates.length - targets.length;
     if (targets.length === 0) {
       toast(
-        skipped > 0
-          ? `${skipped} trade${skipped > 1 ? 's' : ''} still settling — retry in a moment`
+        stillUnsettled > 0
+          ? `${stillUnsettled} trade${stillUnsettled > 1 ? 's' : ''} still settling — try again in a moment`
           : type === 'profit'
             ? 'No profitable positions to close'
             : type === 'loss'
@@ -458,8 +481,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       setBulkBusy(false);
       return;
     }
-    if (skipped > 0) {
-      toast(`${skipped} just-opened trade${skipped > 1 ? 's' : ''} still settling — retry to close ${skipped > 1 ? 'those' : 'it'}`, { icon: '⏳' });
+    if (stillUnsettled > 0) {
+      // We waited up to 3s for the server to acknowledge these and it
+      // still hasn't — skip them this round so the rest can close.
+      toast(`${stillUnsettled} trade${stillUnsettled > 1 ? 's' : ''} not yet acknowledged by the server — skipping`, { icon: '⏳' });
     }
     // Parallel close — each /positions/{id}/close acquires its own row lock,
     // so they can race safely. Sequential awaits were both slow AND let stale
