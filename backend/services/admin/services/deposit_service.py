@@ -60,7 +60,10 @@ async def list_pending_deposits(page: int, per_page: int, db: AsyncSession):
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
-    query = query.order_by(Deposit.created_at.asc()).offset((page - 1) * per_page).limit(per_page)
+    # DESC so the newest pending request lands at the top of the admin
+    # queue — operators expect "what just came in" first, not the
+    # oldest stuck row from the bottom of the list.
+    query = query.order_by(Deposit.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
     result = await db.execute(query)
     deposits = result.scalars().all()
 
@@ -78,7 +81,8 @@ async def list_pending_withdrawals(page: int, per_page: int, db: AsyncSession):
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
-    query = query.order_by(Withdrawal.created_at.asc()).offset((page - 1) * per_page).limit(per_page)
+    # DESC for newest-first, matching the pending-deposits order above.
+    query = query.order_by(Withdrawal.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
     result = await db.execute(query)
     withdrawals = result.scalars().all()
 
