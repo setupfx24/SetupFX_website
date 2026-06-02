@@ -784,12 +784,75 @@ async def create_local_banking_request(
 
     logger.info("Local banking request created: deposit=%s user=%s amount=%s", deposit.id, user_id, amount)
 
+    # Ping every admin / super-admin so the request doesn't sit in the queue
+    # unnoticed. Best-effort — a delivery failure here must never roll back
+    # the user's submission.
+    try:
+        await _email_admins_local_banking_event(
+            db,
+            subject="New local banking deposit request",
+            heading="A user just submitted a new deposit request",
+            body_lines=[
+                f"User: {user_row.email}",
+                "Stage: awaiting admin review",
+                "Action: open the admin Deposits queue and use Set Link to share payment details.",
+            ],
+        )
+    except Exception as e:  # pragma: no cover
+        logger.warning("admin notify (request) failed: %s", e)
+
     return {
         "deposit_id": str(deposit.id),
         "amount": float(amount),
         "status": deposit.status,
         "message": "Request submitted — awaiting admin review.",
     }
+
+
+async def _email_admins_local_banking_event(
+    db: AsyncSession,
+    *,
+    subject: str,
+    heading: str,
+    body_lines: list[str],
+) -> None:
+    """Fan out a one-line transactional email to every admin / super-admin.
+    Used to flag local-banking stage transitions (new request, proof
+    submitted) so the queue gets attention without admins having to poll
+    the deposits page."""
+    try:
+        from packages.common.src.smtp_mail import (
+            send_email, smtp_configured, fire_and_forget,
+        )
+        from packages.common.src.email_templates.base import render_layout
+        from packages.common.src.config import get_settings as _gs
+    except ImportError:
+        return
+    if not smtp_configured():
+        return
+
+    admins_q = await db.execute(
+        select(User).where(User.role.in_(["admin", "super_admin"]))
+    )
+    admins = admins_q.scalars().all()
+    if not admins:
+        return
+
+    admin_app_url = (_gs().ADMIN_APP_URL or "https://admin.swisscresta.com").rstrip("/")
+    body_html = (
+        "<p>" + "</p><p>".join(body_lines) + "</p>"
+    )
+    html = render_layout(
+        title=heading,
+        intro="A local banking deposit needs your attention.",
+        body_html=body_html,
+        cta_label="Open Admin Deposits",
+        cta_url=f"{admin_app_url}/deposits",
+    )
+    for a in admins:
+        if not a.email:
+            continue
+        fire_and_forget(send_email(a.email, subject, html))
 
 
 async def confirm_local_banking_payment(
@@ -900,6 +963,26 @@ async def confirm_local_banking_payment(
         "Local banking payment confirmed: deposit=%s user=%s amount=%s",
         deposit.id, user_id, amount,
     )
+
+    # Tell every admin the proof is in so they can verify against their bank
+    # feed and approve. Best-effort email — failure must not roll back the
+    # already-committed proof row.
+    try:
+        user_q = await db.execute(select(User).where(User.id == user_id))
+        user_row = user_q.scalar_one_or_none()
+        await _email_admins_local_banking_event(
+            db,
+            subject="Local banking payment proof received",
+            heading="A user has uploaded payment proof",
+            body_lines=[
+                f"User: {user_row.email if user_row else '—'}",
+                f"Amount: ${float(amount):,.2f}",
+                f"Reference: {tid}",
+                "Action: open the admin Deposits queue, click the screenshot icon to verify, then Approve.",
+            ],
+        )
+    except Exception as e:  # pragma: no cover
+        logger.warning("admin notify (proof) failed: %s", e)
 
     return {
         "deposit_id": str(deposit.id),

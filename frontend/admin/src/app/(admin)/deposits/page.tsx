@@ -219,6 +219,9 @@ const PAGE_SIZE = 20;
 export default function DepositsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('deposits');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
+  // Method filter — client-side, so admin can isolate "local_banking" rows
+  // from older razorpay / manual test entries cluttering the queue.
+  const [methodFilter, setMethodFilter] = useState<'all' | 'local_banking' | 'manual' | 'razorpay' | 'wallet_connect'>('all');
   const [page, setPage] = useState(1);
 
   const [deposits, setDeposits] = useState<Deposit[]>([]);
@@ -457,6 +460,29 @@ export default function DepositsPage() {
 
             {/* Status filter — hide for history tab */}
             <div className={cn('pr-3 flex items-center gap-2', activeTab === 'history' && 'hidden')}>
+              {/* Method filter — only meaningful on the Deposits tab. */}
+              {activeTab === 'deposits' && (
+                <>
+                  <span className="text-xxs text-text-tertiary">Method:</span>
+                  <div className="relative">
+                    <select
+                      value={methodFilter}
+                      onChange={(e) => setMethodFilter(e.target.value as typeof methodFilter)}
+                      className="text-xs py-1 pl-2 pr-7 appearance-none bg-bg-input border border-border-primary rounded-md text-text-primary"
+                    >
+                      <option value="all">All</option>
+                      <option value="local_banking">Local Banking</option>
+                      <option value="manual">Manual / Bank</option>
+                      <option value="wallet_connect">Crypto on-chain</option>
+                      <option value="razorpay">Razorpay (legacy)</option>
+                    </select>
+                    <ChevronDown
+                      size={12}
+                      className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary"
+                    />
+                  </div>
+                </>
+              )}
               <span className="text-xxs text-text-tertiary">Status:</span>
               <div className="relative">
                 <select
@@ -522,7 +548,9 @@ export default function DepositsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {deposits.map((d) => (
+                        {deposits
+                          .filter((d) => methodFilter === 'all' || d.method === methodFilter)
+                          .map((d) => (
                           <tr
                             key={d.id}
                             className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover"
