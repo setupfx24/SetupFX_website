@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Bell, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,32 @@ export default function AdminNotificationBell() {
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+  // Anchor for the portal — the dropdown lives on document.body so it
+  // escapes the admin layout's overflow:hidden stacking context. We
+  // position it under the bell with this rect, recomputed on open + on
+  // scroll/resize so it stays glued to the icon.
+  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+
+  const recomputeAnchor = () => {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setAnchor({ top: r.bottom + 8, right: window.innerWidth - r.right });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    recomputeAnchor();
+    const onChange = () => recomputeAnchor();
+    window.addEventListener('scroll', onChange, true);
+    window.addEventListener('resize', onChange);
+    return () => {
+      window.removeEventListener('scroll', onChange, true);
+      window.removeEventListener('resize', onChange);
+    };
+  }, [open]);
 
   const fetchNotifications = async () => {
     try {
@@ -51,11 +78,18 @@ export default function AdminNotificationBell() {
     return () => clearInterval(t);
   }, []);
 
-  // Click-outside to close.
+  // Click-outside to close. The dropdown is portaled to document.body
+  // (so it can float above the admin layout's stacking context), which
+  // means the bell wrapper does NOT contain it — we need to check both
+  // the bell ref AND the portal ref so clicks inside the dropdown don't
+  // close it.
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return;
+      if (portalRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -84,6 +118,7 @@ export default function AdminNotificationBell() {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="relative p-1.5 rounded-md hover:bg-bg-hover transition-fast text-text-secondary hover:text-text-primary"
@@ -97,8 +132,12 @@ export default function AdminNotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] flex flex-col rounded-lg border border-border-primary bg-bg-card shadow-dropdown overflow-hidden z-50">
+      {open && anchor && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={portalRef}
+          style={{ position: 'fixed', top: anchor.top, right: anchor.right, zIndex: 2147483600 }}
+          className="w-[360px] max-h-[480px] flex flex-col rounded-lg border border-border-primary bg-bg-card shadow-dropdown overflow-hidden"
+        >
           <div className="flex items-center justify-between px-3 py-2 border-b border-border-primary">
             <span className="text-xs font-semibold text-text-primary">Notifications</span>
             {unread > 0 && (
@@ -154,7 +193,8 @@ export default function AdminNotificationBell() {
               </ul>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
