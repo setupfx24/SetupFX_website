@@ -462,26 +462,46 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       setBulkBusy(false);
       return;
     }
+    // Parallel close — each /positions/{id}/close acquires its own row lock,
+    // so they can race safely. Sequential awaits were both slow AND let stale
+    // store updates between calls drop trades that should have been closed.
+    // Promise.allSettled keeps going on individual failures so one bad close
+    // doesn't abandon the rest.
+    const results = await Promise.allSettled(
+      targets.map((pos) =>
+        api
+          .post<{ profit?: number; close_price?: number }>(`/positions/${pos.id}/close`, {})
+          .then((res) => ({ id: pos.id, profit: res.profit ?? 0 })),
+      ),
+    );
+
     let closed = 0;
-    let failed = 0;
-    for (const pos of targets) {
-      try {
-        const res = await api.post<{ profit?: number; close_price?: number }>(
-          `/positions/${pos.id}/close`,
-          {},
-        );
-        const pnl = res.profit ?? 0;
-        pnl >= 0 ? sounds.profit() : sounds.loss();
-        removePosition(pos.id);
+    let netProfit = 0;
+    const errors: string[] = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') {
         closed++;
-      } catch {
-        failed++;
+        netProfit += r.value.profit;
+        removePosition(r.value.id);
+      } else {
+        const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+        const sym = targets[i]?.symbol ?? 'position';
+        errors.push(`${sym}: ${msg}`);
       }
+    });
+    if (closed > 0) (netProfit >= 0 ? sounds.profit() : sounds.loss());
+
+    if (closed > 0) {
+      toast.success(`${closed} position${closed > 1 ? 's' : ''} closed`);
     }
-    if (closed > 0)
-      toast.success(`${closed} position${closed > 1 ? 's' : ''} closed successfully`);
-    if (failed > 0)
-      toast.error(`${failed} position${failed > 1 ? 's' : ''} failed to close`);
+    if (errors.length > 0) {
+      // Show one toast per distinct error message so the user actually sees
+      // the backend's reason instead of an opaque "N failed" count.
+      const unique = Array.from(new Set(errors));
+      unique.slice(0, 3).forEach((m) => toast.error(m));
+      if (unique.length > 3) toast.error(`+${unique.length - 3} more failures (see console)`);
+      console.error('[bulk-close]', errors);
+    }
     refreshPositions();
     refreshAccount();
     void loadHistory();
