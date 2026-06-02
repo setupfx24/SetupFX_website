@@ -405,6 +405,14 @@ export default function TradingTerminalPage() {
                 >
                   News
                 </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(tradingTerminalUrl(accountId, { view: 'order' }))}
+                  className="shrink-0 px-3 h-[34px] rounded-xl bg-bg-hover/80 text-text-primary border border-border-glass text-[10px] font-extrabold uppercase tracking-wide hover:bg-accent/10 transition-all active:scale-95"
+                  title="Open positions, pending orders, history"
+                >
+                  Trades
+                </button>
               </div>
               ) : null}
 
@@ -591,7 +599,24 @@ export default function TradingTerminalPage() {
               </div>
             </div>
           )}
-          {mobileView === 'order' && <PositionsPanel />}
+          {mobileView === 'order' && (
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-bg-primary">
+              <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-border-glass bg-bg-secondary">
+                <button
+                  type="button"
+                  onClick={() => router.push(tradingTerminalUrl(accountId, { view: 'chart' }))}
+                  className="text-xs font-semibold text-buy"
+                >
+                  ← Chart
+                </button>
+                <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Trades</span>
+                <span className="w-14" aria-hidden />
+              </div>
+              <div className="flex-1 min-h-0 overflow-auto">
+                <PositionsPanel />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
