@@ -1705,41 +1705,56 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                   >
                     Lots to close
                   </label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {([25, 50, 75] as const).map((pct) => (
-                      <button
-                        key={pct}
-                        type="button"
-                        onClick={() => {
-                          setCloseModal((m) => {
-                            if (!m) return m;
-                            const v = snapLotsForCloseFraction(m.lots, m.symbol, instruments, pct / 100);
-                            return { ...m, closeLots: formatLotsInput(v) };
-                          });
-                        }}
-                        className={clsx(
-                          'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                          'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-hover',
-                        )}
-                      >
-                        {pct}%
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCloseModal((m) =>
-                          m ? { ...m, closeLots: formatLotsInput(m.lots) } : m,
-                        );
-                      }}
-                      className={clsx(
-                        'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
-                        'bg-accent/10 border-accent/25 text-accent hover:bg-accent/15',
-                      )}
-                    >
-                      Full
-                    </button>
-                  </div>
+                  {(() => {
+                    // Per-percentage preview: snap value AND whether each chip
+                    // would actually reduce the position. For a min-lot trade
+                    // (0.01 of 0.01) every fraction snaps back to full size,
+                    // so we disable those chips to make it clear they're not
+                    // reasonable choices instead of letting clicks feel dead.
+                    const inst = instruments.find((i) => i.symbol === closeModal.symbol);
+                    const minL = inst?.min_lot ?? 0.01;
+                    const partialPossible = closeModal.lots > minL + 1e-9;
+                    return (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {([25, 50, 75] as const).map((pct) => {
+                          const v = snapLotsForCloseFraction(closeModal.lots, closeModal.symbol, instruments, pct / 100);
+                          const disabled = !partialPossible || v >= closeModal.lots - 1e-9;
+                          return (
+                            <button
+                              key={pct}
+                              type="button"
+                              disabled={disabled}
+                              title={disabled ? 'Position too small for partial close' : undefined}
+                              onClick={() => {
+                                setCloseModal((m) => (m ? { ...m, closeLots: formatLotsInput(v) } : m));
+                              }}
+                              className={clsx(
+                                'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
+                                'bg-bg-secondary border-border-primary text-text-primary hover:bg-bg-hover',
+                                disabled && 'opacity-40 cursor-not-allowed hover:bg-bg-secondary',
+                              )}
+                            >
+                              {pct}%
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCloseModal((m) =>
+                              m ? { ...m, closeLots: formatLotsInput(m.lots) } : m,
+                            );
+                          }}
+                          className={clsx(
+                            'cursor-pointer px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border transition-colors',
+                            'bg-accent/10 border-accent/25 text-accent hover:bg-accent/15',
+                          )}
+                        >
+                          Full
+                        </button>
+                      </div>
+                    );
+                  })()}
                   <input
                     type="number"
                     step="0.01"
@@ -1752,6 +1767,33 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                       'bg-bg-secondary border-border-primary text-text-primary focus:border-sell',
                     )}
                   />
+                  {(() => {
+                    // Estimated P&L for the chosen close size. Scales the live
+                    // total P/L by closeLots/openLots so the trader sees what
+                    // hits the balance the moment they confirm.
+                    const pos = positions.find((p) => p.id === closeModal.id);
+                    if (!pos) return null;
+                    const closeLots = parseFloat(closeModal.closeLots);
+                    if (!Number.isFinite(closeLots) || closeLots <= 0 || closeModal.lots <= 0) return null;
+                    const frac = Math.min(1, closeLots / closeModal.lots);
+                    const partPnl = (pos.profit ?? 0) * frac;
+                    const partCharges = (pos.commission ?? 0) * frac;
+                    const net = partPnl - partCharges;
+                    const pct = Math.round(frac * 100);
+                    return (
+                      <div className="mt-2 flex items-center justify-between px-3 py-2 rounded-lg bg-bg-secondary border border-border-primary">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+                          Est. P&amp;L {pct < 100 ? `(${pct}%)` : ''}
+                        </span>
+                        <span
+                          className="font-mono text-sm font-bold tabular-nums"
+                          style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}
+                        >
+                          {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex gap-2">
