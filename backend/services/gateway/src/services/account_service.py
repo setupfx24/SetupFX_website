@@ -159,14 +159,13 @@ async def open_live_account(
         wallet_bal = user.main_wallet_balance or Decimal("0")
         live_total = sum((a.balance or Decimal("0")) for a in existing_live)
         available = wallet_bal + live_total
-        # First-time signups (no prior live account AND no wallet balance)
-        # open at $0 — they'll deposit later. Only enforce min_deposit when
-        # the user already has *some* money in the system; that way a user
-        # holding $504k in the wallet can't be told "you have no balance".
-        enforce_min = min_d > 0 and available > 0
-        if enforce_min:
-            # Funding pool = main wallet + existing live account balances.
-            # If even the combined pool can't cover min_deposit, refuse.
+        # If the admin has set a minimum-deposit on this group, enforce it
+        # *always*. The earlier "first-time user with no money opens at $0"
+        # loophole let brand-new accounts get created with no funding — the
+        # accounts page then rendered empty equity rows that looked broken.
+        # Users now have to deposit first; refusal message tells them where
+        # to go.
+        if min_d > 0:
             if available < min_d:
                 raise HTTPException(
                     status_code=400,
