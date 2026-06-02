@@ -21,6 +21,10 @@ class BankAccount(Base):
     ifsc_code = Column(String(20))
     upi_id = Column(String(100))
     qr_code_url = Column(Text)
+    # Crypto wallet address the admin wants users to send funds to. When
+    # set, the trader's deposit page renders it as a copyable address +
+    # auto-generated QR alongside the bank/UPI fields.
+    wallet_address = Column(String(200))
     tier = Column(Integer, default=1)
     min_amount = Column(Numeric(18, 2), default=0)
     max_amount = Column(Numeric(18, 2), default=999999999)

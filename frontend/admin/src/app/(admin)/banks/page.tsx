@@ -24,6 +24,10 @@ interface Bank {
   ifsc_code: string;
   upi_id: string;
   qr_code_url: string;
+  /** Optional crypto wallet address — when set, the trader's deposit
+   *  page renders it as a copyable address + auto-generated QR
+   *  alongside the bank/UPI fields. */
+  wallet_address: string;
   is_active: boolean;
 }
 
@@ -36,6 +40,7 @@ const emptyForm: BankForm = {
   ifsc_code: '',
   upi_id: '',
   qr_code_url: '',
+  wallet_address: '',
   is_active: true,
 };
 
@@ -89,6 +94,7 @@ export default function BanksPage() {
       ifsc_code: bank.ifsc_code,
       upi_id: bank.upi_id,
       qr_code_url: bank.qr_code_url,
+      wallet_address: bank.wallet_address || '',
       is_active: bank.is_active,
     });
     setShowModal(true);
@@ -113,6 +119,7 @@ export default function BanksPage() {
       ifsc_code: form.ifsc_code,
       upi_id: form.upi_id,
       qr_code_url: form.qr_code_url,
+      wallet_address: form.wallet_address,
       is_active: form.is_active,
     };
 
@@ -364,6 +371,11 @@ export default function BanksPage() {
                   },
                   { key: 'ifsc_code', label: 'IFSC Code', placeholder: 'e.g. HDFC0001234' },
                   { key: 'upi_id', label: 'UPI ID', placeholder: 'e.g. merchant@upi' },
+                  {
+                    key: 'wallet_address',
+                    label: 'Crypto wallet address (optional)',
+                    placeholder: 'e.g. TXxxxxxxxxxxxxxxxxxx (USDT TRC20)',
+                  },
                 ] as const
               ).map((f) => (
                 <div key={f.key}>

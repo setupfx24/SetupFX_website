@@ -2091,28 +2091,13 @@ async def get_deposit_bank_details(amount: Decimal | None, db: AsyncSession) -> 
             resp["upi_id"] = bank.upi_id
         if bank.qr_code_url:
             resp["qr_code_url"] = bank.qr_code_url
-
-    # Surface any crypto deposit addresses the admin set on the
-    # Settings → Deposit Wallets page. These live in a separate
-    # admin_deposit_wallets table — the trader's "Crypto" chip needs
-    # them so the user actually has something to scan/pay to even when
-    # no bank QR is uploaded.
-    from packages.common.src.models import AdminDepositWallet
-    wallets_q = await db.execute(
-        select(AdminDepositWallet)
-        .where(AdminDepositWallet.is_active == True)
-        .order_by(AdminDepositWallet.network)
-    )
-    crypto_wallets = []
-    for w in wallets_q.scalars().all():
-        crypto_wallets.append({
-            "network": w.network,
-            "asset": w.asset,
-            "address": w.address,
-            "min_confirmations": w.min_confirmations,
-        })
-    if crypto_wallets:
-        resp["crypto_wallets"] = crypto_wallets
+        # Optional crypto wallet address on the same Bank row — admin
+        # enters it on the /admin/banks page; the trader renders it as
+        # a copyable address + auto-generated QR alongside the bank /
+        # UPI fields. Single source of truth for every deposit
+        # destination.
+        if bank.wallet_address:
+            resp["wallet_address"] = bank.wallet_address
 
     return resp
 
