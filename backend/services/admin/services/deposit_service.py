@@ -145,6 +145,112 @@ async def list_all_withdrawals(
     return PaginatedResponse(items=items, total=total, page=page, per_page=per_page)
 
 
+async def set_payment_link(
+    deposit_id: uuid.UUID,
+    payment_link: str,
+    message: str | None,
+    admin_id: uuid.UUID,
+    ip_address: str | None,
+    db: AsyncSession,
+) -> dict:
+    """Attach a payment URL to a pending local-banking deposit and notify
+    the user (in-app + email). Deposit stays pending — admin still has to
+    mark it approved once the user has paid externally."""
+    link = (payment_link or "").strip()
+    if not link:
+        raise HTTPException(status_code=400, detail="payment_link is required")
+    if not (link.startswith("http://") or link.startswith("https://") or link.startswith("upi://")):
+        raise HTTPException(
+            status_code=400,
+            detail="payment_link must start with http://, https://, or upi://",
+        )
+
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+    )
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    if deposit.method != "local_banking":
+        raise HTTPException(
+            status_code=400,
+            detail="Payment link can only be attached to local-banking requests",
+        )
+    if deposit.status != "pending":
+        raise HTTPException(status_code=400, detail="Deposit is not pending")
+
+    deposit.payment_link = link
+
+    user_row = (
+        await db.execute(select(User).where(User.id == deposit.user_id))
+    ).scalar_one_or_none()
+
+    note = message.strip() if message else ""
+    notif_message = (
+        f"Your local banking deposit of ${float(deposit.amount or 0):,.2f} is "
+        f"ready. Tap to pay."
+    )
+    if note:
+        notif_message = f"{notif_message} Admin note: {note}"
+
+    await create_notification(
+        db, deposit.user_id,
+        title="Deposit payment link ready",
+        message=notif_message,
+        notif_type="deposit",
+        action_url="/wallet?tab=deposit",
+        commit=False,
+    )
+
+    await write_audit_log(
+        db, admin_id, "set_payment_link", "deposit", deposit_id,
+        old_values={"payment_link": None},
+        new_values={"payment_link": link, "message": note or None},
+        ip_address=ip_address,
+    )
+
+    await db.commit()
+
+    # Fire-and-forget email so the user gets a copy even if they're not
+    # actively in the app. Failure here doesn't roll back the link.
+    try:
+        from packages.common.src.smtp_mail import send_email, smtp_configured, fire_and_forget
+        from packages.common.src.email_templates.base import render_layout
+        from packages.common.src.config import get_settings as _gs
+        if smtp_configured() and user_row and user_row.email:
+            trader_app_url = (_gs().TRADER_APP_URL or "https://trade.swisscresta.com").rstrip("/")
+            body_html = f"""
+            <p>We've reviewed your deposit request and attached a payment link below.
+            Click through to complete payment with your bank or card. Once you've paid,
+            our team will confirm and your wallet will be credited.</p>
+            {('<p><em>' + note + '</em></p>') if note else ''}
+            """
+            html = render_layout(
+                title="Your deposit payment link is ready",
+                intro=f"Deposit request: ${float(deposit.amount or 0):,.2f}",
+                body_html=body_html,
+                cta_label="Open payment link",
+                cta_url=link,
+                footer_note=(
+                    f"After paying, you can track the request at {trader_app_url}/wallet."
+                ),
+            )
+            fire_and_forget(send_email(
+                user_row.email,
+                "Your SwissCresta deposit payment link",
+                html,
+            ))
+    except Exception as e:  # pragma: no cover - email path is best-effort
+        import logging
+        logging.getLogger(__name__).warning("payment-link email failed: %s", e)
+
+    return {
+        "ok": True,
+        "deposit_id": str(deposit.id),
+        "payment_link": link,
+    }
+
+
 async def approve_deposit(
     deposit_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
 ) -> dict:

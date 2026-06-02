@@ -714,6 +714,81 @@ async def handle_oxapay_webhook(
     logger.info("OxaPay webhook: deposit %s → %s", order_id, deposit.status)
 
 
+# ─── Local Banking deposit request (admin-mediated) ────────────────────────
+
+
+async def create_local_banking_request(
+    *,
+    amount: Decimal,
+    user_id: UUID,
+    db: AsyncSession,
+) -> dict:
+    """Stage-1 of the local-banking flow: user submits only an amount.
+
+    A Deposit row is created with method='local_banking', status='pending',
+    payment_link=NULL. Admin reviews the user's KYC and then attaches a
+    payment_link (Razorpay payment-link / UPI VPA / bank instructions —
+    admin's choice per case) through the admin panel. User then pays
+    externally and the admin marks the deposit 'approved', which credits
+    the main wallet through the standard manual-approval flow.
+
+    KYC is required: card / UPI / bank rails contractually need a verified
+    identity behind every payout. The same gate that used to sit on the
+    Razorpay popup now sits here.
+    """
+    from packages.common.src.settings_store import get_bool_setting
+
+    if await get_bool_setting("maintenance_mode", False):
+        raise HTTPException(status_code=503, detail="Platform is under maintenance.")
+    if not await get_bool_setting("allow_deposits", True):
+        raise HTTPException(status_code=403, detail="Deposits are currently disabled")
+
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid amount")
+
+    # KYC gate — same semantics as the old Razorpay path.
+    user_row = (
+        await db.execute(select(User).where(User.id == user_id))
+    ).scalar_one_or_none()
+    if user_row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    kyc = (user_row.kyc_status or "").lower()
+    if kyc not in ("approved", "verified"):
+        raise HTTPException(status_code=403, detail="KYC_REQUIRED")
+
+    deposit = Deposit(
+        user_id=user_id,
+        account_id=None,
+        amount=amount,
+        method="local_banking",
+        status="pending",
+    )
+    db.add(deposit)
+    await db.commit()
+    await db.refresh(deposit)
+
+    await create_notification(
+        db, user_id,
+        title="Deposit request submitted",
+        message=(
+            f"Your ${float(amount):,.2f} local banking deposit request has been "
+            "submitted. Our team will review your KYC and share payment "
+            "details with you shortly."
+        ),
+        notif_type="deposit",
+        action_url="/wallet?tab=deposit",
+    )
+
+    logger.info("Local banking request created: deposit=%s user=%s amount=%s", deposit.id, user_id, amount)
+
+    return {
+        "deposit_id": str(deposit.id),
+        "amount": float(amount),
+        "status": deposit.status,
+        "message": "Request submitted — awaiting admin review.",
+    }
+
+
 # ─── Razorpay deposit (Checkout popup, charged in INR) ─────────────────────
 
 
@@ -1510,6 +1585,9 @@ async def list_deposits(user_id: UUID, db: AsyncSession) -> dict:
                 "amount": float(d.amount or 0),
                 "status": d.status or "pending",
                 "currency": "USD",
+                # Local-banking flow surfaces the admin-provided link to the
+                # user. NULL until an admin attaches it.
+                "payment_link": d.payment_link or None,
             }
             for d in deposits
         ]

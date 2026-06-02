@@ -54,6 +54,10 @@ class Deposit(Base):
     network = Column(String(20), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     rejection_reason = Column(Text)
+    # Local-banking flow: user submits a request (no proof yet), admin reviews
+    # KYC then drops in a payment URL here (Razorpay link / bank instructions /
+    # UPI VPA / anything). Stays NULL until the admin populates it.
+    payment_link = Column(Text, nullable=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     approved_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

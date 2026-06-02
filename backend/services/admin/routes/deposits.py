@@ -15,6 +15,11 @@ class MarkPaidRequest(BaseModel):
     tx_hash: str
     notes: str | None = None
 
+
+class PaymentLinkRequest(BaseModel):
+    payment_link: str
+    message: str | None = None
+
 router = APIRouter(prefix="/finance", tags=["Finance"])
 
 
@@ -76,6 +81,29 @@ async def approve_deposit(
     return await deposit_service.approve_deposit(
         deposit_id=deposit_id, admin_id=admin.id,
         ip_address=request.client.host if request.client else None, db=db,
+    )
+
+
+@router.post("/deposits/{deposit_id}/payment-link")
+async def set_deposit_payment_link(
+    deposit_id: uuid.UUID,
+    body: PaymentLinkRequest,
+    request: Request,
+    admin: User = Depends(require_permission("deposits.approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Local Banking stage-2: admin attaches a payment URL (Razorpay link,
+    bank instructions URL, UPI VPA wrapped in upi://) onto the user's
+    request. User gets an in-app notification + email with the link;
+    deposit stays in 'pending' until the admin marks it approved after the
+    user pays."""
+    return await deposit_service.set_payment_link(
+        deposit_id=deposit_id,
+        payment_link=body.payment_link,
+        message=body.message,
+        admin_id=admin.id,
+        ip_address=request.client.host if request.client else None,
+        db=db,
     )
 
 

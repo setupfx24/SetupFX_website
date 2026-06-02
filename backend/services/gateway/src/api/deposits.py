@@ -81,6 +81,26 @@ async def create_manual_withdrawal(
     )
 
 
+# ─── Local Banking request (admin-mediated, KYC-gated) ────────────────────
+
+
+@router.post("/deposit/local-banking", status_code=201)
+async def create_local_banking_request(
+    amount: Decimal = Form(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage 1 of the local banking flow — user submits a request, admin
+    reviews KYC and shares a payment link out of band (or attaches it via
+    the admin panel). KYC must be approved or the call 403s with
+    KYC_REQUIRED so the trader UI can route to /kyc."""
+    return await wallet_service.create_local_banking_request(
+        amount=amount,
+        user_id=current_user["user_id"],
+        db=db,
+    )
+
+
 # ─── Razorpay deposits (Checkout popup, charged in INR) ───────────────────
 
 

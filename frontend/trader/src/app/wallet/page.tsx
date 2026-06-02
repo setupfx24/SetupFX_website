@@ -27,55 +27,10 @@ import {
   Hourglass,
 } from 'lucide-react';
 
-// ─── Razorpay Checkout typings ─────────────────────────────────────────────
-// Minimal typed surface for the global injected by checkout.js. Keeps the
-// integration free of `any` while only declaring what we actually use.
-interface RazorpayHandlerResponse {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
-}
-
-interface RazorpayCheckoutOptions {
-  key: string;
-  order_id: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  handler: (response: RazorpayHandlerResponse) => void;
-  prefill?: { email?: string; name?: string; contact?: string };
-  theme?: { color?: string };
-  modal?: { ondismiss?: () => void };
-}
-
-interface RazorpayInstance {
-  open: () => void;
-}
-
-interface RazorpayConstructor {
-  new (options: RazorpayCheckoutOptions): RazorpayInstance;
-}
-
-declare global {
-  interface Window {
-    Razorpay?: RazorpayConstructor;
-  }
-}
-
-const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
-
-/** Backend response shape for POST /wallet/deposit/razorpay/order. */
-interface RazorpayOrderResponse {
-  deposit_id: string;
-  order_id: string;
-  key_id: string;
-  amount_paise: number;
-  amount_inr: number;
-  currency: string;
-  name: string;
-  description: string;
-}
+// Razorpay popup integration removed — local-banking flow replaces it.
+// Admin can still attach Razorpay payment-links per request from the
+// admin panel; those open in a new tab when the user clicks them, no
+// in-app SDK / checkout.js needed.
 
 interface AccountItem {
   id: string;
@@ -146,6 +101,10 @@ interface WalletListItem {
   amount: number;
   status: string;
   currency: string;
+  // Populated by the backend for `local_banking` deposits once the admin
+  // attaches a payment URL. Null while the request is still waiting for
+  // admin review.
+  payment_link?: string | null;
 }
 
 /** Raw DB method code → friendly label. Covers both manual (bank / UPI /
@@ -195,15 +154,6 @@ function fmtHistoryDate(iso: string | null): string {
 
 const DEMO_FUNDING_MSG =
   'Demo accounts cannot deposit, withdraw, or transfer funds. Open a live account to use wallet funding.';
-
-// Fallback USD→INR display rate, used only until the live rate loads (or if
-// the rate endpoint is unreachable). The authoritative conversion always
-// happens on the backend at order time using the live mid-market rate; this
-// is just so the rupee preview isn't blank on first paint.
-const FALLBACK_USD_TO_INR_RATE = (() => {
-  const raw = Number(process.env.NEXT_PUBLIC_USD_TO_INR_RATE);
-  return Number.isFinite(raw) && raw > 0 ? raw : 83.0;
-})();
 
 // Networks the on-chain USDT payout supports (admin signs the transfer
 // manually). Must mirror `ALLOWED_NETWORKS` in onchain_withdraw_service.py.
@@ -290,13 +240,17 @@ function WalletPageContent() {
   // the Deposit and Withdrawal forms — kept inline (instead of moved into a
   // follow-up modal) so we don't have to surgically rewrite the submit
   // handlers' channel branching.
-  const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'manual'>('crypto');
+  // Deposit channels:
+  //   - 'crypto'        = admin-set QR / wallet info shown, user pays externally
+  //                       and uploads proof (the legacy manual flow's UI).
+  //   - 'local_banking' = NEW: user submits a request, admin reviews KYC and
+  //                       sends a payment link out of band. No upfront proof,
+  //                       no upfront link — admin pushes it later.
+  // The Razorpay-checkout popup that previously sat on 'crypto' is gone;
+  // admin can still generate per-user Razorpay payment links and attach them
+  // through the local-banking flow.
+  const [depositUiSection, setDepositUiSection] = useState<'crypto' | 'local_banking'>('crypto');
   const [withdrawUiSection, setWithdrawUiSection] = useState<'crypto' | 'bank'>('crypto');
-  // True once checkout.js has loaded and window.Razorpay is available.
-  const [razorpayReady, setRazorpayReady] = useState(false);
-  const [usdToInrRate, setUsdToInrRate] = useState(FALLBACK_USD_TO_INR_RATE);
-
-  const [depositChannel, setDepositChannel] = useState<FundingChannel>('crypto');
   const [depositAmount, setDepositAmount] = useState('');
   const [depositAccountId, setDepositAccountId] = useState<string | null>(null);
   const [depositTxId, setDepositTxId] = useState('');
@@ -321,6 +275,11 @@ function WalletPageContent() {
   const [transferDestinationId, setTransferDestinationId] = useState<string>('');
   const [transferAmount, setTransferAmount] = useState('');
   const [transferSubmitting, setTransferSubmitting] = useState(false);
+
+  // Local-banking pending requests shown inline on the Deposit tab — gives
+  // the user a place to find the admin-issued payment link once it's been
+  // attached. Refreshed on tab change + after submitting a new request.
+  const [localBankingRequests, setLocalBankingRequests] = useState<WalletListItem[]>([]);
 
   // History tab — recent ledger items rendered as a compact table.
   const [historyItems, setHistoryItems] = useState<WalletListItem[]>([]);
@@ -456,62 +415,13 @@ function WalletPageContent() {
     void fetchData();
   }, [fetchData]);
 
-  // Pull the live USD→INR rate so the rupee preview matches what the backend
-  // will actually charge. Silent fallback to the static rate on failure.
-  useEffect(() => {
-    let active = true;
-    api
-      .get<{ rate?: number }>('/wallet/deposit/razorpay/rate')
-      .then((r) => {
-        const rate = Number(r?.rate);
-        if (active && Number.isFinite(rate) && rate > 0) setUsdToInrRate(rate);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Load the Razorpay Checkout script once. Guards against double-injection
-  // (the page can re-mount under Suspense / fast refresh).
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.Razorpay) {
-      setRazorpayReady(true);
-      return;
-    }
-    const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${RAZORPAY_CHECKOUT_SRC}"]`,
-    );
-    if (existing) {
-      if (existing.dataset.loaded === 'true') setRazorpayReady(true);
-      else existing.addEventListener('load', () => setRazorpayReady(true), { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = RAZORPAY_CHECKOUT_SRC;
-    script.async = true;
-    script.onload = () => {
-      script.dataset.loaded = 'true';
-      setRazorpayReady(true);
-    };
-    script.onerror = () => {
-      toast.error('Could not load the secure payment library. Check your connection and retry.');
-    };
-    document.body.appendChild(script);
-  }, []);
-
   const fmt = useCallback(
     (n: number) => formatCurrency(n, wallet?.currency || 'USD'),
     [wallet?.currency],
   );
 
-  // Channel-chip state mirrors the legacy depositUiSection / withdrawUiSection
-  // so the existing submit handlers (which branch on depositChannel /
-  // withdrawChannel) keep working unchanged.
-  useEffect(() => {
-    setDepositChannel(depositUiSection === 'manual' ? 'manual' : 'crypto');
-  }, [depositUiSection]);
+  // Withdraw still uses the legacy `crypto / manual` FundingChannel; deposit
+  // branches directly on depositUiSection now (no more depositChannel).
 
   useEffect(() => {
     setWithdrawChannel(withdrawUiSection === 'crypto' ? 'crypto' : 'manual');
@@ -571,12 +481,34 @@ function WalletPageContent() {
     }
   }, [depositAmount]);
 
-  // Preload manual bank details whenever the user is on the manual deposit
-  // chip so the destination bank/UPI is visible immediately.
+  // Preload admin's deposit QR / bank details whenever the user lands on
+  // the Crypto chip — that's where we render them (the legacy manual flow
+  // populated the same fields).
   useEffect(() => {
-    if (tab !== 'deposit' || depositUiSection !== 'manual') return;
+    if (tab !== 'deposit' || depositUiSection !== 'crypto') return;
     void loadManualBankDetails();
   }, [tab, depositUiSection, loadManualBankDetails]);
+
+  // Pull recent deposits and pick out the local-banking ones so they can
+  // surface inline on the Local Banking chip. Stays cheap — the deposits
+  // list is small and already used by /history.
+  const loadLocalBankingRequests = useCallback(async () => {
+    try {
+      const res = await api.get<{ items?: WalletListItem[] }>('/wallet/deposits');
+      const items = res?.items ?? [];
+      const local = items.filter(
+        (d) => (d.method || '').toLowerCase() === 'local_banking',
+      );
+      setLocalBankingRequests(local);
+    } catch {
+      setLocalBankingRequests([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab !== 'deposit' || depositUiSection !== 'local_banking') return;
+    void loadLocalBankingRequests();
+  }, [tab, depositUiSection, loadLocalBankingRequests]);
 
   /** Open withdraw via ?action=withdraw deep link. */
   useEffect(() => {
@@ -766,91 +698,76 @@ function WalletPageContent() {
       toast.error('Enter a valid amount');
       return;
     }
-    if (depositChannel === 'crypto') {
-      // Razorpay Checkout path: create the order on the backend (charged in
-      // INR), then open the Checkout popup. The handler posts the signature
-      // to /verify which credits the USD amount to the wallet.
-      if (!kycApproved) {
-        toast.error('Complete KYC verification to deposit via Card / UPI.');
-        router.push('/kyc');
+    // ── Crypto channel: user pays via admin's QR / wallet info shown
+    //   in the panel, then uploads proof + reference. Existing manual
+    //   deposit endpoint handles the row + admin review.
+    if (depositUiSection === 'crypto') {
+      if (!depositTxId.trim()) {
+        toast.error('Enter your transaction reference / tx hash');
         return;
       }
-      if (!razorpayReady || typeof window === 'undefined' || !window.Razorpay) {
-        toast.error('Secure payment is still loading — please wait a moment and retry.');
+      if (!depositProofFile) {
+        toast.error('Upload a screenshot of your payment');
         return;
       }
       setDepositSubmitting(true);
       try {
-        const order = await api.post<RazorpayOrderResponse>('/wallet/deposit/razorpay/order', {
-          amount: amt,
-          account_target: wallet?.wallet_account ? fundTargetPreference : undefined,
+        const fd = new FormData();
+        fd.append('amount', String(amt));
+        fd.append('transaction_id', depositTxId.trim());
+        fd.append('file', depositProofFile);
+        if (wallet?.wallet_account) fd.append('target', fundTargetPreference);
+        const token = api.getToken();
+        const res = await fetch(`${getApiBase()}/wallet/deposit/manual`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+          credentials: 'include',
         });
-        const Razorpay = window.Razorpay;
-        if (!Razorpay) {
-          toast.error('Secure payment library unavailable. Please refresh and retry.');
-          return;
+        const raw = await res.text();
+        let json: { detail?: unknown; message?: string } = {};
+        try {
+          json = raw ? JSON.parse(raw) : {};
+        } catch {
+          throw new Error(raw.slice(0, 200) || `Request failed (${res.status})`);
         }
-        const rzp = new Razorpay({
-          key: order.key_id,
-          order_id: order.order_id,
-          amount: order.amount_paise,
-          currency: order.currency,
-          name: order.name,
-          description: order.description,
-          handler: (resp: RazorpayHandlerResponse) => {
-            // Settle on the backend. Idempotent — the webhook may also fire;
-            // whichever lands first credits once.
-            void (async () => {
-              try {
-                await api.post('/wallet/deposit/razorpay/verify', {
-                  razorpay_order_id: resp.razorpay_order_id,
-                  razorpay_payment_id: resp.razorpay_payment_id,
-                  razorpay_signature: resp.razorpay_signature,
-                });
-                toast.success(`Deposit of $${amt.toLocaleString()} received — credited to your wallet`);
-                setDepositAmount('');
-                void fetchData(true);
-              } catch (err) {
-                // Payment captured but verify failed — the webhook is the
-                // safety net, so reassure rather than alarm.
-                toast.error(
-                  err instanceof Error
-                    ? `Payment received; confirmation pending: ${err.message}`
-                    : 'Payment received; confirmation pending. It will reflect shortly.',
-                );
-                void fetchData(true);
-              }
-            })();
-          },
-          prefill: userEmail ? { email: userEmail } : undefined,
-          theme: { color: '#E94E1B' },
-        });
-        rzp.open();
+        if (!res.ok) {
+          const d = json.detail;
+          const msg =
+            typeof d === 'string'
+              ? d
+              : Array.isArray(d)
+                ? d.map((x: { msg?: string }) => x.msg).join(', ')
+                : 'Deposit failed';
+          throw new Error(msg);
+        }
+        toast.success(`Deposit of $${amt.toLocaleString()} submitted — pending approval`);
+        setDepositAmount('');
+        setDepositTxId('');
+        setDepositProofFile(null);
+        void fetchData(true);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Could not start the payment');
+        toast.error(err instanceof Error ? err.message : 'Deposit failed');
       } finally {
         setDepositSubmitting(false);
       }
       return;
     }
 
-    if (!depositTxId.trim()) {
-      toast.error('Enter your bank / UPI transaction or reference ID');
-      return;
-    }
-    if (!depositProofFile) {
-      toast.error('Upload a screenshot of your payment');
+    // ── Local Banking channel: user just submits an amount. Admin
+    //   reviews KYC and pushes back a payment link out of band (via the
+    //   new /wallet/deposit/local-banking endpoint). KYC-gated.
+    if (!kycApproved) {
+      toast.error('Complete KYC verification to use Local Banking deposits.');
+      router.push('/kyc');
       return;
     }
     setDepositSubmitting(true);
     try {
       const fd = new FormData();
       fd.append('amount', String(amt));
-      fd.append('transaction_id', depositTxId.trim());
-      fd.append('file', depositProofFile);
-      if (wallet?.wallet_account) fd.append('target', fundTargetPreference);
       const token = api.getToken();
-      const res = await fetch(`${getApiBase()}/wallet/deposit/manual`, {
+      const res = await fetch(`${getApiBase()}/wallet/deposit/local-banking`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
@@ -870,13 +787,24 @@ function WalletPageContent() {
             ? d
             : Array.isArray(d)
               ? d.map((x: { msg?: string }) => x.msg).join(', ')
-              : 'Deposit failed';
+              : 'Request failed';
+        // Backend signals missing KYC as a special detail string so we can
+        // route the user straight to the form instead of confusing copy.
+        if (msg === 'KYC_REQUIRED') {
+          toast.error('Complete KYC verification to continue.');
+          router.push('/kyc');
+          return;
+        }
         throw new Error(msg);
       }
-      toast.success(`Manual deposit of $${amt.toLocaleString()} submitted — pending approval`);
+      toast.success(
+        `Request for $${amt.toLocaleString()} submitted. We'll share payment details shortly.`,
+      );
+      setDepositAmount('');
       void fetchData(true);
+      void loadLocalBankingRequests();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Deposit failed');
+      toast.error(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setDepositSubmitting(false);
     }
@@ -957,9 +885,9 @@ function WalletPageContent() {
     !depositSubmitting &&
     !!depositAccountId &&
     depositAmountValid &&
-    // Card / UPI route requires KYC; the panel surfaces a "Complete KYC"
+    // Local Banking requires KYC; the panel surfaces a "Complete KYC"
     // banner so the gate is obvious before the user types an amount.
-    (depositUiSection !== 'crypto' || kycApproved);
+    (depositUiSection !== 'local_banking' || kycApproved);
 
   const withdrawAmountNumber = parseFloat(withdrawAmount);
   const withdrawAmountValid = !Number.isNaN(withdrawAmountNumber) && withdrawAmountNumber > 0;
@@ -1142,15 +1070,15 @@ function WalletPageContent() {
         {/* Voucher (placeholder) */}
         {renderVoucherField()}
 
-        {/* Payment method chips — kept inline so legacy depositChannel
-            branching keeps working without a follow-up modal. */}
+        {/* Payment method chips: Crypto (admin's QR shown, user pays + uploads
+            proof) and Local Banking (request flow, admin sends back link). */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium text-[#0A0A0A]">Payment method</label>
           <div className="flex gap-2">
             {(
               [
-                { id: 'crypto' as const, label: 'Card / UPI', sub: 'Instant · Razorpay' },
-                { id: 'manual' as const, label: 'Bank / UPI', sub: 'Manual transfer' },
+                { id: 'crypto' as const, label: 'Crypto', sub: 'Pay via admin QR / wallet' },
+                { id: 'local_banking' as const, label: 'Local Banking', sub: 'Request payment link' },
               ]
             ).map((c) => {
               const active = depositUiSection === c.id;
@@ -1166,9 +1094,7 @@ function WalletPageContent() {
                       : 'border-transparent bg-[#F5F5F5] hover:border-[#E5E5E5]',
                   )}
                 >
-                  <div className={clsx('text-sm font-semibold', active ? 'text-[#0A0A0A]' : 'text-[#0A0A0A]')}>
-                    {c.label}
-                  </div>
+                  <div className="text-sm font-semibold text-[#0A0A0A]">{c.label}</div>
                   <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>
                 </button>
               );
@@ -1178,11 +1104,66 @@ function WalletPageContent() {
 
         {/* Channel-specific extras ------------------------------ */}
         {depositUiSection === 'crypto' ? (
+          <>
+            {/* Admin's QR / wallet info — same source as the legacy manual
+                flow used (per-tier bank/UPI/QR rows the admin maintains). */}
+            {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.upi_id || manualBankInfo.qr_code_url) && (
+              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5 text-sm text-[#0A0A0A] space-y-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
+                  Pay to
+                </div>
+                {manualBankInfo.qr_code_url && (
+                  <img
+                    src={manualBankInfo.qr_code_url}
+                    alt="Admin payment QR"
+                    className="block w-40 h-40 object-contain rounded-lg border border-[#E5E5E5] bg-white"
+                  />
+                )}
+                <div className="space-y-1 text-xs">
+                  {manualBankInfo.bank_name && (
+                    <div><span className="text-[#0A0A0A] font-semibold">Bank:</span> {manualBankInfo.bank_name}</div>
+                  )}
+                  {manualBankInfo.account_holder && (
+                    <div><span className="text-[#0A0A0A] font-semibold">Holder:</span> {manualBankInfo.account_holder}</div>
+                  )}
+                  {manualBankInfo.account_number && (
+                    <div><span className="text-[#0A0A0A] font-semibold">A/C:</span> {manualBankInfo.account_number}</div>
+                  )}
+                  {manualBankInfo.ifsc_code && (
+                    <div><span className="text-[#0A0A0A] font-semibold">IFSC:</span> {manualBankInfo.ifsc_code}</div>
+                  )}
+                  {manualBankInfo.upi_id && (
+                    <div><span className="text-[#0A0A0A] font-semibold">UPI:</span> {manualBankInfo.upi_id}</div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[#0A0A0A]">Transaction reference / tx hash</label>
+              <input
+                type="text"
+                value={depositTxId}
+                onChange={(e) => setDepositTxId(e.target.value)}
+                placeholder="On-chain tx hash, UTR, or transfer reference"
+                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[#0A0A0A]">Payment proof</label>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
+                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
+              />
+            </div>
+          </>
+        ) : (
           <div className="space-y-2">
             {!kycApproved && (
               <div className="rounded-xl border border-[#E94E1B]/40 bg-[#FCE6DD] px-4 py-3 text-sm text-[#0A0A0A] flex flex-wrap items-center justify-between gap-3">
                 <span className="leading-relaxed">
-                  Card / UPI deposits require <span className="font-semibold">verified KYC</span>.
+                  Local Banking requires <span className="font-semibold">verified KYC</span>.
                 </span>
                 <button
                   type="button"
@@ -1195,75 +1176,59 @@ function WalletPageContent() {
             )}
             <div className="rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A]">
               <p className="leading-relaxed">
-                You&apos;ll be charged{' '}
-                <span className="font-semibold">
-                  ≈ ₹
-                  {(depositAmountValid ? depositAmountNumber * usdToInrRate : 0).toLocaleString(
-                    'en-IN',
-                    { maximumFractionDigits: 0 },
-                  )}
-                </span>{' '}
-                at 1 USD = ₹
-                {usdToInrRate.toLocaleString('en-IN', { maximumFractionDigits: 2 })}. Your wallet is
-                credited the
-                USD amount{depositAmountValid ? ` ($${depositAmountNumber.toLocaleString()})` : ''}.
-              </p>
-              <p className="mt-1 text-xs text-[#6B7280]">
-                Pay securely with cards, UPI, or netbanking via Razorpay.
+                Submit this request and our team will share a payment link (Razorpay, bank transfer, or UPI) with you shortly. Your wallet is credited the USD amount once payment is confirmed.
               </p>
             </div>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">Transaction / Reference ID</label>
-              <input
-                type="text"
-                value={depositTxId}
-                onChange={(e) => setDepositTxId(e.target.value)}
-                placeholder="UPI ref or bank transfer ID"
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[#0A0A0A]">Payment proof</label>
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={(e) => setDepositProofFile(e.target.files?.[0] ?? null)}
-                className="w-full rounded-xl bg-[#F5F5F5] px-4 py-3 text-sm text-[#0A0A0A] file:mr-3 file:rounded-lg file:border-0 file:bg-[#0A0A0A] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white"
-              />
-              {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.upi_id) && (
-                <div className="mt-2 rounded-xl bg-[#F5F5F5] px-4 py-3 text-xs text-[#6B7280] space-y-1">
-                  {manualBankInfo.bank_name && (
-                    <div>
-                      <span className="text-[#0A0A0A] font-semibold">Bank:</span> {manualBankInfo.bank_name}
-                    </div>
-                  )}
-                  {manualBankInfo.account_holder && (
-                    <div>
-                      <span className="text-[#0A0A0A] font-semibold">Holder:</span> {manualBankInfo.account_holder}
-                    </div>
-                  )}
-                  {manualBankInfo.account_number && (
-                    <div>
-                      <span className="text-[#0A0A0A] font-semibold">A/C:</span> {manualBankInfo.account_number}
-                    </div>
-                  )}
-                  {manualBankInfo.ifsc_code && (
-                    <div>
-                      <span className="text-[#0A0A0A] font-semibold">IFSC:</span> {manualBankInfo.ifsc_code}
-                    </div>
-                  )}
-                  {manualBankInfo.upi_id && (
-                    <div>
-                      <span className="text-[#0A0A0A] font-semibold">UPI:</span> {manualBankInfo.upi_id}
-                    </div>
-                  )}
+
+            {/* User's existing local-banking requests (admin queue / link). */}
+            {localBankingRequests.length > 0 && (
+              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5">
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7280] mb-2">
+                  Your requests
                 </div>
-              )}
-            </div>
-          </>
+                <ul className="space-y-2">
+                  {localBankingRequests.slice(0, 5).map((r) => {
+                    const status = (r.status || 'pending').toLowerCase();
+                    const isApproved = status === 'approved' || status === 'auto_approved';
+                    const isRejected = status === 'rejected' || status === 'failed';
+                    const hasLink = !!r.payment_link;
+                    return (
+                      <li
+                        key={r.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[#0A0A0A] tabular-nums">
+                            ${Number(r.amount || 0).toLocaleString()}
+                          </div>
+                          <div className="text-[11px] text-[#6B7280]">
+                            {r.created_at ? new Date(r.created_at).toLocaleString() : ''} ·{' '}
+                            {isApproved
+                              ? 'Credited'
+                              : isRejected
+                                ? 'Rejected'
+                                : hasLink
+                                  ? 'Payment link ready'
+                                  : 'Awaiting admin review'}
+                          </div>
+                        </div>
+                        {hasLink && !isApproved && !isRejected && (
+                          <a
+                            href={r.payment_link as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                          >
+                            Pay now
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Continue */}
