@@ -146,6 +146,7 @@ function ContactBox({ team, email }: { team: string; email: string }) {
           +33 7 59 15 99 87
         </a>
       </p>
+      <p className="text-gray-500">Address: Rue de la Tour-de-l&apos;Île 4, 1204 Genève</p>
     </div>
   )
 }

@@ -20,6 +20,10 @@ export default function LandingFooter() {
             <p className="text-gray-500 text-sm leading-relaxed mb-3 max-w-sm">
               Professional multi-asset trading platform for serious traders.
             </p>
+            <p className="text-gray-500 text-sm">
+              <span className="font-medium text-gray-900">Headquarters:</span><br />
+              Rue de la Tour-de-l&apos;Île 4, 1204 Genève
+            </p>
           </div>
 
           <div>

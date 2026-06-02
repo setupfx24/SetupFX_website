@@ -117,8 +117,8 @@ export const dict: Dict = {
       p2: 'Avant d’ouvrir un compte chez SwissCresta, évaluez attentivement votre niveau d’expérience, vos objectifs d’investissement, vos ressources financières, vos revenus et votre tolérance personnelle au risque. Les pertes peuvent théoriquement être illimitées. Les performances passées ne préjugent pas des résultats futurs. Les données de marché présentées le sont à titre informatif uniquement, provenant de tiers réputés fiables ; SwissCresta n’en garantit pas l’exactitude et se réserve le droit de différer ou d’interrompre la diffusion sans préavis. Les clôtures de position sont exécutées sous forme d’ordres au marché au cours acheteur ou vendeur en vigueur ; un slippage peut survenir, notamment lors de fortes volatilités.',
       p3: 'Si vous n’êtes pas sûr que le trading à effet de levier convienne à votre situation, veuillez consulter un conseiller financier indépendant avant de poursuivre. Pour tous les détails sur l’effet de levier, les frais, les exigences de marge et les coûts de trading, référez-vous à notre documentation officielle.',
       p4: '',
-      hq: '',
-      hqAddr: '',
+      hq: 'Siège social :',
+      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
       copyright: '© 2026 SwissCresta. Tous droits réservés.',
       links: {
         privacy: 'Politique de confidentialité',
@@ -235,8 +235,8 @@ export const dict: Dict = {
       p2: 'Before opening an account with SwissCresta, carefully assess your level of experience, investment objectives, financial resources, income, and personal risk tolerance. Losses can theoretically be unlimited. Past performance is not indicative of future results. Market data displayed on this site is provided for informational purposes only, sourced from third parties believed to be reliable; SwissCresta does not guarantee its accuracy and reserves the right to delay or interrupt data delivery without prior notice. Position closures are executed as market orders at the prevailing bid or ask price; slippage may occur, particularly during periods of high volatility.',
       p3: 'If you are unsure whether leveraged trading is appropriate for your situation, please consult an independent financial adviser before proceeding. For full details on leverage, fees, margin requirements, and trading costs, refer to our official documentation.',
       p4: '',
-      hq: '',
-      hqAddr: '',
+      hq: 'Headquarters:',
+      hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
       copyright: '© 2026 SwissCresta. All rights reserved.',
       links: {
         privacy: 'Privacy Policy',
