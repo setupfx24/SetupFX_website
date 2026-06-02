@@ -200,16 +200,21 @@ async def get_provider_detail(
 
 
 async def start_copy(
-    master_id: UUID, account_id: UUID, amount: Decimal,
+    master_id: UUID, account_id: UUID | None, amount: Decimal,
     max_drawdown_pct: Decimal | None, max_lot_override: Decimal | None,
     user_id: UUID, db: AsyncSession,
 ) -> dict:
     """Follower starts copying a master — auto-approved.
 
-    Creates a dedicated CF trading account for the follower, debits their main
-    wallet, and activates the allocation in one step so the copy engine starts
-    mirroring the master's trades immediately. Funds stay in the follower's
-    own CF account; the master never touches them.
+    Two destination modes:
+      • account_id=None  → create a fresh CF trading account, debit
+                           the follower's main wallet by `amount` and
+                           seed the new account with that balance.
+      • account_id=<id>  → reuse the follower's existing live account
+                           as the copy destination. No main wallet
+                           debit; the amount is recorded as the
+                           allocation tag only. The account's own
+                           equity drives lot sizing.
     """
     master_result = await db.execute(
         select(MasterAccount).where(
@@ -248,9 +253,6 @@ async def start_copy(
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    wallet_bal = user.main_wallet_balance or Decimal("0")
-    if wallet_bal < amount:
-        raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
 
     existing = await db.execute(
         select(InvestorAllocation).where(
@@ -262,27 +264,59 @@ async def start_copy(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Already copying this provider")
 
-    investor_account = TradingAccount(
-        user_id=user_id,
-        account_number=_gen_investor_account_number("signal"),
-        balance=amount,
-        equity=amount,
-        free_margin=amount,
-        margin_used=Decimal("0"),
-        leverage=500,
-        currency="USD",
-        is_demo=False,
-        is_active=True,
-    )
-    db.add(investor_account)
-    await db.flush()
+    investor_account: TradingAccount
+    if account_id is not None:
+        # ── Existing-account path ──
+        acc_q = await db.execute(
+            select(TradingAccount).where(TradingAccount.id == account_id)
+        )
+        acc = acc_q.scalar_one_or_none()
+        if not acc or acc.user_id != user_id:
+            raise HTTPException(status_code=400, detail="Account not found or not yours")
+        if acc.is_demo:
+            raise HTTPException(status_code=400, detail="Demo accounts can't host copy-trade subscriptions")
+        if master.account_id and acc.id == master.account_id:
+            raise HTTPException(status_code=400, detail="You can't copy a master into the master's own account")
+        # Another allocation already using the same destination would
+        # double-mirror the same trades into one account — block it.
+        dup_q = await db.execute(
+            select(InvestorAllocation.id).where(
+                InvestorAllocation.investor_account_id == account_id,
+                InvestorAllocation.status.in_(["active", "pending"]),
+            )
+        )
+        if dup_q.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="This account is already used by another copy subscription")
+        acc_balance = acc.balance or Decimal("0")
+        if acc_balance < amount:
+            raise HTTPException(status_code=400, detail=f"Account balance ${acc_balance} is below allocation ${amount}")
+        investor_account = acc
+    else:
+        # ── New-account path (legacy default) ──
+        wallet_bal = user.main_wallet_balance or Decimal("0")
+        if wallet_bal < amount:
+            raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
+        investor_account = TradingAccount(
+            user_id=user_id,
+            account_number=_gen_investor_account_number("signal"),
+            balance=amount,
+            equity=amount,
+            free_margin=amount,
+            margin_used=Decimal("0"),
+            leverage=500,
+            currency="USD",
+            is_demo=False,
+            is_active=True,
+        )
+        db.add(investor_account)
+        await db.flush()
 
-    user.main_wallet_balance = wallet_bal - amount
-    db.add(Transaction(
-        user_id=user_id, account_id=investor_account.id,
-        type="withdrawal", amount=-amount,
-        description=f"Copy trading investment → account {investor_account.account_number}",
-    ))
+        user.main_wallet_balance = wallet_bal - amount
+        db.add(Transaction(
+            user_id=user_id, account_id=investor_account.id,
+            type="withdrawal", amount=-amount,
+            description=f"Copy trading investment → account {investor_account.account_number}",
+        ))
 
     allocation = InvestorAllocation(
         master_id=master_id,
@@ -299,13 +333,18 @@ async def start_copy(
     await db.commit()
     await db.refresh(allocation)
 
+    message = (
+        f"Now copying — using existing account {investor_account.account_number} (${amount} allocation)"
+        if account_id is not None
+        else f"Now copying — account {investor_account.account_number} funded with ${amount}"
+    )
     return {
         "id": str(allocation.id), "master_id": str(master_id),
         "investor_account": investor_account.account_number,
         "amount": float(amount),
         "copy_type": allocation.copy_type, "status": allocation.status,
-        "wallet_balance": float(user.main_wallet_balance),
-        "message": f"Now copying — account {investor_account.account_number} funded with ${amount}",
+        "wallet_balance": float(user.main_wallet_balance or 0),
+        "message": message,
         "created_at": allocation.created_at.isoformat() if allocation.created_at else None,
     }
 

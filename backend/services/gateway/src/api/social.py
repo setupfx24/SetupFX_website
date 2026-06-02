@@ -39,13 +39,17 @@ async def get_provider_detail(
 @router.post("/copy", status_code=201)
 async def start_copy(
     master_id: UUID = Query(...),
-    account_id: UUID = Query(...),
+    account_id: UUID | None = Query(None),
     amount: Decimal = Query(..., gt=0),
     max_drawdown_pct: Decimal = Query(None),
     max_lot_override: Decimal = Query(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # account_id is optional:
+    #   - None  → auto-create a dedicated CF account and debit main wallet
+    #   - UUID  → follower picked an existing live account; mirrored
+    #             trades land there and we don't touch the main wallet
     return await social_service.start_copy(
         master_id=master_id, account_id=account_id, amount=amount,
         max_drawdown_pct=max_drawdown_pct, max_lot_override=max_lot_override,

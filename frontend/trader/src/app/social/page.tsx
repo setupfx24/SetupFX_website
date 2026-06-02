@@ -376,6 +376,7 @@ interface TradingAccount {
   id: string;
   account_number: string;
   balance: number;
+  is_demo?: boolean;
 }
 
 function CopyModal({
@@ -388,45 +389,63 @@ function CopyModal({
   onSuccess: () => void;
 }) {
   const [amount, setAmount] = useState('');
-  const [accountId, setAccountId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
-  const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [walletBalance, setWalletBalance] = useState(0);
+  // Destination mode: a new dedicated CF account funded from main wallet,
+  // or an existing live account the follower already trades from.
+  const [destMode, setDestMode] = useState<'new' | 'existing'>('new');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        setLoadingAccounts(true);
         const [accRes, walRes] = await Promise.all([
-          api.get<{ items: TradingAccount[] }>('/accounts'),
+          api.get<{ items: TradingAccount[] } | TradingAccount[]>('/accounts'),
           api.get<{ main_wallet_balance?: number }>('/wallet/summary'),
         ]);
         if (cancelled) return;
-        const items = accRes.items ?? [];
-        setAccounts(items);
-        if (items.length > 0) setAccountId(items[0]!.id);
+        const items: TradingAccount[] = Array.isArray(accRes)
+          ? accRes
+          : (accRes?.items ?? []);
+        setAccounts(items.filter((a) => !a.is_demo));
         setWalletBalance(Number(walRes.main_wallet_balance) || 0);
       } catch {
         // non-critical
-      } finally {
-        if (!cancelled) setLoadingAccounts(false);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+
   const handleSubmit = async () => {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { toast.error('Enter a valid amount'); return; }
-    if (amt > walletBalance) { toast.error('Insufficient wallet balance'); return; }
+    if (destMode === 'new' && amt > walletBalance) {
+      toast.error('Insufficient wallet balance');
+      return;
+    }
+    if (destMode === 'existing') {
+      if (!selectedAccountId) { toast.error('Pick a destination account'); return; }
+      if (selectedAccount && amt > selectedAccount.balance) {
+        toast.error(`Account balance $${selectedAccount.balance.toFixed(2)} is below allocation`);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
-      // account_id is sent for API compat but backend auto-creates a dedicated account
-      const acctId = accounts.length > 0 ? accounts[0]!.id : '00000000-0000-0000-0000-000000000000';
-      await api.post(`/social/copy?master_id=${provider.id}&account_id=${acctId}&amount=${amt}`, {});
-      toast.success(`Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`);
+      const qs =
+        destMode === 'existing' && selectedAccountId
+          ? `?master_id=${provider.id}&account_id=${selectedAccountId}&amount=${amt}`
+          : `?master_id=${provider.id}&amount=${amt}`;
+      await api.post(`/social/copy${qs}`, {});
+      toast.success(
+        destMode === 'existing'
+          ? `Now following ${provider.provider_name} — trades will mirror into ${selectedAccount?.account_number}`
+          : `Now following ${provider.provider_name} — $${amt.toFixed(2)} deducted from wallet`,
+      );
       onSuccess();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to start subscription');
@@ -447,26 +466,99 @@ function CopyModal({
         <h3 className="text-sm font-semibold text-text-primary mb-1">Follow {provider.provider_name}</h3>
         <p className="text-xxs text-text-tertiary mb-4">Performance fee: {provider.performance_fee_pct}% · Min: ${provider.min_investment}</p>
 
-        {/* Wallet balance */}
-        <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
-            <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        {/* Destination picker — new dedicated CF account vs an existing live account */}
+        <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-3 space-y-3">
+          <p className="text-xs font-semibold text-accent">Where should mirrored trades go?</p>
+          <div className="grid grid-cols-1 gap-2">
+            <label
+              className={clsx(
+                'cursor-pointer rounded-lg border p-2.5 text-xxs transition-colors',
+                destMode === 'new'
+                  ? 'border-accent/60 bg-accent/10'
+                  : 'border-border-glass bg-bg-secondary hover:border-accent/30',
+              )}
+            >
+              <input
+                type="radio"
+                name="dest-mode"
+                checked={destMode === 'new'}
+                onChange={() => {
+                  setDestMode('new');
+                  setSelectedAccountId('');
+                }}
+                className="sr-only"
+              />
+              <p className="font-semibold text-text-primary">Create new dedicated account</p>
+              <p className="text-text-tertiary mt-0.5 leading-snug">
+                A fresh CF account is opened and funded from your main wallet.
+              </p>
+            </label>
+            <label
+              className={clsx(
+                'cursor-pointer rounded-lg border p-2.5 text-xxs transition-colors',
+                destMode === 'existing'
+                  ? 'border-accent/60 bg-accent/10'
+                  : 'border-border-glass bg-bg-secondary hover:border-accent/30',
+                accounts.length === 0 && 'opacity-60 cursor-not-allowed',
+              )}
+            >
+              <input
+                type="radio"
+                name="dest-mode"
+                checked={destMode === 'existing'}
+                disabled={accounts.length === 0}
+                onChange={() => setDestMode('existing')}
+                className="sr-only"
+              />
+              <p className="font-semibold text-text-primary">Use an existing account</p>
+              <p className="text-text-tertiary mt-0.5 leading-snug">
+                {accounts.length === 0
+                  ? 'No live accounts available.'
+                  : 'Mirrored trades land in an account you already trade from.'}
+              </p>
+            </label>
           </div>
-          <button type="button" onClick={() => setAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-accent hover:underline">Max</button>
+          {destMode === 'existing' && accounts.length > 0 && (
+            <div>
+              <label className="text-xxs text-text-secondary block mb-1">Destination account</label>
+              <select
+                value={selectedAccountId}
+                onChange={(e) => setSelectedAccountId(e.target.value)}
+                className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-xs text-text-primary font-mono focus:border-accent/50 focus:outline-none"
+              >
+                <option value="">— Select —</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.account_number} · ${a.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-warning mt-1 leading-snug">
+                Heads up: mirrored trades will mix with your own trades on this account, and lot sizing scales with the account&apos;s full equity.
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="rounded-lg border border-border-glass bg-bg-primary p-3 mb-3 text-xs text-text-secondary">
-          A dedicated trading account will be auto-created for this Trade Master subscription. Mirrored trades will appear there.
-        </div>
+        {destMode === 'new' && (
+          <div className="rounded-lg border border-accent/30 bg-bg-primary p-3 mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-text-tertiary">From Main Wallet</div>
+              <div className="text-lg font-bold text-accent font-mono tabular-nums">${walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            </div>
+            <button type="button" onClick={() => setAmount(String(Math.max(0, walletBalance)))} className="text-xs font-bold text-accent hover:underline">Max</button>
+          </div>
+        )}
 
-        <label className="block text-xs text-text-secondary mb-1">Investment Amount (USD)</label>
+        <label className="block text-xs text-text-secondary mb-1">
+          {destMode === 'existing' ? 'Allocation Amount (USD)' : 'Investment Amount (USD)'}
+        </label>
         <input
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           min={provider.min_investment}
-          max={walletBalance}
+          max={destMode === 'existing' ? (selectedAccount?.balance ?? undefined) : walletBalance}
           placeholder={`Min $${provider.min_investment}`}
           className="mb-4 w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent/50 focus:outline-none [data-theme='light']:border-black"
         />
