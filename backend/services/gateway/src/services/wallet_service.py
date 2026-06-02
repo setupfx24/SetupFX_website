@@ -1614,6 +1614,25 @@ async def create_manual_withdrawal(
         message=f"${float(amount):,.2f} manual withdrawal pending approval",
         notif_type="withdrawal", action_url="/wallet",
     )
+    # Ping every admin so the withdrawal queue gets attention. The crypto
+    # withdrawal path already does this; manual was missed and admins
+    # never got the bell update on UPI/QR requests.
+    try:
+        from packages.common.src.notify import notify_all_admins
+        await notify_all_admins(
+            db,
+            title="New withdrawal request",
+            message=(
+                f"{user_row.email} requested a "
+                f"${float(amount):,.2f} manual withdrawal "
+                f"({'UPI' if upi else 'QR'})."
+            ),
+            notif_type="withdrawal",
+            action_url="/deposits",
+            commit=False,
+        )
+    except Exception:  # pragma: no cover
+        pass
     await db.commit()
 
     # Confirmation email — same template + helper as the legacy /
