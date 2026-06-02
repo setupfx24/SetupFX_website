@@ -14,11 +14,37 @@ import asyncio
 import logging
 import smtplib
 from email.message import EmailMessage
+from pathlib import Path
 from typing import Optional
 
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
+
+# Inline-attached brand logo. Bundled with the package so we don't depend
+# on an outbound URL fetch — every email gets the wordmark whether or not
+# the recipient's client has remote-image loading enabled. The CID below
+# must match LOGO_CID in email_templates/base.py.
+_LOGO_PATH = (
+    Path(__file__).parent / "email_templates" / "assets" / "swisscresta-logo.png"
+)
+_LOGO_CID = "swisscresta-logo"
+_LOGO_BYTES: bytes | None = None
+
+
+def _logo_bytes() -> bytes | None:
+    """Read the logo PNG once, cache for the process lifetime. Returns
+    None if the file is missing so a packaging hiccup doesn't break sending
+    — emails still go out with a broken-image icon instead of a 500."""
+    global _LOGO_BYTES
+    if _LOGO_BYTES is not None:
+        return _LOGO_BYTES
+    try:
+        _LOGO_BYTES = _LOGO_PATH.read_bytes()
+    except FileNotFoundError:
+        logger.warning("Email logo missing at %s — emails will render without it", _LOGO_PATH)
+        _LOGO_BYTES = b""
+    return _LOGO_BYTES or None
 
 
 def smtp_configured() -> bool:
@@ -46,6 +72,21 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
     plain = text if text else _strip_tags(html)
     msg.set_content(plain)
     msg.add_alternative(html, subtype="html")
+
+    # Attach the brand logo as a related inline image so <img src="cid:..."/>
+    # in the template renders without an outbound fetch. We modify the HTML
+    # alternative part directly (not the outer message) so the structure is
+    # multipart/alternative {plain, multipart/related {html, image}}.
+    logo = _logo_bytes()
+    if logo:
+        html_part = msg.get_payload()[-1]
+        html_part.add_related(
+            logo,
+            maintype="image",
+            subtype="png",
+            cid=f"<{_LOGO_CID}>",
+            filename="swisscresta-logo.png",
+        )
 
     host = str(s.SMTP_HOST).strip()
     port = int(s.SMTP_PORT)

@@ -20,10 +20,11 @@ _TEXT_DIM = "#9a9a9a"
 _BORDER = "#2a2a2a"
 _BORDER_BRIGHT = "#3a3a3a"
 
-# Logo served from the marketing site (no auth, no CORS). Same PNG the
-# navbar uses, so the wordmark in the inbox matches what the user just
-# saw on the site.
-_LOGO_URL = "https://swisscresta.com/marketing/swisscresta-logo.png"
+# CID for the inline-attached logo. The SMTP sender (smtp_mail._send_sync)
+# attaches the bundled PNG with this exact Content-ID, so the <img> below
+# resolves without an outbound network fetch — works even when the client
+# blocks remote images (Gmail's "Show pictures", Outlook's safe mode, etc).
+LOGO_CID = "swisscresta-logo"
 
 
 def render_layout(
@@ -84,7 +85,7 @@ def render_layout(
                       border:1px solid {_BORDER};border-radius:12px;overflow:hidden;">
           <tr>
             <td style="padding:24px 32px;border-bottom:1px solid {_BORDER};">
-              <img src="{_LOGO_URL}" alt="SwissCresta"
+              <img src="cid:{LOGO_CID}" alt="SwissCresta"
                    height="36"
                    style="display:block;height:36px;width:auto;border:0;outline:none;text-decoration:none;" />
             </td>
