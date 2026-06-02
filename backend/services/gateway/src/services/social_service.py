@@ -1884,9 +1884,15 @@ async def master_transactions(
     }
     allowed_types = type_filters.get(filter_type, type_filters["all"])
 
+    # Scope every query to the master's pool/CT account. Activity on
+    # the user's main wallet or other trading accounts is NOT master
+    # activity — it already lives in the Funds → Transaction History
+    # tab, so surfacing it here would just be duplicate noise.
+    master_account_id = master.account_id
+
     count_q = await db.execute(
         select(func.count()).select_from(Transaction).where(
-            Transaction.user_id == user_id,
+            Transaction.account_id == master_account_id,
             Transaction.type.in_(allowed_types),
         )
     )
@@ -1894,7 +1900,7 @@ async def master_transactions(
 
     rows_q = await db.execute(
         select(Transaction).where(
-            Transaction.user_id == user_id,
+            Transaction.account_id == master_account_id,
             Transaction.type.in_(allowed_types),
         ).order_by(Transaction.created_at.desc())
         .limit(per_page).offset((page - 1) * per_page)
@@ -1986,7 +1992,7 @@ async def master_transactions(
     # page) so they survive pagination.
     summary_q = await db.execute(
         select(Transaction.type, func.coalesce(func.sum(Transaction.amount), 0))
-        .where(Transaction.user_id == user_id)
+        .where(Transaction.account_id == master_account_id)
         .group_by(Transaction.type)
     )
     summary_raw = {row[0]: float(row[1] or 0) for row in summary_q.all()}

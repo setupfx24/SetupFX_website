@@ -1767,9 +1767,9 @@ function MasterTransactionHistory() {
     <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
       <div className="px-4 py-3 border-b border-border-primary flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-text-primary">Transaction History</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Master Account History</h3>
           <p className="text-xxs text-text-tertiary mt-0.5">
-            Commissions per follower, withdrawals, transfers to main wallet — all in one place
+            Activity on your master pool account only — commissions earned per follower, plus any withdrawals or transfers of those earnings. General wallet activity lives in Funds → Transaction History.
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
