@@ -552,3 +552,161 @@ async def delete_master(
     )
     await db.commit()
     return {"message": "Master account deleted successfully"}
+
+
+async def master_transactions(
+    master_id: uuid.UUID,
+    db: AsyncSession,
+    page: int = 1,
+    per_page: int = 20,
+    filter_type: str = "all",
+) -> dict:
+    """Paginated transaction history on a specific master pool account.
+
+    Same shape as the trader-side master_transactions endpoint but
+    keyed by master_id so admins can audit any master without having
+    to impersonate them. Surfaces ib_commission rows (with the
+    originating follower), withdrawals, transfers, deposits — all
+    scoped to master.account_id so general wallet activity stays out.
+    """
+    from packages.common.src.models import Instrument
+
+    master_q = await db.execute(
+        select(MasterAccount).where(MasterAccount.id == master_id)
+    )
+    master = master_q.scalar_one_or_none()
+    if not master:
+        raise HTTPException(status_code=404, detail="Master not found")
+    if not master.account_id:
+        return {
+            "items": [], "page": 1, "per_page": per_page, "total": 0, "pages": 0,
+            "summary": {"total_commission": 0, "total_withdrawn": 0, "total_transferred": 0, "total_deposit": 0},
+            "master": {
+                "id": str(master.id),
+                "user_id": str(master.user_id),
+                "performance_fee_pct": float(master.performance_fee_pct or 0),
+                "admin_commission_pct": float(master.admin_commission_pct or 0),
+            },
+        }
+
+    page = max(1, page)
+    per_page = max(1, min(per_page, 100))
+
+    type_filters: dict[str, list[str]] = {
+        "all": ["ib_commission", "withdrawal", "transfer", "deposit", "bonus"],
+        "commission": ["ib_commission"],
+        "withdrawal": ["withdrawal"],
+        "transfer": ["transfer"],
+        "deposit": ["deposit", "bonus"],
+    }
+    allowed_types = type_filters.get(filter_type, type_filters["all"])
+
+    count_q = await db.execute(
+        select(func.count()).select_from(Transaction).where(
+            Transaction.account_id == master.account_id,
+            Transaction.type.in_(allowed_types),
+        )
+    )
+    total = int(count_q.scalar() or 0)
+
+    rows_q = await db.execute(
+        select(Transaction).where(
+            Transaction.account_id == master.account_id,
+            Transaction.type.in_(allowed_types),
+        ).order_by(Transaction.created_at.desc())
+        .limit(per_page).offset((page - 1) * per_page)
+    )
+    txns = list(rows_q.scalars().all())
+
+    commission_refs = [t.reference_id for t in txns if t.type == "ib_commission" and t.reference_id]
+    follower_by_ref: dict = {}
+    symbol_by_ref: dict = {}
+    if commission_refs:
+        copy_q = await db.execute(
+            select(CopyTrade, InvestorAllocation, User)
+            .join(InvestorAllocation, InvestorAllocation.id == CopyTrade.investor_allocation_id)
+            .join(User, User.id == InvestorAllocation.investor_user_id)
+            .where(CopyTrade.investor_position_id.in_(commission_refs))
+        )
+        for ct, alloc, follower in copy_q.all():
+            follower_by_ref[ct.investor_position_id] = {
+                "user_id": str(follower.id),
+                "name": follower.full_name or follower.email,
+                "email": follower.email,
+            }
+        pos_q = await db.execute(
+            select(Position, Instrument)
+            .join(Instrument, Instrument.id == Position.instrument_id)
+            .where(Position.id.in_(commission_refs))
+        )
+        for pos, inst in pos_q.all():
+            symbol_by_ref[pos.id] = {
+                "symbol": inst.symbol,
+                "side": str(pos.side).lower() if pos.side else None,
+                "lots": float(pos.lots) if pos.lots is not None else None,
+                "gross_profit": float(pos.profit) if pos.profit is not None else None,
+            }
+
+    perf_pct = float(master.performance_fee_pct or 0)
+    admin_pct = float(master.admin_commission_pct or 0)
+
+    items: list[dict] = []
+    for t in txns:
+        row = {
+            "id": str(t.id),
+            "created_at": t.created_at.isoformat() if t.created_at else None,
+            "type": t.type,
+            "amount": float(t.amount or 0),
+            "balance_after": float(t.balance_after) if t.balance_after is not None else None,
+            "description": t.description,
+            "follower": None, "symbol": None, "side": None, "lots": None,
+            "gross_profit": None, "performance_fee_pct": None,
+            "performance_fee_gross": None, "admin_commission_pct": None,
+            "admin_fee": None, "master_net": None,
+        }
+        if t.type == "ib_commission":
+            ref = t.reference_id
+            row["follower"] = follower_by_ref.get(ref)
+            sym = symbol_by_ref.get(ref) if ref else None
+            if sym:
+                row["symbol"] = sym["symbol"]; row["side"] = sym["side"]
+                row["lots"] = sym["lots"]; row["gross_profit"] = sym["gross_profit"]
+            master_net = float(t.amount or 0)
+            row["master_net"] = master_net
+            row["performance_fee_pct"] = perf_pct
+            row["admin_commission_pct"] = admin_pct
+            if admin_pct < 100:
+                gross_fee = master_net / (1 - admin_pct / 100) if admin_pct else master_net
+                row["performance_fee_gross"] = round(gross_fee, 4)
+                row["admin_fee"] = round(gross_fee - master_net, 4)
+        items.append(row)
+
+    summary_q = await db.execute(
+        select(Transaction.type, func.coalesce(func.sum(Transaction.amount), 0))
+        .where(Transaction.account_id == master.account_id)
+        .group_by(Transaction.type)
+    )
+    raw = {row[0]: float(row[1] or 0) for row in summary_q.all()}
+    summary = {
+        "total_commission": raw.get("ib_commission", 0),
+        "total_withdrawn": abs(raw.get("withdrawal", 0)),
+        "total_transferred": raw.get("transfer", 0),
+        "total_deposit": raw.get("deposit", 0) + raw.get("bonus", 0),
+    }
+
+    master_user_q = await db.execute(select(User).where(User.id == master.user_id))
+    master_user = master_user_q.scalar_one_or_none()
+    return {
+        "items": items,
+        "page": page, "per_page": per_page, "total": total,
+        "pages": (total + per_page - 1) // per_page if per_page else 1,
+        "summary": summary,
+        "master": {
+            "id": str(master.id),
+            "user_id": str(master.user_id),
+            "name": (master_user.full_name or master_user.email) if master_user else None,
+            "email": master_user.email if master_user else None,
+            "performance_fee_pct": perf_pct,
+            "admin_commission_pct": admin_pct,
+        },
+    }

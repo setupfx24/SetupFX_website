@@ -111,6 +111,21 @@ async def delete_master(
     )
 
 
+@router.get("/masters/{master_id}/transactions")
+async def master_transactions(
+    master_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    filter_type: str = Query("all"),
+    admin: User = Depends(require_permission("social.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await social_service.master_transactions(
+        master_id=master_id, db=db,
+        page=page, per_page=per_page, filter_type=filter_type,
+    )
+
+
 @router.get("/pamm-analytics")
 async def pamm_analytics(
     admin: User = Depends(require_permission("social.view")),
