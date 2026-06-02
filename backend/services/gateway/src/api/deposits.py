@@ -139,6 +139,45 @@ async def get_razorpay_rate(
     return {"rate": float(rate), "currency": "INR"}
 
 
+@router.get("/deposit/razorpay/{order_id}/meta")
+async def get_razorpay_order_meta(
+    order_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the publishable key + locked amount for a Razorpay order that
+    was created server-side (e.g. by admin's Approve & Razorpay button).
+    The trader UI calls this before opening the Razorpay Checkout popup."""
+    from sqlalchemy import select
+    from packages.common.src.models import Deposit
+    from ..services import razorpay_service
+
+    if not razorpay_service.razorpay_configured():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=503, detail="Razorpay is not configured")
+
+    q = await db.execute(
+        select(Deposit).where(
+            Deposit.transaction_id == order_id,
+            Deposit.user_id == current_user["user_id"],
+        )
+    )
+    deposit = q.scalar_one_or_none()
+    if not deposit:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Order not found on your account")
+
+    from packages.common.src.config import get_settings
+    rate = await razorpay_service.get_usd_to_inr_rate()
+    amount_paise = razorpay_service.usd_to_inr_paise(deposit.amount, rate)
+    return {
+        "key_id": get_settings().RAZORPAY_KEY_ID,
+        "amount_paise": amount_paise,
+        "amount_inr": float(amount_paise) / 100,
+        "currency": "INR",
+    }
+
+
 @router.post("/deposit/razorpay/order", status_code=201)
 async def create_razorpay_order(
     req: RazorpayOrderRequest,

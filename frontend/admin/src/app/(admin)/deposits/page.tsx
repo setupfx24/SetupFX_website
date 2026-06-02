@@ -597,24 +597,47 @@ export default function DepositsPage() {
                             <td className="px-4 py-2.5 text-right">
                               {d.status === 'pending' && (
                                 <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                                  {/* Local-banking flow: admin attaches a payment URL before approving.
-                                      Approve still works (manual mark-paid) once the user has paid. */}
+                                  {/* Local-banking flow — admin has two paths:
+                                      1. Approve & Razorpay (default) — auto-creates a Razorpay order
+                                         server-side for the user's locked amount. User pays via
+                                         Razorpay popup; webhook credits automatically.
+                                      2. Set custom link — for cases where admin wants to share a
+                                         non-Razorpay URL (custom invoice, bank instructions, UPI VPA). */}
                                   {d.method === 'local_banking' && !d.payment_link && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setLinkUrl('');
-                                        setLinkMessage('');
-                                        setLinkModal({
-                                          id: d.id,
-                                          userName: d.user_name,
-                                          amount: d.amount,
-                                        });
-                                      }}
-                                      className="px-2 py-1 rounded-md text-xxs font-medium bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-fast"
-                                    >
-                                      Set Link
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          try {
+                                            await adminApi.post(`/finance/deposits/${d.id}/approve-razorpay`, {});
+                                            toast.success('Razorpay order created — user can now pay');
+                                            await fetchDeposits();
+                                          } catch (e: any) {
+                                            toast.error(e?.message || 'Failed to create Razorpay order');
+                                          }
+                                        }}
+                                        className="px-2 py-1 rounded-md text-xxs font-medium bg-buy/15 text-buy border border-buy/30 hover:bg-buy/25 transition-fast"
+                                        title={`Auto-create a Razorpay order for $${d.amount.toFixed(2)} and notify the user`}
+                                      >
+                                        Approve & Razorpay
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setLinkUrl('');
+                                          setLinkMessage('');
+                                          setLinkModal({
+                                            id: d.id,
+                                            userName: d.user_name,
+                                            amount: d.amount,
+                                          });
+                                        }}
+                                        className="px-2 py-1 rounded-md text-xxs font-medium bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-fast"
+                                        title="Share a custom payment URL instead of using Razorpay"
+                                      >
+                                        Custom link
+                                      </button>
+                                    </>
                                   )}
                                   <button
                                     type="button"

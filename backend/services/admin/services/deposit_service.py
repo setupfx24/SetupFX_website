@@ -825,3 +825,105 @@ async def download_withdrawal_payout_qr(withdrawal_id: uuid.UUID, db: AsyncSessi
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File missing on server")
     return FileResponse(str(p), filename=p.name, media_type="application/octet-stream")
+
+
+async def approve_with_razorpay(
+    deposit_id: uuid.UUID,
+    admin_id: uuid.UUID,
+    ip_address: str | None,
+    db: AsyncSession,
+) -> dict:
+    """Local Banking stage-2 (auto path): admin approves the request and
+    we create a Razorpay order server-side for the user's locked amount.
+
+    Differences from set_payment_link:
+      - No manual link entry — admin just hits Approve.
+      - The Razorpay order_id is stored on deposit.transaction_id so the
+        existing Razorpay webhook / verify path picks it up unchanged.
+      - deposit.payment_link gets a sentinel "razorpay:<order_id>" so the
+        trader UI knows to open the Razorpay popup instead of opening an
+        external URL.
+      - Deposit stays "pending" until the Razorpay webhook fires
+        payment.captured, which the existing handler credits idempotently.
+
+    The trader's requested amount is locked at request time — admin
+    cannot change it here. If a refund or adjustment is needed they can
+    reject and the user re-requests.
+    """
+    result = await db.execute(
+        select(Deposit).where(Deposit.id == deposit_id).with_for_update()
+    )
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    if deposit.method != "local_banking":
+        raise HTTPException(
+            status_code=400,
+            detail="Razorpay auto-approval only applies to local-banking requests",
+        )
+    if deposit.status != "pending":
+        raise HTTPException(status_code=400, detail="Deposit is not pending")
+    if (deposit.amount or Decimal("0")) <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Deposit amount is missing — ask the user to resubmit with an amount",
+        )
+
+    # Create the Razorpay order via the same helper the legacy flow used.
+    from services.razorpay_service import create_order as rzp_create_order
+    order = await rzp_create_order(
+        amount_usd=Decimal(str(deposit.amount)),
+        receipt=str(deposit.id)[:40],
+        notes={
+            "deposit_id": str(deposit.id),
+            "user_id": str(deposit.user_id),
+            "source": "local_banking_admin_approve",
+        },
+    )
+
+    deposit.transaction_id = order["order_id"]
+    deposit.payment_link = f"razorpay:{order['order_id']}"
+    deposit.method = "razorpay"  # so the existing webhook handler matches
+
+    user_row = (
+        await db.execute(select(User).where(User.id == deposit.user_id))
+    ).scalar_one_or_none()
+
+    notif_message = (
+        f"Your deposit of ${float(deposit.amount):,.2f} has been approved. "
+        f"Open Funds to pay via Razorpay."
+    )
+    await create_notification(
+        db, deposit.user_id,
+        title="Deposit approved — pay now",
+        message=notif_message,
+        notif_type="deposit",
+        action_url="/wallet?tab=deposit",
+        commit=False,
+    )
+
+    await write_audit_log(
+        db, admin_id, "approve_local_banking_with_razorpay", "deposit", deposit_id,
+        old_values={"method": "local_banking", "transaction_id": None},
+        new_values={
+            "method": "razorpay",
+            "transaction_id": order["order_id"],
+            "amount_inr": order["amount_inr"],
+            "usd_to_inr_rate": order["usd_to_inr_rate"],
+        },
+        ip_address=ip_address,
+    )
+
+    await db.commit()
+
+    return {
+        "deposit_id": str(deposit.id),
+        "razorpay": {
+            "order_id": order["order_id"],
+            "amount_paise": order["amount_paise"],
+            "amount_inr": order["amount_inr"],
+            "key_id": order["key_id"],
+            "currency": order["currency"],
+        },
+        "message": "Approved — Razorpay order created. The user can now pay.",
+    }

@@ -102,8 +102,13 @@ interface WalletListItem {
   currency: string;
   // Populated by the backend for `local_banking` deposits once the admin
   // attaches a payment URL. Null while the request is still waiting for
-  // admin review.
+  // admin review. When admin used the Razorpay-auto path this looks like
+  // "razorpay:<order_id>" and the UI opens a Razorpay popup instead of an
+  // external URL.
   payment_link?: string | null;
+  // transaction_id holds the Razorpay order_id for auto-approved LB
+  // deposits — the trader needs it to launch the Razorpay Checkout popup.
+  transaction_id?: string | null;
 }
 
 /** Raw DB method code → friendly label. Covers both manual (bank / UPI /
@@ -262,6 +267,40 @@ function WalletPageContent() {
   const [depositAccountId, setDepositAccountId] = useState<string | null>(null);
   const [depositTxId, setDepositTxId] = useState('');
   const [depositProofFile, setDepositProofFile] = useState<File | null>(null);
+  const [cryptoGatewayBusy, setCryptoGatewayBusy] = useState(false);
+
+  /** Open the OxaPay hosted crypto checkout for the entered amount. The
+   *  backend creates a Deposit row + an OxaPay payment and returns the
+   *  hosted payment_url; we redirect the user there. OxaPay's webhook
+   *  flips the deposit to "approved" on payment confirmation. */
+  const openCryptoGatewayCheckout = async () => {
+    const amt = parseFloat(depositAmount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a deposit amount first');
+      return;
+    }
+    setCryptoGatewayBusy(true);
+    try {
+      const res = await api.post<{ payment_url?: string; id?: string }>(
+        '/wallet/deposit',
+        {
+          amount: amt,
+          method: 'oxapay',
+          account_id: depositAccountId === MAIN_WALLET_OPTION_ID ? undefined : depositAccountId,
+        },
+      );
+      if (res?.payment_url) {
+        window.open(res.payment_url, '_blank', 'noopener');
+        toast.success('Gateway opened — complete the payment in the new tab');
+      } else {
+        toast.error('Gateway did not return a payment link');
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not open the gateway');
+    } finally {
+      setCryptoGatewayBusy(false);
+    }
+  };
   const [manualBankInfo, setManualBankInfo] = useState<ManualBankDetailsResponse | null>(null);
   const [depositSubmitting, setDepositSubmitting] = useState(false);
 
@@ -507,13 +546,118 @@ function WalletPageContent() {
   // Pull recent deposits and pick out the local-banking ones so they can
   // surface inline on the Local Banking chip. Stays cheap — the deposits
   // list is small and already used by /history.
+  /** Open the Razorpay Checkout popup for an approved local-banking
+   *  deposit. The order is already created server-side (deposit's
+   *  transaction_id holds the order_id, payment_link holds the sentinel),
+   *  so we only need to fetch the publishable key + locked amount and
+   *  launch checkout.js. On success we re-poll the deposits list — the
+   *  webhook will flip the row to "approved" once Razorpay confirms. */
+  const openRazorpayCheckout = useCallback(async (deposit: WalletListItem) => {
+    const orderId = deposit.transaction_id;
+    if (!orderId) {
+      toast.error('No Razorpay order on this deposit yet');
+      return;
+    }
+    // Fetch the publishable key + INR amount for THIS order so we don't
+    // hardcode the conversion math on the client.
+    let keyId: string | undefined;
+    let amountInr: number | undefined;
+    try {
+      const meta = await api.get<{ key_id?: string; amount_inr?: number; currency?: string }>(
+        `/wallet/deposit/razorpay/${orderId}/meta`,
+      );
+      keyId = meta?.key_id;
+      amountInr = meta?.amount_inr;
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not load payment details');
+      return;
+    }
+    if (!keyId) {
+      toast.error('Razorpay is not configured');
+      return;
+    }
+
+    // Lazy-load the Checkout SDK exactly once.
+    const SCRIPT_ID = 'razorpay-checkout';
+    const ensureSdk = () =>
+      new Promise<void>((resolve, reject) => {
+        if (typeof window === 'undefined') return reject(new Error('no window'));
+        const w = window as unknown as { Razorpay?: unknown };
+        if (w.Razorpay) return resolve();
+        if (document.getElementById(SCRIPT_ID)) {
+          document.getElementById(SCRIPT_ID)!.addEventListener('load', () => resolve());
+          document.getElementById(SCRIPT_ID)!.addEventListener('error', () =>
+            reject(new Error('Failed to load Razorpay')),
+          );
+          return;
+        }
+        const s = document.createElement('script');
+        s.id = SCRIPT_ID;
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load Razorpay'));
+        document.body.appendChild(s);
+      });
+
+    try {
+      await ensureSdk();
+    } catch {
+      toast.error('Could not load Razorpay');
+      return;
+    }
+
+    type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
+    const w = window as unknown as { Razorpay: RazorpayCtor };
+
+    const rzp = new w.Razorpay({
+      key: keyId,
+      order_id: orderId,
+      amount: amountInr ? Math.round(amountInr * 100) : undefined,
+      currency: 'INR',
+      name: 'SwissCresta',
+      description: `Deposit ${deposit.id.slice(0, 8)}`,
+      prefill: {},
+      theme: { color: '#E94E1B' },
+      handler: async (resp: Record<string, string>) => {
+        // Verify the signature server-side so the row credits via the
+        // same locked path the webhook uses. Webhook will also catch
+        // this independently — double-credit is prevented by the
+        // (payment_id, "captured") dedup row in webhook_events.
+        try {
+          await api.post('/wallet/deposit/razorpay/verify', {
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
+          });
+          toast.success('Payment received — wallet credited');
+          void loadLocalBankingRequests();
+        } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : 'Verification failed');
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          // No-op — user can re-open the popup from the same row.
+        },
+      },
+    });
+    rzp.open();
+  }, []);
+
   const loadLocalBankingRequests = useCallback(async () => {
     try {
       const res = await api.get<{ items?: WalletListItem[] }>('/wallet/deposits');
       const items = res?.items ?? [];
-      const local = items.filter(
-        (d) => (d.method || '').toLowerCase() === 'local_banking',
-      );
+      // local_banking is the new method for the LB flow. When admin
+      // chooses "Approve & Razorpay" the row gets flipped to method=
+      // razorpay with a payment_link of "razorpay:<order_id>" — we
+      // still want to surface those here so the user can find their
+      // pending Razorpay payment in the same place.
+      const local = items.filter((d) => {
+        const m = (d.method || '').toLowerCase();
+        if (m === 'local_banking') return true;
+        return m === 'razorpay' && (d.payment_link || '').startsWith('razorpay:');
+      });
       setLocalBankingRequests(local);
     } catch {
       setLocalBankingRequests([]);
@@ -1241,6 +1385,25 @@ function WalletPageContent() {
                 )}
               </div>
             )}
+
+            {/* Automated crypto checkout via the OxaPay gateway. Opens a
+                hosted page where the user picks a coin/network, pays, and
+                the OxaPay webhook auto-credits the deposit — no manual
+                tx-hash entry required. The manual fields below remain as
+                a fallback for users who already paid directly to the
+                admin QR/address. */}
+            <button
+              type="button"
+              onClick={() => void openCryptoGatewayCheckout()}
+              disabled={cryptoGatewayBusy || !(parseFloat(depositAmount) > 0)}
+              className="w-full rounded-xl bg-[#0A0A0A] text-white text-sm font-semibold py-3 hover:bg-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center justify-center gap-2"
+            >
+              {cryptoGatewayBusy ? 'Opening gateway…' : 'Pay with crypto gateway →'}
+            </button>
+            <p className="text-[11px] text-[#6B7280] leading-snug text-center">
+              Or pay manually to the address above and submit your transaction hash below.
+            </p>
+
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-[#0A0A0A]">Transaction reference / tx hash</label>
               <input
@@ -1322,30 +1485,48 @@ function WalletPageContent() {
                               {r.created_at ? new Date(r.created_at).toLocaleString() : ''} · {stage}
                             </div>
                           </div>
-                          {hasLink && !isApproved && !isRejected && !proofSubmitted && (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <a
-                                href={r.payment_link as string}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
-                              >
-                                Pay now
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setConfirmingId(isConfirming ? null : r.id);
-                                  setConfirmAmount('');
-                                  setConfirmTxId('');
-                                  setConfirmFile(null);
-                                }}
-                                className="inline-flex items-center justify-center rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-xs font-semibold px-3 py-1.5 hover:bg-[#0A0A0A] hover:text-white transition-colors"
-                              >
-                                {isConfirming ? 'Cancel' : "I've Paid"}
-                              </button>
-                            </div>
-                          )}
+                          {hasLink && !isApproved && !isRejected && !proofSubmitted && (() => {
+                            // Razorpay-auto path — payment_link looks like
+                            // "razorpay:<order_id>". Open the Razorpay
+                            // Checkout popup; webhook handles crediting.
+                            const isRazorpay = (r.payment_link || '').startsWith('razorpay:');
+                            return (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {isRazorpay ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void openRazorpayCheckout(r)}
+                                    className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                                  >
+                                    Pay with Razorpay
+                                  </button>
+                                ) : (
+                                  <>
+                                    <a
+                                      href={r.payment_link as string}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-3 py-1.5 transition-colors"
+                                    >
+                                      Pay now
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setConfirmingId(isConfirming ? null : r.id);
+                                        setConfirmAmount('');
+                                        setConfirmTxId('');
+                                        setConfirmFile(null);
+                                      }}
+                                      className="inline-flex items-center justify-center rounded-lg border border-[#0A0A0A] text-[#0A0A0A] text-xs font-semibold px-3 py-1.5 hover:bg-[#0A0A0A] hover:text-white transition-colors"
+                                    >
+                                      {isConfirming ? 'Cancel' : "I've Paid"}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Inline "I've Paid" form — collapses back when closed. */}

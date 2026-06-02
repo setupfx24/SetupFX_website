@@ -1851,8 +1851,15 @@ async def list_deposits(user_id: UUID, db: AsyncSession) -> dict:
                 "status": d.status or "pending",
                 "currency": "USD",
                 # Local-banking flow surfaces the admin-provided link to the
-                # user. NULL until an admin attaches it.
+                # user. NULL until an admin attaches it. When the admin
+                # picked the Razorpay-auto path we set this to
+                # "razorpay:<order_id>" so the trader UI knows to open
+                # the Razorpay checkout popup instead of an external URL.
                 "payment_link": d.payment_link or None,
+                # transaction_id doubles as the Razorpay order_id for
+                # auto-approved deposits; the trader needs it to launch
+                # the Razorpay Checkout popup.
+                "transaction_id": d.transaction_id or None,
             }
             for d in deposits
         ]

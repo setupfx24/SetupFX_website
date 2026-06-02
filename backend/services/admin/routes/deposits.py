@@ -92,15 +92,34 @@ async def set_deposit_payment_link(
     admin: User = Depends(require_permission("deposits.approve")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Local Banking stage-2: admin attaches a payment URL (Razorpay link,
-    bank instructions URL, UPI VPA wrapped in upi://) onto the user's
-    request. User gets an in-app notification + email with the link;
-    deposit stays in 'pending' until the admin marks it approved after the
-    user pays."""
+    """Local Banking stage-2 (manual link path): admin attaches a custom
+    payment URL onto the user's request. Kept for cases where Razorpay
+    isn't appropriate (admin wants to share a custom invoice link, UPI
+    VPA, etc.). For the auto-Razorpay path see /deposits/{id}/approve-razorpay."""
     return await deposit_service.set_payment_link(
         deposit_id=deposit_id,
         payment_link=body.payment_link,
         message=body.message,
+        admin_id=admin.id,
+        ip_address=request.client.host if request.client else None,
+        db=db,
+    )
+
+
+@router.post("/deposits/{deposit_id}/approve-razorpay")
+async def approve_deposit_with_razorpay(
+    deposit_id: uuid.UUID,
+    request: Request,
+    admin: User = Depends(require_permission("deposits.approve")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Local Banking stage-2 (auto path): admin clicks Approve, we create
+    a Razorpay order server-side for the user's locked requested amount
+    and notify the user. They tap the deposit row in their wallet to open
+    the Razorpay checkout and pay; the existing Razorpay webhook credits
+    the deposit on payment.captured — admin never touches it again."""
+    return await deposit_service.approve_with_razorpay(
+        deposit_id=deposit_id,
         admin_id=admin.id,
         ip_address=request.client.host if request.client else None,
         db=db,
