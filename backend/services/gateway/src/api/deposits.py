@@ -1,7 +1,8 @@
 """Wallet API — Deposits, Withdrawals, Transactions."""
+from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
@@ -31,6 +32,52 @@ async def create_deposit(
 ):
     return await wallet_service.create_deposit(
         req=req, user_id=current_user["user_id"], db=db,
+    )
+
+
+# ─── Manual bank / UPI deposit (multipart with proof file) ──────────────────
+
+
+@router.post("/deposit/manual", status_code=201)
+async def create_manual_deposit(
+    amount: Decimal = Form(...),
+    transaction_id: str = Form(...),
+    file: UploadFile = File(...),
+    account_id: UUID | None = Form(None),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manual bank / UPI deposit: user uploads payment proof; goes to admin
+    queue for review. Body is multipart/form-data (not JSON) because of the
+    file upload."""
+    return await wallet_service.create_manual_deposit(
+        user_id=current_user["user_id"],
+        account_id=account_id,
+        amount=amount,
+        transaction_id=transaction_id,
+        file=file,
+        db=db,
+    )
+
+
+@router.post("/withdraw/manual", status_code=201)
+async def create_manual_withdrawal(
+    amount: Decimal = Form(...),
+    upi_id: str = Form(""),
+    payout_notes: str = Form(""),
+    file: UploadFile | None = File(None),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manual UPI / QR-payout withdrawal: user submits UPI ID and/or a QR
+    image; goes to admin queue for manual payout. Multipart body."""
+    return await wallet_service.create_manual_withdrawal(
+        user_id=current_user["user_id"],
+        amount=amount,
+        upi_id=upi_id,
+        payout_notes=payout_notes,
+        file=file,
+        db=db,
     )
 
 

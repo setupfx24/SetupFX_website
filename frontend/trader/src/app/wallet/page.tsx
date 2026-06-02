@@ -8,7 +8,7 @@ import DashboardShell from '@/components/layout/DashboardShell';
 import DemoLockGate from '@/components/demo/DemoLockGate';
 import { formatCurrency } from '@/lib/formatters';
 import { useAuthStore } from '@/stores/authStore';
-import api from '@/lib/api/client';
+import api, { getApiBase } from '@/lib/api/client';
 // Automated deposits go through Razorpay Checkout (cards / UPI / netbanking).
 // The user enters a USD amount; the backend converts USD→INR at the live
 // mid-market rate, creates a Razorpay order, and we open the Razorpay
@@ -720,10 +720,15 @@ function WalletPageContent() {
       if (manualWithdrawQrFile) fd.append('file', manualWithdrawQrFile);
       if (wallet?.wallet_account) fd.append('source', fundTargetPreference);
       const token = api.getToken();
-      const res = await fetch('/api/v1/wallet/withdraw/manual/', {
+      // Multipart uploads bypass the api client (it sets a JSON
+       // content-type) but we still need the absolute API base so the
+       // request lands on the gateway (api.swisscresta.com) and not on
+       // whichever marketing apex / trader subdomain the user is on.
+      const res = await fetch(`${getApiBase()}/wallet/withdraw/manual`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
+        credentials: 'include',
       });
       const raw = await res.text();
       let json: { detail?: unknown; message?: string } = {};
@@ -845,7 +850,7 @@ function WalletPageContent() {
       fd.append('file', depositProofFile);
       if (wallet?.wallet_account) fd.append('target', fundTargetPreference);
       const token = api.getToken();
-      const res = await fetch('/api/v1/wallet/deposit/manual', {
+      const res = await fetch(`${getApiBase()}/wallet/deposit/manual`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
