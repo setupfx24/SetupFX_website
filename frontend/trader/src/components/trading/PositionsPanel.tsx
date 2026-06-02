@@ -1704,6 +1704,27 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                     <span className="text-text-tertiary">Open lots</span>
                     <span className="font-mono text-text-primary">{closeModal.lots}</span>
                   </div>
+                  {(() => {
+                    // Live P/L for the position being closed. Looked up by id
+                    // every render so the row tracks the same price feed the
+                    // positions list does — closing a trade should never show
+                    // a stale number to the user about to commit.
+                    const pos = positions.find((p) => p.id === closeModal.id);
+                    const pnl = pos?.profit ?? 0;
+                    const charges = pos?.commission ?? 0;
+                    const net = pnl - charges;
+                    return (
+                      <div className="flex justify-between text-[11px] font-medium pt-1.5 mt-1.5 border-t border-border-primary/50">
+                        <span className="text-text-tertiary">P&amp;L</span>
+                        <span
+                          className="font-mono font-bold tabular-nums"
+                          style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}
+                        >
+                          {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
