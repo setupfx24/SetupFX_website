@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTradingStore, type Position, type InstrumentInfo } from '@/stores/tradingStore';
 import { clsx } from 'clsx';
@@ -13,7 +13,6 @@ import {
   Pencil,
   Check,
   X,
-  ChevronDown,
   ChevronRight,
   TrendingUp,
   TrendingDown,
@@ -322,10 +321,8 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const [toolbarBusy, setToolbarBusy] = useState(false);
   const [sltpEdit, setSltpEdit] = useState<SltpEdit>(null);
   const [sltpSaving, setSltpSaving] = useState(false);
-  const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState<BulkCloseType | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const bulkMenuRef = useRef<HTMLDivElement>(null);
   /** Terminal open tab: static trade cards vs compact table. */
   const [terminalOpenCardView, setTerminalOpenCardView] = useState(false);
   const [sharePosition, setSharePosition] = useState<Position | null>(null);
@@ -334,21 +331,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
 
   const profitPositions = positions.filter((p) => (p.profit || 0) > 0);
   const lossPositions = positions.filter((p) => (p.profit || 0) < 0);
-
-  useEffect(() => {
-    if (!bulkMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (bulkMenuRef.current && !bulkMenuRef.current.contains(e.target as Node)) {
-        setBulkMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [bulkMenuOpen]);
-
-  useEffect(() => {
-    if (activeTab !== 'open') setBulkMenuOpen(false);
-  }, [activeTab]);
 
   useEffect(() => {
     if (!closeModal && !bulkConfirm) return;
@@ -414,6 +396,12 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     setCloseModal(null);
     setCloseSubmitting(false);
 
+    if (id.startsWith('optim-')) {
+      toast('Trade still settling — try again in a moment', { icon: '⏳' });
+      refreshPositions().catch(() => {});
+      return;
+    }
+
     const body: Record<string, unknown> = {};
     if (lots) body.lots = lots;
 
@@ -448,19 +436,30 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
   const executeBulkClose = async (type: BulkCloseType) => {
     setBulkConfirm(null);
     setBulkBusy(true);
-    const targets =
+    const rawTargets =
       type === 'all' ? positions : type === 'profit' ? profitPositions : lossPositions;
+    // Optimistic rows (id prefix "optim-") haven't been reconciled to their
+    // server UUID yet — calling /positions/optim-xxx/close trips Pydantic's
+    // UUID validator. Skip them; refreshPositions below will pick up real
+    // UUIDs on the next poll so a retry closes them.
+    const targets = rawTargets.filter((p) => !p.id.startsWith('optim-'));
+    const skipped = rawTargets.length - targets.length;
     if (targets.length === 0) {
       toast(
-        type === 'profit'
-          ? 'No profitable positions to close'
-          : type === 'loss'
-            ? 'No losing positions to close'
-            : 'No open positions',
+        skipped > 0
+          ? `${skipped} trade${skipped > 1 ? 's' : ''} still settling — retry in a moment`
+          : type === 'profit'
+            ? 'No profitable positions to close'
+            : type === 'loss'
+              ? 'No losing positions to close'
+              : 'No open positions',
         { icon: 'ℹ️' },
       );
       setBulkBusy(false);
       return;
+    }
+    if (skipped > 0) {
+      toast(`${skipped} just-opened trade${skipped > 1 ? 's' : ''} still settling — retry to close ${skipped > 1 ? 'those' : 'it'}`, { icon: '⏳' });
     }
     // Parallel close — each /positions/{id}/close acquires its own row lock,
     // so they can race safely. Sequential awaits were both slow AND let stale
@@ -815,56 +814,6 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 ) : null}
                 {isTerminal && activeTab === 'open' && (
                   <div className="flex items-center gap-1 shrink-0 pb-0.5 border-l border-border-primary ml-1 pl-2">
-                    {positions.length > 0 && (
-                      <div className="relative" ref={bulkMenuRef}>
-                        <button
-                          type="button"
-                          onClick={() => setBulkMenuOpen((o) => !o)}
-                          className="flex items-center gap-0.5 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover border border-border-primary hover:border-border-secondary transition-colors"
-                        >
-                          Close All
-                          <ChevronDown
-                            className={clsx('w-3.5 h-3.5 transition-transform shrink-0', bulkMenuOpen && 'rotate-180')}
-                          />
-                        </button>
-                        {bulkMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 min-w-[180px] py-1 rounded-lg border border-border-primary bg-card shadow-xl z-[100]">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('all');
-                              }}
-                              className="w-full text-left px-3 py-2 text-xs text-text-primary hover:bg-bg-hover"
-                            >
-                              Close all ({positions.length})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('profit');
-                              }}
-                              disabled={profitPositions.length === 0}
-                              className="w-full text-left px-3 py-2 text-xs text-accent hover:bg-bg-hover disabled:opacity-40"
-                            >
-                              Close profitable ({profitPositions.length})
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBulkMenuOpen(false);
-                                setBulkConfirm('loss');
-                              }}
-                              disabled={lossPositions.length === 0}
-                              className="w-full text-left px-3 py-2 text-xs text-[#ff5252] hover:bg-bg-hover disabled:opacity-40"
-                            >
-                              Close losing ({lossPositions.length})
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => setTerminalOpenCardView((v) => !v)}
