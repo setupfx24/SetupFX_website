@@ -2069,22 +2069,44 @@ async def get_deposit_bank_details(amount: Decimal | None, db: AsyncSession) -> 
             .limit(1)
         )
         bank = result.scalars().first()
-    if not bank:
-        return {}
 
     resp: dict = {}
-    if bank.bank_name:
-        resp["bank_name"] = bank.bank_name
-    if bank.account_name:
-        resp["account_holder"] = bank.account_name
-    if bank.account_number:
-        resp["account_number"] = bank.account_number
-    if bank.ifsc_code:
-        resp["ifsc_code"] = bank.ifsc_code
-    if bank.upi_id:
-        resp["upi_id"] = bank.upi_id
-    if bank.qr_code_url:
-        resp["qr_code_url"] = bank.qr_code_url
+    if bank:
+        if bank.bank_name:
+            resp["bank_name"] = bank.bank_name
+        if bank.account_name:
+            resp["account_holder"] = bank.account_name
+        if bank.account_number:
+            resp["account_number"] = bank.account_number
+        if bank.ifsc_code:
+            resp["ifsc_code"] = bank.ifsc_code
+        if bank.upi_id:
+            resp["upi_id"] = bank.upi_id
+        if bank.qr_code_url:
+            resp["qr_code_url"] = bank.qr_code_url
+
+    # Surface any crypto deposit addresses the admin set on the
+    # Settings → Deposit Wallets page. These live in a separate
+    # admin_deposit_wallets table — the trader's "Crypto" chip needs
+    # them so the user actually has something to scan/pay to even when
+    # no bank QR is uploaded.
+    from packages.common.src.models import AdminDepositWallet
+    wallets_q = await db.execute(
+        select(AdminDepositWallet)
+        .where(AdminDepositWallet.is_active == True)
+        .order_by(AdminDepositWallet.network)
+    )
+    crypto_wallets = []
+    for w in wallets_q.scalars().all():
+        crypto_wallets.append({
+            "network": w.network,
+            "asset": w.asset,
+            "address": w.address,
+            "min_confirmations": w.min_confirmations,
+        })
+    if crypto_wallets:
+        resp["crypto_wallets"] = crypto_wallets
+
     return resp
 
 

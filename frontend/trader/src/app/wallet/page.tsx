@@ -186,6 +186,13 @@ const WITHDRAW_NETWORK_OPTIONS = [
 // covers cards, UPI and netbanking.)
 type FundingChannel = 'crypto' | 'manual';
 
+interface CryptoWallet {
+  network: string;
+  asset: string;
+  address: string;
+  min_confirmations?: number;
+}
+
 interface ManualBankDetailsResponse {
   bank_name?: string;
   account_holder?: string;
@@ -193,6 +200,7 @@ interface ManualBankDetailsResponse {
   ifsc_code?: string;
   upi_id?: string;
   qr_code_url?: string;
+  crypto_wallets?: CryptoWallet[];
 }
 
 type FundsTab = 'deposit' | 'withdrawal' | 'transfer' | 'history';
@@ -1160,8 +1168,13 @@ function WalletPageContent() {
           <>
             {/* Admin's QR / wallet info — same source as the legacy manual
                 flow used (per-tier bank/UPI/QR rows the admin maintains). */}
-            {manualBankInfo && (manualBankInfo.bank_name || manualBankInfo.upi_id || manualBankInfo.qr_code_url) && (
-              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5 text-sm text-[#0A0A0A] space-y-2">
+            {manualBankInfo && (
+              manualBankInfo.bank_name ||
+              manualBankInfo.upi_id ||
+              manualBankInfo.qr_code_url ||
+              (manualBankInfo.crypto_wallets && manualBankInfo.crypto_wallets.length > 0)
+            ) && (
+              <div className="rounded-xl border border-[#E5E5E5] bg-white px-4 py-3.5 text-sm text-[#0A0A0A] space-y-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
                   Pay to
                 </div>
@@ -1189,6 +1202,43 @@ function WalletPageContent() {
                     <div><span className="text-[#0A0A0A] font-semibold">UPI:</span> {manualBankInfo.upi_id}</div>
                   )}
                 </div>
+                {manualBankInfo.crypto_wallets && manualBankInfo.crypto_wallets.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-[#E5E5E5]">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[#6B7280]">
+                      Crypto addresses
+                    </div>
+                    {manualBankInfo.crypto_wallets.map((w) => {
+                      const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=2&data=${encodeURIComponent(w.address)}`;
+                      const label = `${w.asset || 'USDT'} · ${w.network.toUpperCase()}`;
+                      return (
+                        <div key={`${w.network}-${w.asset}-${w.address}`} className="flex items-start gap-3 rounded-lg border border-[#E5E5E5] p-2.5 bg-[#FAFAFA]">
+                          <img
+                            src={qrSrc}
+                            alt={`${label} QR`}
+                            className="block w-24 h-24 shrink-0 object-contain rounded bg-white border border-[#E5E5E5]"
+                          />
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="text-[10px] font-bold uppercase tracking-wider text-[#E94E1B]">{label}</div>
+                            <div className="text-[11px] font-mono break-all leading-snug text-[#0A0A0A]">{w.address}</div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard?.writeText(w.address);
+                                toast.success('Address copied');
+                              }}
+                              className="text-[11px] font-semibold text-[#E94E1B] hover:underline"
+                            >
+                              Copy address
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <p className="text-[10px] text-[#6B7280] leading-snug">
+                      Scan the QR or copy the address. After paying, paste your transaction hash below as proof.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <div className="space-y-1.5">
