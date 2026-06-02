@@ -36,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Deposits', href: '/deposits', icon: Wallet, perm: 'deposits.view' },
   { label: 'Transactions', href: '/transactions', icon: Receipt, perm: 'deposits.view' },
   { label: 'Banks', href: '/banks', icon: Landmark, perm: 'banks.view' },
+  { label: 'Deposit Wallets', href: '/settings/deposit-wallets', icon: Wallet, perm: 'banks.view' },
   { label: 'Account types', href: '/account-types', icon: Layers, perm: 'config.view' },
   {
     label: 'Config', icon: Sliders, perm: 'config.view',
