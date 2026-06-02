@@ -115,7 +115,6 @@ export default function EmailOtpStep({
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') void sendCode(); }}
                 placeholder="you@example.com"
                 className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-bg-base border border-border-primary text-sm text-text-primary placeholder:text-text-tertiary focus:border-[#E94E1B] focus:outline-none"
                 autoFocus
