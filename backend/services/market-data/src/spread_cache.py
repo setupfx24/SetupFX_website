@@ -125,21 +125,29 @@ class StreamSpreadCache:
         else:
             return mid, mid
 
-        # Apply category-aware fallback when the resolved spread is 0
-        # regardless of which branch above we took. `resolve_spread_config`
-        # populates `_params` for every active instrument even when no
-        # SpreadConfig row exists — and it returns `Decimal("0")` in that
-        # case. So both the per-instrument and the default-row paths can
-        # legitimately end up at `sv == 0`. Admin overrides still win:
-        # as soon as any non-zero spread is configured (per instrument or
-        # as a default-scope row), this branch is skipped.
-        if sv <= 0 and key in INSTRUMENTS:
-            info = INSTRUMENTS[key]
-            sv = _CATEGORY_FALLBACK_PIPS.get(
-                str(info.get("category") or ""),
-                _DEFAULT_FALLBACK_PIPS,
-            )
-            st = "pips"
+        # When the per-instrument resolved spread is 0 (no per-instrument /
+        # per-segment row in spread_configs), fall back in this order:
+        #   1. Admin's Default (All Instruments) row — if it's set and > 0.
+        #   2. The hardcoded _CATEGORY_FALLBACK_PIPS table (last-resort,
+        #      only kicks in when the platform has *no* spread config at
+        #      all so the order ticket never shows bid == ask).
+        # The previous version skipped step 1 in the `_params` branch,
+        # which made the admin's Default visibly ineffective for symbols
+        # that already had a row in spread_configs with value=0 — XAUUSD
+        # and oil dropped to the commodity-30 fallback while indexes
+        # dropped to the index-10 fallback, looking like a "spread
+        # fluctuating between 10 and 30" bug in the watchlist.
+        if sv <= 0:
+            default_sv, default_st = self._default_spread
+            if default_sv > 0:
+                sv, st = default_sv, default_st
+            elif key in INSTRUMENTS:
+                info = INSTRUMENTS[key]
+                sv = _CATEGORY_FALLBACK_PIPS.get(
+                    str(info.get("category") or ""),
+                    _DEFAULT_FALLBACK_PIPS,
+                )
+                st = "pips"
         b, a = symmetric_quote_from_mid(
             Decimal(str(mid)), sv, st, pip, digits, Decimal("0"),
         )
