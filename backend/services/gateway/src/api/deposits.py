@@ -24,6 +24,34 @@ from ..services import wallet_service, onchain_deposit_service, onchain_withdraw
 router = APIRouter()
 
 
+@router.post("/deposit/bank-details")
+async def fetch_deposit_bank_details(
+    body: dict | None = None,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return the admin-configured deposit destinations for the user:
+      - bank_name / account_holder / account_number / ifsc_code / upi_id
+        / qr_code_url from the bank_accounts table (admin manages via
+        /admin/banks)
+      - crypto_wallets: [] from admin_deposit_wallets (admin manages via
+        /admin/settings/deposit-wallets)
+
+    Body can optionally include `amount` to trigger per-tier bank rotation.
+    Both data sources are surfaced together so the trader's Crypto chip
+    always shows whatever payment destinations the admin has configured.
+    """
+    amount = None
+    if isinstance(body, dict):
+        raw = body.get("amount")
+        try:
+            if raw is not None:
+                amount = Decimal(str(raw))
+        except Exception:
+            amount = None
+    return await wallet_service.get_deposit_bank_details(amount=amount, db=db)
+
+
 @router.post("/deposit", status_code=201)
 async def create_deposit(
     req: DepositRequest,
