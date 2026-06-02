@@ -82,6 +82,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               position="top-center"
               containerClassName="swisscresta-toaster"
               gutter={10}
+              // Belt-and-suspenders cap on the lib's outer container.
+              // The CSS rule on .swisscresta-toaster also clamps this,
+              // but inline styles always win over a possibly-stale CSS
+              // chunk, so this guarantees no toast overflows even if
+              // the stylesheet hasn't loaded yet.
+              containerStyle={{
+                maxWidth: 'min(440px, calc(100vw - 32px))',
+              }}
               toastOptions={{
                 duration: 2500,
                 className: 'swisscresta-hot-toast',
@@ -94,8 +102,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   background: 'var(--toast-bg)',
                   color: 'var(--toast-fg)',
                   border: '1px solid var(--toast-border)',
-                  maxWidth: '380px',
+                  maxWidth: 'min(420px, calc(100vw - 32px))',
+                  width: 'auto',
+                  minWidth: 0,
                   lineHeight: 1.4,
+                  whiteSpace: 'normal',
+                  overflowWrap: 'anywhere',
                 },
                 success: {
                   duration: 2200,
