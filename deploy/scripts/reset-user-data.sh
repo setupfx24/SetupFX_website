@@ -12,8 +12,9 @@
 # staking plans, spin prizes.
 #
 # Safety: takes a fresh backup first via deploy/scripts/backup-db.sh,
-# refuses to run unless you type RESET, and stops the app services
-# before touching the DB so concurrent writes can't sneak in.
+# refuses to run unless you type RESET, stops the app services before
+# touching the DB, and uses ON_ERROR_STOP so a single bad statement
+# aborts the whole script instead of marching past the rollback.
 #
 # Usage:
 #   /opt/swisscresta/deploy/scripts/reset-user-data.sh          # keep admins
@@ -28,6 +29,19 @@ MODE="keep-admins"
 if [ "${1:-}" = "--full" ]; then
   MODE="full"
 fi
+
+# Services to stop / restart. We probe what's defined in compose and
+# only act on what's actually there — the trader install at the time
+# of writing doesn't ship marketing-frontend, so hard-coding it caused
+# "no such service" at restart.
+ALL_SERVICES=(gateway admin-api market-data b-book-engine risk-engine trader-frontend admin-frontend marketing-frontend)
+APP_SERVICES=()
+DEFINED_SERVICES="$($COMPOSE config --services 2>/dev/null || true)"
+for s in "${ALL_SERVICES[@]}"; do
+  if echo "$DEFINED_SERVICES" | grep -qx "$s"; then
+    APP_SERVICES+=("$s")
+  fi
+done
 
 echo
 echo "╔════════════════════════════════════════════════════════════════╗"
@@ -56,96 +70,110 @@ echo "[1/4] Taking a fresh backup before the wipe..."
 
 echo
 echo "[2/4] Stopping app services so nothing writes mid-reset..."
-$COMPOSE stop gateway admin-api market-data b-book-engine risk-engine trader-frontend admin-frontend marketing-frontend 2>/dev/null || true
+if [ "${#APP_SERVICES[@]}" -gt 0 ]; then
+  $COMPOSE stop "${APP_SERVICES[@]}" 2>/dev/null || true
+fi
 
-# In keep-admins mode we DELETE … WHERE for the users table so admins
-# stay. Their related accounts/trades/etc. are wiped by the TRUNCATE
-# above. In full mode we add users to the TRUNCATE list.
-USERS_LINE=""
-DELETE_NON_ADMIN_USERS=""
+# Build the table list. Wrapping the TRUNCATE in a PL/pgSQL DO block
+# lets us filter out tables that don't exist on this install — the
+# schema has drifted from migrations on some prod boxes (e.g.
+# algo_api_keys was dropped before some installs got it).
 if [ "$MODE" = "full" ]; then
-  USERS_LINE="  users,"
+  TABLE_LIST_SQL="
+    -- Sessions / auth ephemera
+    'user_sessions',
+    'user_refresh_tokens',
+    'password_reset_tokens',
+    'email_otp_codes',
+    'sensitive_action_challenges',
+    'wallet_auth_nonces',
+    'user_2fa_backup_codes',
+    'idempotency_keys',
+    'webhook_events',
+    'wallet_cooldowns',
+    -- Trading
+    'positions', 'orders', 'trade_history', 'shared_trades', 'trading_accounts',
+    -- Money movement
+    'deposits', 'withdrawals', 'transactions', 'bank_accounts', 'fund_move_approvals',
+    -- Copy / managed
+    'copy_trades', 'investor_allocations', 'master_accounts',
+    -- IB / referrals
+    'ib_commissions', 'ib_applications', 'ib_profiles', 'referrals',
+    -- KYC
+    'kyc_documents',
+    -- Tickets / audit / notifications
+    'ticket_messages', 'support_tickets', 'notifications',
+    'audit_logs', 'user_audit_logs', 'ip_logs',
+    -- Rewards / bonuses / lottery / insurance / staking / vip / bidding
+    'user_bonuses', 'rewards_transactions', 'rewards_user_mission_progress',
+    'rewards_user_state', 'spin_results', 'lottery_tickets', 'lottery_rounds',
+    'insurance_claims', 'insurance_policies',
+    'staking_reward_accruals', 'staking_positions',
+    'vip_passes', 'bids', 'bidding_rounds', 'lifestyle_fulfillments', 'algo_api_keys',
+    -- Users last
+    'users'
+  "
+  DELETE_NON_ADMIN_USERS=""
 else
+  TABLE_LIST_SQL="
+    'user_sessions',
+    'user_refresh_tokens',
+    'password_reset_tokens',
+    'email_otp_codes',
+    'sensitive_action_challenges',
+    'wallet_auth_nonces',
+    'user_2fa_backup_codes',
+    'idempotency_keys',
+    'webhook_events',
+    'wallet_cooldowns',
+    'positions', 'orders', 'trade_history', 'shared_trades', 'trading_accounts',
+    'deposits', 'withdrawals', 'transactions', 'bank_accounts', 'fund_move_approvals',
+    'copy_trades', 'investor_allocations', 'master_accounts',
+    'ib_commissions', 'ib_applications', 'ib_profiles', 'referrals',
+    'kyc_documents',
+    'ticket_messages', 'support_tickets', 'notifications',
+    'audit_logs', 'user_audit_logs', 'ip_logs',
+    'user_bonuses', 'rewards_transactions', 'rewards_user_mission_progress',
+    'rewards_user_state', 'spin_results', 'lottery_tickets', 'lottery_rounds',
+    'insurance_claims', 'insurance_policies',
+    'staking_reward_accruals', 'staking_positions',
+    'vip_passes', 'bids', 'bidding_rounds', 'lifestyle_fulfillments', 'algo_api_keys'
+  "
   DELETE_NON_ADMIN_USERS="DELETE FROM users WHERE role NOT IN ('admin', 'super_admin');"
 fi
 
 echo
 echo "[3/4] Wiping user data ($MODE)..."
-$COMPOSE exec -T postgres psql -U swisscresta -d swisscresta <<SQL
+$COMPOSE exec -T postgres psql -v ON_ERROR_STOP=1 -U swisscresta -d swisscresta <<SQL
 BEGIN;
 
--- Single TRUNCATE handles FK ordering for us via CASCADE; RESTART
--- IDENTITY resets owned sequences.
-TRUNCATE TABLE
-  -- Sessions / auth ephemera
-  user_sessions,
-  user_refresh_tokens,
-  password_reset_tokens,
-  email_otp_codes,
-  sensitive_action_challenges,
-  wallet_auth_nonces,
-  user_2fa_backup_codes,
-  idempotency_keys,
-  webhook_events,
-  wallet_cooldowns,
+DO \$\$
+DECLARE
+  candidate text;
+  candidates text[] := ARRAY[
+$TABLE_LIST_SQL
+  ];
+  existing text[] := ARRAY[]::text[];
+BEGIN
+  FOREACH candidate IN ARRAY candidates LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = candidate
+    ) THEN
+      existing := array_append(existing, candidate);
+    END IF;
+  END LOOP;
 
-  -- Trading
-  positions,
-  orders,
-  trade_history,
-  shared_trades,
-  trading_accounts,
+  IF cardinality(existing) > 0 THEN
+    RAISE NOTICE 'Truncating % tables', cardinality(existing);
+    EXECUTE 'TRUNCATE TABLE '
+         || array_to_string(ARRAY(SELECT quote_ident(t) FROM unnest(existing) t), ', ')
+         || ' RESTART IDENTITY CASCADE';
+  END IF;
+END
+\$\$;
 
-  -- Money movement
-  deposits,
-  withdrawals,
-  transactions,
-  bank_accounts,
-  fund_move_approvals,
-
-  -- Copy / managed
-  copy_trades,
-  investor_allocations,
-  master_accounts,
-
-  -- IB / referrals
-  ib_commissions,
-  ib_applications,
-  ib_profiles,
-  referrals,
-
-  -- KYC + identity docs
-  kyc_documents,
-
-  -- Tickets + audit + notifications
-  ticket_messages,
-  support_tickets,
-  notifications,
-  audit_logs,
-  user_audit_logs,
-  ip_logs,
-
-  -- Rewards / bonuses / lottery / insurance / staking / vip / bidding
-  user_bonuses,
-  rewards_transactions,
-  rewards_user_mission_progress,
-  rewards_user_state,
-  spin_results,
-  lottery_tickets,
-  lottery_rounds,
-  insurance_claims,
-  insurance_policies,
-  staking_reward_accruals,
-  staking_positions,
-  vip_passes,
-  bids,
-  bidding_rounds,
-  lifestyle_fulfillments,
-  algo_api_keys
-${USERS_LINE}
-RESTART IDENTITY CASCADE;
-
-${DELETE_NON_ADMIN_USERS}
+$DELETE_NON_ADMIN_USERS
 
 COMMIT;
 
@@ -167,7 +195,9 @@ SQL
 
 echo
 echo "[4/4] Restarting app services..."
-$COMPOSE up -d gateway admin-api market-data b-book-engine risk-engine trader-frontend admin-frontend marketing-frontend
+if [ "${#APP_SERVICES[@]}" -gt 0 ]; then
+  $COMPOSE up -d "${APP_SERVICES[@]}"
+fi
 
 echo
 echo "✓ Reset complete."
