@@ -21,7 +21,6 @@ import {
   ArrowLeftRight,
   History as HistoryIcon,
   ChevronDown,
-  Ticket,
   RefreshCcw,
   CheckCircle2,
   Hourglass,
@@ -1000,26 +999,6 @@ function WalletPageContent() {
         },
       ];
 
-  /** Voucher field — disabled placeholder. Backend rebate flow isn't
-   *  surfaced to the trader UI yet, so this just renders a non-interactive
-   *  shell to preserve the Vantage layout. */
-  const renderVoucherField = () => (
-    <div className="space-y-1.5">
-      <label className="text-sm font-medium text-[#0A0A0A]">Voucher</label>
-      <div
-        className="flex items-center gap-2.5 w-full rounded-xl bg-[#F5F5F5] px-4 py-3.5 text-sm text-[#9CA3AF] cursor-not-allowed select-none"
-        aria-disabled="true"
-      >
-        <Ticket className="w-4 h-4 shrink-0" />
-        <span className="flex-1 truncate">No vouchers available</span>
-        <ChevronDown className="w-4 h-4 shrink-0" />
-      </div>
-      <p className="text-xs text-[#6B7280] leading-relaxed">
-        *Deposit rebate will be added to your account within 24 hours once deposit success.
-      </p>
-    </div>
-  );
-
   const renderDepositTab = () => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       {/* LEFT — form */}
@@ -1066,9 +1045,6 @@ function WalletPageContent() {
             </p>
           )}
         </div>
-
-        {/* Voucher (placeholder) */}
-        {renderVoucherField()}
 
         {/* Payment method chips: Crypto (admin's QR shown, user pays + uploads
             proof) and Local Banking (request flow, admin sends back link). */}
