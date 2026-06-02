@@ -54,7 +54,7 @@ export interface SubNavLink {
   groups?: LinkGroupItem[]
 }
 
-type ActivePage = 'private' | 'partners' | 'institutional' | 'careers' | 'group' | 'markets' | 'platforms' | 'white-label' | 'about' | 'contact' | 'policy'
+type ActivePage = 'private' | 'partners' | 'institutional' | 'careers' | 'group' | 'markets' | 'platforms' | 'white-label' | 'about' | 'contact' | 'policy' | 'liquidity'
 
 export interface NavbarProps {
   activePage?: ActivePage
@@ -63,8 +63,9 @@ export interface NavbarProps {
   subNavRight?: SubNavLink[] | null
 }
 
-const NAV_LINKS: { label: string; key: ActivePage; href: string }[] = [
+const NAV_LINKS: { label: string; key: ActivePage; href: string; external?: boolean }[] = [
   { label: 'Platforms', key: 'platforms', href: '/platforms' },
+  { label: 'Liquidity', key: 'liquidity', href: 'https://liquidity.swisscresta.com', external: true },
   { label: 'Partners', key: 'partners', href: '/partners' },
   { label: 'Policy', key: 'policy', href: '/policy' },
   { label: 'About', key: 'about', href: '/about' },
@@ -337,16 +338,20 @@ export default function MarketingNavbar({
         <ul className="hidden lg:flex flex-1 items-center justify-center gap-6 xl:gap-8 min-w-0">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
+            const cls = `text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
+              active ? 'text-[#E94E1B]' : 'text-gray-900'
+            }`
             return (
               <li key={link.key}>
-                <Link
-                  href={link.href}
-                  className={`text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
-                    active ? 'text-[#E94E1B]' : 'text-gray-900'
-                  }`}
-                >
-                  {labelFor(link.key, link.label)}
-                </Link>
+                {link.external ? (
+                  <a href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>
+                    {labelFor(link.key, link.label)}
+                  </a>
+                ) : (
+                  <Link href={link.href} className={cls}>
+                    {labelFor(link.key, link.label)}
+                  </Link>
+                )}
               </li>
             )
           })}
@@ -437,17 +442,30 @@ export default function MarketingNavbar({
           <ul className="w-full mx-auto px-6 md:px-10 lg:px-16 py-4 flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const active = link.key === activePage
+              const cls = `block text-sm font-semibold py-1 ${
+                active ? 'text-[#E94E1B]' : 'text-gray-900/80'
+              }`
               return (
                 <li key={link.key}>
-                  <Link
-                    href={link.href}
-                    className={`block text-sm font-semibold py-1 ${
-                      active ? 'text-[#E94E1B]' : 'text-gray-900/80'
-                    }`}
-                    onClick={() => setOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
+                  {link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cls}
+                      onClick={() => setOpen(false)}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className={cls}
+                      onClick={() => setOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               )
             })}
