@@ -263,6 +263,11 @@ function WalletPageContent() {
   const [depositTxId, setDepositTxId] = useState('');
   const [depositProofFile, setDepositProofFile] = useState<File | null>(null);
   const [cryptoGatewayBusy, setCryptoGatewayBusy] = useState(false);
+  // Per-deposit amount inputs for the "Razorpay awaiting" row — keyed
+  // by deposit id so multiple pending approvals don't overwrite each
+  // other while the user is filling them in.
+  const [rzpPayAmountByDeposit, setRzpPayAmountByDeposit] = useState<Record<string, string>>({});
+  const [rzpCreatingForId, setRzpCreatingForId] = useState<string | null>(null);
 
   /** Open the OxaPay hosted crypto checkout for the entered amount. The
    *  backend creates a Deposit row + an OxaPay payment and returns the
@@ -541,6 +546,84 @@ function WalletPageContent() {
   // Pull recent deposits and pick out the local-banking ones so they can
   // surface inline on the Local Banking chip. Stays cheap — the deposits
   // list is small and already used by /history.
+  /** Create the Razorpay order for a "razorpay:awaiting" deposit then
+   *  open the checkout popup. Two-step because the order is created
+   *  lazily with the user's chosen amount. */
+  const openRazorpayForAwaitingDeposit = useCallback(async (deposit: WalletListItem) => {
+    const raw = rzpPayAmountByDeposit[deposit.id] || '';
+    const amt = parseFloat(raw);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    setRzpCreatingForId(deposit.id);
+    let order: { order_id: string; key_id: string; amount_inr: number } | null = null;
+    try {
+      order = await api.post<{ order_id: string; key_id: string; amount_inr: number }>(
+        `/wallet/deposit/${deposit.id}/razorpay-order`,
+        { amount: amt },
+      );
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not create Razorpay order');
+      setRzpCreatingForId(null);
+      return;
+    }
+
+    const SCRIPT_ID = 'razorpay-checkout';
+    const ensureSdk = () =>
+      new Promise<void>((resolve, reject) => {
+        if (typeof window === 'undefined') return reject(new Error('no window'));
+        const w = window as unknown as { Razorpay?: unknown };
+        if (w.Razorpay) return resolve();
+        const existing = document.getElementById(SCRIPT_ID);
+        if (existing) {
+          existing.addEventListener('load', () => resolve());
+          existing.addEventListener('error', () => reject(new Error('Failed to load Razorpay')));
+          return;
+        }
+        const s = document.createElement('script');
+        s.id = SCRIPT_ID;
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load Razorpay'));
+        document.body.appendChild(s);
+      });
+    try {
+      await ensureSdk();
+    } catch {
+      toast.error('Could not load Razorpay');
+      setRzpCreatingForId(null);
+      return;
+    }
+
+    type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
+    const w = window as unknown as { Razorpay: RazorpayCtor };
+    const rzp = new w.Razorpay({
+      key: order.key_id,
+      order_id: order.order_id,
+      amount: Math.round(order.amount_inr * 100),
+      currency: 'INR',
+      name: 'SwissCresta',
+      description: `Deposit ${deposit.id.slice(0, 8)}`,
+      theme: { color: '#E94E1B' },
+      handler: async (resp: Record<string, string>) => {
+        try {
+          await api.post('/wallet/deposit/razorpay/verify', {
+            razorpay_order_id: resp.razorpay_order_id,
+            razorpay_payment_id: resp.razorpay_payment_id,
+            razorpay_signature: resp.razorpay_signature,
+          });
+          toast.success('Payment received — wallet credited');
+          void loadLocalBankingRequests();
+        } catch (e: unknown) {
+          toast.error(e instanceof Error ? e.message : 'Verification failed');
+        }
+      },
+    });
+    rzp.open();
+    setRzpCreatingForId(null);
+  }, [rzpPayAmountByDeposit]);
+
   /** Open the Razorpay Checkout popup for an approved local-banking
    *  deposit. The order is already created server-side (deposit's
    *  transaction_id holds the order_id, payment_link holds the sentinel),
@@ -1482,13 +1565,21 @@ function WalletPageContent() {
                             </div>
                           </div>
                           {hasLink && !isApproved && !isRejected && !proofSubmitted && (() => {
-                            // Razorpay-auto path — payment_link looks like
-                            // "razorpay:<order_id>". Open the Razorpay
-                            // Checkout popup; webhook handles crediting.
-                            const isRazorpay = (r.payment_link || '').startsWith('razorpay:');
+                            const pl = r.payment_link || '';
+                            // Three states:
+                            //   razorpay:awaiting → admin approved, user
+                            //     enters amount and creates the order
+                            //   razorpay:<order_id> → order already created
+                            //     (legacy / repeat-open path) — open popup
+                            //   anything else → external link admin shared
+                            const isRzpAwaiting = pl === 'razorpay:awaiting';
+                            const isRzpOrder = pl.startsWith('razorpay:') && !isRzpAwaiting;
+                            if (isRzpAwaiting) {
+                              return null; // handled by the inline amount form below
+                            }
                             return (
                               <div className="flex items-center gap-1.5 shrink-0">
-                                {isRazorpay ? (
+                                {isRzpOrder ? (
                                   <button
                                     type="button"
                                     onClick={() => void openRazorpayCheckout(r)}
@@ -1524,6 +1615,45 @@ function WalletPageContent() {
                             );
                           })()}
                         </div>
+
+                        {/* Razorpay-awaiting form — admin approved, user enters
+                            the amount and we create the Razorpay order on the
+                            fly, then open the Checkout popup. */}
+                        {r.payment_link === 'razorpay:awaiting' && !isApproved && !isRejected && (
+                          <div className="space-y-2 rounded-lg bg-white border border-[#E5E5E5] p-3">
+                            <p className="text-xs text-[#6B7280] leading-snug">
+                              Your request was approved. Enter how much you want to deposit and pay via Razorpay.
+                            </p>
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1 space-y-1">
+                                <label className="text-xs font-medium text-[#0A0A0A]">Amount (USD)</label>
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  step="0.01"
+                                  min="1"
+                                  value={rzpPayAmountByDeposit[r.id] || ''}
+                                  onChange={(e) =>
+                                    setRzpPayAmountByDeposit((prev) => ({ ...prev, [r.id]: e.target.value }))
+                                  }
+                                  placeholder="e.g. 100"
+                                  className="w-full rounded-lg bg-[#F5F5F5] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#E94E1B]/40"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => void openRazorpayForAwaitingDeposit(r)}
+                                disabled={
+                                  rzpCreatingForId === r.id ||
+                                  !(parseFloat(rzpPayAmountByDeposit[r.id] || '0') > 0)
+                                }
+                                className="inline-flex items-center justify-center rounded-lg bg-[#E94E1B] hover:bg-[#C73E11] text-white text-xs font-semibold px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {rzpCreatingForId === r.id ? 'Opening…' : 'Pay with Razorpay'}
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Inline "I've Paid" form — collapses back when closed. */}
                         {isConfirming && (

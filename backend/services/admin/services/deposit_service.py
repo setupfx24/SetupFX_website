@@ -836,21 +836,24 @@ async def approve_with_razorpay(
     admin_id: uuid.UUID,
     ip_address: str | None,
     db: AsyncSession,
-    amount_override: Decimal | None = None,
+    amount_override: Decimal | None = None,  # kept for backward compatibility, ignored
 ) -> dict:
-    """Local Banking stage-2 (auto path): admin approves the request and
-    we create a Razorpay order server-side for the deposit amount.
+    """Local Banking stage-2 (auto path): admin approves the request as
+    "ready for Razorpay". The actual Razorpay order is NOT created here
+    — the trader enters their final amount when they tap "Pay with
+    Razorpay" on the deposit row, and the order is created lazily then
+    (see wallet_service.create_razorpay_order_on_deposit).
 
-    Amount precedence (highest wins):
-      1. amount_override — admin enters it in the approval modal
-      2. deposit.amount — what the user typed at request time, if any
-      Otherwise we 400 so the admin gets a clear "enter an amount"
-      message instead of silently creating a zero-rupee order.
+    Why deferred: admin has reviewed KYC but can't always predict what
+    the user will actually want to deposit. Letting the user pick the
+    amount at pay time keeps the UX flexible and means an old LB row
+    with amount=0 isn't stuck.
 
-    The picked amount is also stamped onto deposit.amount so the
-    existing crediting code knows what to add to the wallet when
-    Razorpay's webhook fires payment.captured.
+    The deposit's payment_link gets the sentinel "razorpay:awaiting"
+    so the trader UI knows to render the amount-entry + Razorpay
+    launcher instead of an external URL.
     """
+    _ = amount_override  # unused — see docstring
     result = await db.execute(
         select(Deposit).where(Deposit.id == deposit_id).with_for_update()
     )
@@ -865,47 +868,19 @@ async def approve_with_razorpay(
     if deposit.status != "pending":
         raise HTTPException(status_code=400, detail="Deposit is not pending")
 
-    # Resolve the charge amount.
-    final_amount: Decimal | None = None
-    if amount_override is not None and amount_override > 0:
-        final_amount = Decimal(str(amount_override))
-    elif (deposit.amount or Decimal("0")) > 0:
-        final_amount = Decimal(str(deposit.amount))
-    if final_amount is None or final_amount <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Enter an amount to charge the user.",
-        )
-    deposit.amount = final_amount
-
-    # Create the Razorpay order via the same helper the legacy flow used.
-    from services.razorpay_service import create_order as rzp_create_order
-    order = await rzp_create_order(
-        amount_usd=final_amount,
-        receipt=str(deposit.id)[:40],
-        notes={
-            "deposit_id": str(deposit.id),
-            "user_id": str(deposit.user_id),
-            "source": "local_banking_admin_approve",
-        },
-    )
-
-    deposit.transaction_id = order["order_id"]
-    deposit.payment_link = f"razorpay:{order['order_id']}"
-    deposit.method = "razorpay"  # so the existing webhook handler matches
+    deposit.payment_link = "razorpay:awaiting"
 
     user_row = (
         await db.execute(select(User).where(User.id == deposit.user_id))
     ).scalar_one_or_none()
 
-    notif_message = (
-        f"Your deposit of ${float(deposit.amount):,.2f} has been approved. "
-        f"Open Funds to pay via Razorpay."
-    )
     await create_notification(
         db, deposit.user_id,
         title="Deposit approved — pay now",
-        message=notif_message,
+        message=(
+            "Your local banking request was approved. Open Funds, enter "
+            "your amount, and pay via Razorpay."
+        ),
         notif_type="deposit",
         action_url="/wallet?tab=deposit",
         commit=False,
@@ -913,13 +888,8 @@ async def approve_with_razorpay(
 
     await write_audit_log(
         db, admin_id, "approve_local_banking_with_razorpay", "deposit", deposit_id,
-        old_values={"method": "local_banking", "transaction_id": None},
-        new_values={
-            "method": "razorpay",
-            "transaction_id": order["order_id"],
-            "amount_inr": order["amount_inr"],
-            "usd_to_inr_rate": order["usd_to_inr_rate"],
-        },
+        old_values={"payment_link": None},
+        new_values={"payment_link": "razorpay:awaiting"},
         ip_address=ip_address,
     )
 
@@ -927,12 +897,5 @@ async def approve_with_razorpay(
 
     return {
         "deposit_id": str(deposit.id),
-        "razorpay": {
-            "order_id": order["order_id"],
-            "amount_paise": order["amount_paise"],
-            "amount_inr": order["amount_inr"],
-            "key_id": order["key_id"],
-            "currency": order["currency"],
-        },
-        "message": "Approved — Razorpay order created. The user can now pay.",
+        "message": "Approved — the user can now enter an amount and pay via Razorpay.",
     }

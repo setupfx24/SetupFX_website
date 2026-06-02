@@ -167,6 +167,31 @@ async def get_razorpay_rate(
     return {"rate": float(rate), "currency": "INR"}
 
 
+@router.post("/deposit/{deposit_id}/razorpay-order", status_code=201)
+async def create_razorpay_order_on_lb_deposit(
+    deposit_id: UUID,
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a Razorpay order against an approved Local Banking deposit.
+    Body: { "amount": number }. Used by the trader's "Pay with Razorpay"
+    button after admin has approved the LB request — admin doesn't pick
+    an amount, the user picks it here at pay time."""
+    raw = body.get("amount") if isinstance(body, dict) else None
+    try:
+        amount = Decimal(str(raw)) if raw is not None else Decimal("0")
+    except Exception:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Invalid amount")
+    return await wallet_service.create_razorpay_order_on_lb_deposit(
+        deposit_id=deposit_id,
+        amount=amount,
+        user_id=current_user["user_id"],
+        db=db,
+    )
+
+
 @router.get("/deposit/razorpay/{order_id}/meta")
 async def get_razorpay_order_meta(
     order_id: str,

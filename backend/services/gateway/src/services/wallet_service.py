@@ -2115,3 +2115,67 @@ async def get_bank_info(amount: Decimal, db: AsyncSession) -> dict:
         "upi_id": bank.upi_id,
         "qr_code_url": bank.qr_code_url,
     }
+
+
+async def create_razorpay_order_on_lb_deposit(
+    deposit_id: UUID,
+    amount: Decimal,
+    user_id: UUID,
+    db: AsyncSession,
+) -> dict:
+    """Trader-side: create a Razorpay order against an already-approved
+    Local Banking deposit. Used by the "Pay with Razorpay" flow after
+    admin has flipped payment_link to "razorpay:awaiting".
+
+    Amount is whatever the user typed in the trader UI — it overwrites
+    any prior amount on the deposit row, and the Razorpay order is
+    created for it. The existing webhook + verify-on-popup paths credit
+    this USD amount when payment.captured fires.
+    """
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Enter a valid amount")
+
+    result = await db.execute(
+        select(Deposit).where(
+            Deposit.id == deposit_id,
+            Deposit.user_id == user_id,
+        ).with_for_update()
+    )
+    deposit = result.scalar_one_or_none()
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit not found")
+    if deposit.status not in ("pending",):
+        raise HTTPException(status_code=400, detail="Deposit is not pending")
+
+    pl = (deposit.payment_link or "")
+    if not pl.startswith("razorpay:"):
+        raise HTTPException(
+            status_code=400,
+            detail="This deposit is not approved for Razorpay yet",
+        )
+
+    deposit.amount = amount
+
+    order = await razorpay_service.create_order(
+        amount_usd=amount,
+        receipt=str(deposit.id)[:40],
+        notes={
+            "deposit_id": str(deposit.id),
+            "user_id": str(user_id),
+            "source": "local_banking_user_pay",
+        },
+    )
+
+    deposit.transaction_id = order["order_id"]
+    deposit.payment_link = f"razorpay:{order['order_id']}"
+    deposit.method = "razorpay"  # so the existing webhook handler matches
+    await db.commit()
+
+    return {
+        "deposit_id": str(deposit.id),
+        "order_id": order["order_id"],
+        "amount_paise": order["amount_paise"],
+        "amount_inr": order["amount_inr"],
+        "key_id": order["key_id"],
+        "currency": order["currency"],
+    }
