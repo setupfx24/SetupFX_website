@@ -205,6 +205,11 @@ function BrokerHome() {
         <p className="text-sm text-text-secondary mt-1">Trade. Earn. Level Up.</p>
       </div>
 
+      {/* Admin-managed banner strip — moved up here so the marketing
+          message sits in the user's first view instead of being buried
+          at the bottom of the dashboard. */}
+      {banners.length > 0 && <BannerStrip banners={banners} />}
+
       {/* ── 4 stat cards (DAG aesthetic). Surfaces + foreground colors
               come from theme-aware `--card-*` CSS vars (defined in
               globals.css) so the cards work in both dark and light
@@ -311,7 +316,6 @@ function BrokerHome() {
         loading={loading}
       />
       <TopMoversCard movers={movers} />
-      {banners.length > 0 && <BannerStrip banners={banners} />}
     </div>
   );
 }
