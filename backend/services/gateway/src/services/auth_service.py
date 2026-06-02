@@ -495,9 +495,10 @@ async def register_user(
     response = await issue_auth_json_response(
         user, request, db, status_code=201, user_audit_action="REGISTER",
     )
-    # Fire-and-forget welcome email after the commit — never blocks the
-    # signup response and a delivery failure can't roll back the account.
-    _send_welcome_email(user, via_google=False)
+    # Welcome email is sent later, once the user has verified their email
+    # and completed their profile (handled in profile_service.update_profile).
+    # Firing it here used to mean the welcome arrived before the OTP code,
+    # which confused new signups.
     return response
 
 
@@ -770,9 +771,14 @@ async def google_oauth(
         audit_metadata={"google_sub": google_id, "google_email": email},
     )
     # Welcome email only for first-time Google signups — returning users
-    # logging in via Google have already received it.
+    # logging in via Google have already received it. Google's email is
+    # already verified upstream so we send the welcome at OAuth time
+    # rather than waiting for profile completion; flip the flag so the
+    # profile path doesn't double-send.
     if is_new:
         _send_welcome_email(user, via_google=True)
+        user.welcome_email_sent = True
+        await db.commit()
     return response
 
 

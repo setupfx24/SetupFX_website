@@ -84,11 +84,16 @@ export default function ProfileCompleteGate() {
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const refreshUser = useAuthStore((s) => s.refreshUser);
 
+  // Email verification runs FIRST. If the user just signed up and hasn't
+  // verified their email yet, OnboardingGate owns the screen with the OTP
+  // step. We defer until email_verified flips true so the order is:
+  //   register → verify email → fill profile → welcome.
   const shouldRender =
     isInitialized &&
     isAuthenticated &&
     !!user &&
     !user.is_demo &&
+    user.email_verified !== false &&
     user.profile_complete === false;
 
   const [form, setForm] = useState<FormState>({

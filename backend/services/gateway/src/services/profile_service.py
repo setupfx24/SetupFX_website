@@ -155,6 +155,31 @@ async def update_profile(
     await db.commit()
     await db.refresh(user)
 
+    # Send the welcome email exactly once, the first time the user
+    # completes every required profile field. Prior behavior was to fire
+    # it at /auth/register which meant the welcome landed before the OTP
+    # code and before any personalization was available.
+    profile_complete = bool(
+        (user.first_name or "").strip()
+        and (user.last_name or "").strip()
+        and (user.phone or "").strip()
+        and (user.country or "").strip()
+        and (user.address or "").strip()
+        and (user.city or "").strip()
+        and (user.state or "").strip()
+        and (user.postal_code or "").strip()
+        and user.date_of_birth is not None
+    )
+    if profile_complete and not getattr(user, "welcome_email_sent", False):
+        try:
+            from .auth_service import _send_welcome_email
+            _send_welcome_email(user, via_google=False)
+            user.welcome_email_sent = True
+            await db.commit()
+        except Exception:
+            # Delivery failure must not block the profile save.
+            pass
+
     return {
         "id": str(user.id),
         "email": user.email,

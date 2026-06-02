@@ -23,6 +23,9 @@ class User(Base):
     # signups with the placeholder @wallet.swisscresta.local email.
     email_verified = Column(Boolean, nullable=False, default=False, server_default="false")
     email_verified_at = Column(DateTime(timezone=True), nullable=True)
+    # Flips True the first time profile completion finishes successfully so
+    # the welcome email never gets re-sent on later profile edits.
+    welcome_email_sent = Column(Boolean, nullable=False, default=False, server_default="false")
     phone = Column(String(20))
     password_hash = Column(String(255), nullable=True)  # nullable for OAuth-only users
     google_id = Column(String(64), nullable=True, index=True)  # Google `sub` claim if signed in via Google

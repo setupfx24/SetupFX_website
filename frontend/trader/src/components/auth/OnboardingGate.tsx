@@ -46,13 +46,14 @@ export default function OnboardingGate() {
     if (user.is_demo) return 'hidden' as const;
     if (STAFF_ROLES.has(user.role)) return 'hidden' as const;
 
-    // Step 1 belongs to ProfileCompleteGate. Defer to it.
-    if (user.profile_complete === false) return 'hidden' as const;
-
-    // Already onboarded — nothing to do.
-    if (user.onboarding_complete) return 'hidden' as const;
-
+    // Email verification comes FIRST in the post-signup sequence. We
+    // intentionally do NOT defer to ProfileCompleteGate here — the user
+    // should verify the address they signed up with before they're asked
+    // for personal details (and certainly before any KYC/payout flow).
     if (!user.email_verified) return 'email' as const;
+
+    // Already onboarded beyond email — nothing for this gate to do.
+    if (user.onboarding_complete) return 'hidden' as const;
 
     return 'hidden' as const;
   }, [isInitialized, isAuthenticated, user]);
