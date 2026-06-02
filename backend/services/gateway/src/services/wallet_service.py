@@ -784,9 +784,22 @@ async def create_local_banking_request(
 
     logger.info("Local banking request created: deposit=%s user=%s amount=%s", deposit.id, user_id, amount)
 
-    # Ping every admin / super-admin so the request doesn't sit in the queue
-    # unnoticed. Best-effort — a delivery failure here must never roll back
+    # Ping every admin / super-admin: in-app notification (bell icon) +
+    # email. Best-effort — a delivery failure here must never roll back
     # the user's submission.
+    try:
+        from packages.common.src.notify import notify_all_admins
+        await notify_all_admins(
+            db,
+            title="New local banking deposit request",
+            message=f"{user_row.email} just submitted a request. Open Deposits to attach a payment link.",
+            notif_type="deposit",
+            action_url="/deposits",
+        )
+        await db.commit()
+    except Exception as e:  # pragma: no cover
+        logger.warning("admin in-app notify (request) failed: %s", e)
+
     try:
         await _email_admins_local_banking_event(
             db,
@@ -799,7 +812,7 @@ async def create_local_banking_request(
             ],
         )
     except Exception as e:  # pragma: no cover
-        logger.warning("admin notify (request) failed: %s", e)
+        logger.warning("admin email notify (request) failed: %s", e)
 
     return {
         "deposit_id": str(deposit.id),
@@ -964,12 +977,26 @@ async def confirm_local_banking_payment(
         deposit.id, user_id, amount,
     )
 
-    # Tell every admin the proof is in so they can verify against their bank
-    # feed and approve. Best-effort email — failure must not roll back the
-    # already-committed proof row.
+    # Tell every admin the proof is in: bell icon + email. Best-effort.
+    user_q = await db.execute(select(User).where(User.id == user_id))
+    user_row = user_q.scalar_one_or_none()
     try:
-        user_q = await db.execute(select(User).where(User.id == user_id))
-        user_row = user_q.scalar_one_or_none()
+        from packages.common.src.notify import notify_all_admins
+        await notify_all_admins(
+            db,
+            title="Payment proof uploaded",
+            message=(
+                f"{(user_row.email if user_row else 'A user')} uploaded "
+                f"${float(amount):,.2f} proof. Verify and approve in Deposits."
+            ),
+            notif_type="deposit",
+            action_url="/deposits",
+        )
+        await db.commit()
+    except Exception as e:  # pragma: no cover
+        logger.warning("admin in-app notify (proof) failed: %s", e)
+
+    try:
         await _email_admins_local_banking_event(
             db,
             subject="Local banking payment proof received",
@@ -982,7 +1009,7 @@ async def confirm_local_banking_payment(
             ],
         )
     except Exception as e:  # pragma: no cover
-        logger.warning("admin notify (proof) failed: %s", e)
+        logger.warning("admin email notify (proof) failed: %s", e)
 
     return {
         "deposit_id": str(deposit.id),
@@ -1459,6 +1486,22 @@ async def create_withdrawal(req, user_id: UUID, db: AsyncSession) -> dict:
         message=f"${float(req.amount):,.2f} withdrawal via {req.method} is pending approval",
         notif_type="withdrawal", action_url="/wallet",
     )
+    # Ping every admin so the withdrawal queue gets attention.
+    try:
+        from packages.common.src.notify import notify_all_admins
+        await notify_all_admins(
+            db,
+            title="New withdrawal request",
+            message=(
+                f"{user_row.email if user_row else 'A user'} requested a "
+                f"${float(req.amount):,.2f} withdrawal via {req.method}."
+            ),
+            notif_type="withdrawal",
+            action_url="/deposits",
+            commit=False,
+        )
+    except Exception:  # pragma: no cover
+        pass
     await db.commit()
 
     # Confirmation email — fire-and-forget so SMTP never blocks the response.

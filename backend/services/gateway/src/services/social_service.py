@@ -1063,6 +1063,25 @@ async def become_provider(
     await db.commit()
     await db.refresh(master)
 
+    # Notify every admin so the master queue gets attention.
+    try:
+        from packages.common.src.notify import notify_all_admins
+        user_q = await db.execute(select(User).where(User.id == user_id))
+        user_row = user_q.scalar_one_or_none()
+        await notify_all_admins(
+            db,
+            title="New Trade Master application",
+            message=(
+                f"{user_row.email if user_row else 'A user'} has applied to "
+                f"become a {normalized_type} master."
+            ),
+            notif_type="system",
+            action_url="/social",
+        )
+        await db.commit()
+    except Exception:  # pragma: no cover
+        pass
+
     return {
         "id": str(master.id),
         "status": master.status,

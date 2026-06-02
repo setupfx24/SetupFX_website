@@ -18,6 +18,7 @@ from routes import (
     support, employees, settings, transactions, kyc, account_types, user_audit_logs,
     admin_audit_logs,
     deposit_wallets,
+    notifications,
 )
 
 app_settings = get_settings()
@@ -120,6 +121,7 @@ app.include_router(account_types.router, prefix=prefix)
 app.include_router(user_audit_logs.router, prefix=prefix)
 app.include_router(admin_audit_logs.router, prefix=prefix)
 app.include_router(deposit_wallets.router, prefix=prefix)
+app.include_router(notifications.router, prefix=prefix)
 
 
 @app.get("/health")

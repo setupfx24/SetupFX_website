@@ -359,6 +359,19 @@ async def submit_kyc(
             action_url="/profile",
             commit=False,
         )
+        # Ping every admin so the KYC queue gets attention without polling.
+        try:
+            from packages.common.src.notify import notify_all_admins
+            await notify_all_admins(
+                db,
+                title="New KYC submission",
+                message=f"{user.email} just submitted KYC documents for review.",
+                notif_type="kyc",
+                action_url="/kyc",
+                commit=False,
+            )
+        except Exception:  # pragma: no cover
+            pass
         await db.commit()
         for d in saved_docs:
             await db.refresh(d)

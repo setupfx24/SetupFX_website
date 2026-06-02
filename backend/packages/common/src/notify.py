@@ -28,6 +28,45 @@ TYPES = {
 }
 
 
+async def notify_all_admins(
+    db: AsyncSession,
+    title: str,
+    message: str,
+    notif_type: str = "system",
+    action_url: str | None = None,
+    commit: bool = True,
+) -> int:
+    """Fan-out a notification to every user with role 'admin' or
+    'super_admin'. Used for back-office events (new deposit, proof
+    upload, KYC submission, master application, etc.) so the admin
+    bell icon lights up in real time without polling Postgres for
+    state.
+
+    Returns the number of admin rows that received the notification.
+    Safe to call inside another transaction (`commit=False`).
+    """
+    from .models import User  # local import — avoid circulars at load
+    from sqlalchemy import select
+
+    admins_q = await db.execute(
+        select(User.id).where(User.role.in_(["admin", "super_admin"]))
+    )
+    admin_ids = [row[0] for row in admins_q.all()]
+    for admin_id in admin_ids:
+        await create_notification(
+            db,
+            user_id=admin_id,
+            title=title,
+            message=message,
+            notif_type=notif_type,
+            action_url=action_url,
+            commit=False,
+        )
+    if commit:
+        await db.flush()
+    return len(admin_ids)
+
+
 async def create_notification(
     db: AsyncSession,
     user_id: UUID,
