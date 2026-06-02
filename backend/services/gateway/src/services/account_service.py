@@ -348,10 +348,21 @@ async def create_wallet_bound_account(
 
 
 async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
+    # Demo users see only demo accounts — protects against legacy rows
+    # the auth bootstrap used to create alongside the demo account, and
+    # cleanly hides any real account an admin might attach to a demo
+    # user by mistake.
+    user_q = await db.execute(select(User.is_demo).where(User.id == user_id))
+    is_demo_user = bool(user_q.scalar() or False)
+
+    where = [TradingAccount.user_id == user_id]
+    if is_demo_user:
+        where.append(TradingAccount.is_demo == True)  # noqa: E712
+
     result = await db.execute(
         select(TradingAccount)
         .options(selectinload(TradingAccount.account_group))
-        .where(TradingAccount.user_id == user_id)
+        .where(*where)
     )
     accounts = result.scalars().unique().all()
 

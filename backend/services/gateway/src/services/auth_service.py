@@ -576,7 +576,8 @@ async def _ensure_shared_demo_user(db: AsyncSession) -> User:
             raise AuthServiceError("This email is reserved for the platform demo account", 403)
         return existing
 
-    default_leverage = await get_int_setting("default_leverage", 100)
+    # default_leverage retained for any future demo-side leverage tweak.
+    await get_int_setting("default_leverage", 100)
     demo_password = secrets.token_urlsafe(32)
     user = User(
         email=DEMO_SHARED_EMAIL,
@@ -588,15 +589,9 @@ async def _ensure_shared_demo_user(db: AsyncSession) -> User:
     db.add(user)
     await db.flush()
 
-    default_group = await db.execute(
-        select(AccountGroup).where(AccountGroup.name == "Standard", AccountGroup.is_demo == False).limit(1)
-    )
-    group = default_group.scalars().first()
-    db.add(TradingAccount(
-        user_id=user.id, account_group_id=group.id if group else None,
-        account_number=generate_account_number(), leverage=default_leverage, currency="USD", is_demo=False,
-    ))
-
+    # Demo users get a demo account only — no Standard/real account is
+    # provisioned. Previously we created both, which surfaced a $0 real
+    # account in the picker for everyone who clicked "Try with demo".
     demo_group = await db.execute(select(AccountGroup).where(AccountGroup.name == "Demo").limit(1))
     dg = demo_group.scalars().first()
     db.add(TradingAccount(
