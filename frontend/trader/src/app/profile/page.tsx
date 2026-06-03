@@ -61,6 +61,12 @@ function fmt(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n || 0);
 }
 
+/* 2FA card is hidden until the verify/enable flow is fixed end-to-end.
+   State + handlers are left intact (referenced by the still-present
+   JSX inside the `&& TWO_FA_ENABLED` gate below) so re-enabling is a
+   one-line flip rather than a re-implementation. */
+const TWO_FA_ENABLED = false;
+
 export default function ProfilePage() {
   const [tab, setTab] = useState<TabId>('profile');
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -473,6 +479,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {TWO_FA_ENABLED && (
             <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
               <h3 className="text-base font-semibold text-text-primary mb-1">Two-Factor Authentication</h3>
               <p className="text-sm text-text-secondary mb-4">Add an extra layer of security to your account.</p>
@@ -506,6 +513,7 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+            )}
 
             <EmailVerificationCard
               email={profile?.email || ''}
