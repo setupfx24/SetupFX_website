@@ -22,6 +22,7 @@ import PositionsPanel from '@/components/trading/PositionsPanel';
 import { ActiveAccountBadge } from '@/components/trading/ActiveAccountBadge';
 import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/TerminalLeftRail';
 import TerminalTicker from '@/components/trading/TerminalTicker';
+import AppNavbar from '@/components/layout/AppNavbar';
 
 const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
@@ -362,13 +363,26 @@ export default function TradingTerminalPage() {
         side,
         order_type: 'market',
         lots,
-      }).catch((e: unknown) => {
-        toast.error(e instanceof Error ? e.message : 'Order failed');
-      });
+      })
+        .then(() => {
+          // After a trade is placed on mobile, jump straight to the
+          // "Trades" view so the trader immediately sees the new (and all
+          // other) open positions — the panel there is scrollable.
+          if (accountId) {
+            router.push(tradingTerminalUrl(accountId, { view: 'order' }));
+          }
+        })
+        .catch((e: unknown) => {
+          toast.error(e instanceof Error ? e.message : 'Order failed');
+        });
     };
 
     return (
       <div className="flex-1 flex flex-col overflow-hidden min-h-0 pb-[calc(64px+env(safe-area-inset-bottom,0px))] scrollbar-none bg-bg-base">
+        {/* Top app navbar — provides the hamburger (three-bar) icon that
+            opens the navigation sidebar drawer (close via the same toggle
+            or the backdrop). Mobile terminal otherwise has no app nav. */}
+        <AppNavbar />
         <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col scrollbar-none">
           {mobileView === 'watchlist' && <Watchlist />}
           {mobileView === 'news' && (
