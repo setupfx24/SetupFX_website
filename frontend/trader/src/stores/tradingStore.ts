@@ -325,9 +325,26 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         if (quote && quote !== 'USD') {
           if (base === 'USD' && cp) {
             pnl = pnl / cp;
+          } else {
+            // Cross pair (e.g. GBPJPY, EURJPY) — convert QUOTE → USD
+            // through whichever USD pair we already have streaming.
+            // USDJPY is in the default watchlist, so JPY crosses are
+            // covered. If no cross-rate tick is loaded yet (rare, brief
+            // window on first connect), fall back to raw — the backend
+            // reconciles on close anyway.
+            // Previously this branch was a no-op comment, so JPY crosses
+            // rendered their raw quote-currency P&L (e.g. -89 JPY shown
+            // as "-$89.10" on a 0.01-lot GBPJPY trade).
+            const usdQuote = state.prices[`USD${quote}`];
+            if (usdQuote && usdQuote.bid) {
+              pnl = pnl / usdQuote.bid;
+            } else {
+              const quoteUsd = state.prices[`${quote}USD`];
+              if (quoteUsd && quoteUsd.bid) {
+                pnl = pnl * quoteUsd.bid;
+              }
+            }
           }
-          // cross pair (no USD on either side) — leave raw until we have a
-          // cross-rate feed; backend will reconcile on close.
         }
         return { ...pos, current_price: cp, profit: pnl };
       }),
