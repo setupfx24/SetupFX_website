@@ -206,6 +206,9 @@ class ChargeConfig(Base):
     segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    # When scope='account_group' this points at the AccountGroup the rule
+    # applies to. NULL for all other scopes. Added in migration 0053.
+    account_group_id = Column(UUID(as_uuid=True), ForeignKey("account_groups.id"))
     charge_type = Column(String(30), nullable=False)
     value = Column(Numeric(18, 8), nullable=False)
     is_enabled = Column(Boolean, default=True)
@@ -221,6 +224,7 @@ class SpreadConfig(Base):
     segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    account_group_id = Column(UUID(as_uuid=True), ForeignKey("account_groups.id"))
     spread_type = Column(String(20), nullable=False)
     value = Column(Numeric(18, 8), nullable=False)
     is_enabled = Column(Boolean, default=True)
@@ -236,6 +240,7 @@ class SwapConfig(Base):
     segment_id = Column(UUID(as_uuid=True), ForeignKey("instrument_segments.id"))
     instrument_id = Column(UUID(as_uuid=True), ForeignKey("instruments.id"))
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    account_group_id = Column(UUID(as_uuid=True), ForeignKey("account_groups.id"))
     swap_long = Column(Numeric(18, 8), default=0)
     swap_short = Column(Numeric(18, 8), default=0)
     triple_swap_day = Column(Integer, default=3)

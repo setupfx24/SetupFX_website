@@ -7,12 +7,14 @@ import toast from 'react-hot-toast';
 import { Loader2, Plus, Save, Trash2, X } from 'lucide-react';
 
 interface Instrument { id: string; symbol: string; display_name: string; segment: string; segment_id: string | null; }
+interface AccountGroup { id: string; name: string; }
 interface SwapRow {
   _key: string;
   scope: string;
   instrument_id: string | null;
   segment_id: string | null;
   user_id: string | null;
+  account_group_id: string | null;
   swap_long: number;
   swap_short: number;
   triple_swap_day: number;
@@ -26,6 +28,7 @@ const newKey = () => `row_${Date.now().toString(36)}_${Math.random().toString(36
 
 export default function SwapsPage() {
   const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
   const [rows, setRows] = useState<SwapRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,14 +39,18 @@ export default function SwapsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [instRes, swapRes] = await Promise.all([
+      const [instRes, swapRes, agRes] = await Promise.all([
         adminApi.get<{ items: Instrument[] }>('/config/instruments'),
         adminApi.get<any[]>('/config/swaps'),
+        adminApi.get<{ items?: AccountGroup[] } | AccountGroup[]>('/account-types'),
       ]);
       setInstruments(instRes.items || []);
+      const ags = Array.isArray(agRes) ? agRes : (agRes?.items || []);
+      setAccountGroups(ags);
       setRows((swapRes || []).map((c: any) => ({
         _key: newKey(),
         scope: c.scope, instrument_id: c.instrument_id, segment_id: c.segment_id, user_id: c.user_id,
+        account_group_id: c.account_group_id || null,
         swap_long: c.swap_long, swap_short: c.swap_short, triple_swap_day: c.triple_swap_day ?? 3,
         swap_free: c.swap_free ?? false, is_enabled: c.is_enabled,
         _user_label: c.user_id ? `User ${c.user_id.slice(0, 8)}` : undefined,
@@ -53,7 +60,11 @@ export default function SwapsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const addRow = (scope: string) => setRows(prev => [...prev, { _key: newKey(), scope, instrument_id: null, segment_id: null, user_id: null, swap_long: -5, swap_short: -3, triple_swap_day: 2, swap_free: false, is_enabled: true }]);
+  const addRow = (scope: string) => setRows(prev => [...prev, {
+    _key: newKey(), scope, instrument_id: null, segment_id: null, user_id: null,
+    account_group_id: null,
+    swap_long: -5, swap_short: -3, triple_swap_day: 2, swap_free: false, is_enabled: true,
+  }]);
   const updateRow = (key: string, field: string, val: any) => {
     setRows(prev => prev.map(r => {
       if (r._key !== key) return r;
@@ -66,9 +77,18 @@ export default function SwapsPage() {
     const next = rows.filter(r => r._key !== key);
     setRows(next);
     try {
-      const cleaned = next.filter(r => !(r.scope === 'user' && !r.user_id) && !(r.scope === 'instrument' && !r.instrument_id));
+      const cleaned = next.filter(r =>
+        !(r.scope === 'user' && !r.user_id) &&
+        !(r.scope === 'instrument' && !r.instrument_id) &&
+        !(r.scope === 'account_group' && !r.account_group_id),
+      );
       await adminApi.put('/config/swaps', {
-        configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, swap_long: r.swap_long, swap_short: r.swap_short, triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled })),
+        configs: cleaned.map(r => ({
+          scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
+          user_id: r.user_id, account_group_id: r.account_group_id,
+          swap_long: r.swap_long, swap_short: r.swap_short,
+          triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled,
+        })),
       });
       toast.success('Rule removed');
     } catch (e: any) {
@@ -90,10 +110,17 @@ export default function SwapsPage() {
   const saveAll = async () => {
     const badUser = rows.find(r => r.scope === 'user' && !r.user_id);
     if (badUser) { toast.error('Pick a user for every Per-User rule or remove that row.'); return; }
+    const badGroup = rows.find(r => r.scope === 'account_group' && !r.account_group_id);
+    if (badGroup) { toast.error('Pick an account group for every Per-Account-Group rule or remove that row.'); return; }
     const cleaned = rows.filter(r => !(r.scope === 'instrument' && !r.instrument_id));
     setSaving(true);
     try {
-      await adminApi.put('/config/swaps', { configs: cleaned.map(r => ({ scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id, user_id: r.user_id, swap_long: r.swap_long, swap_short: r.swap_short, triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled })) });
+      await adminApi.put('/config/swaps', { configs: cleaned.map(r => ({
+        scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
+        user_id: r.user_id, account_group_id: r.account_group_id,
+        swap_long: r.swap_long, swap_short: r.swap_short,
+        triple_swap_day: r.triple_swap_day, swap_free: r.swap_free, is_enabled: r.is_enabled,
+      })) });
       toast.success('Swaps saved'); fetchData();
     } catch (e: any) { toast.error(e.message || 'Save failed'); } finally { setSaving(false); }
   };
@@ -102,9 +129,17 @@ export default function SwapsPage() {
 
   const globalRows = rows.filter(r => r.scope === 'default');
   const instrumentRows = rows.filter(r => r.scope === 'instrument');
+  const groupRows = rows.filter(r => r.scope === 'account_group');
   const userRows = rows.filter(r => r.scope === 'user');
 
-  const renderTable = (title: string, items: SwapRow[], scopeType: string) => (
+  const renderTable = (title: string, items: SwapRow[], scopeType: string) => {
+    const leadingCols =
+      scopeType === 'instrument' ? ['Instrument']
+      : scopeType === 'account_group' ? ['Account Group', 'Instrument']
+      : scopeType === 'user' ? ['User', 'Instrument']
+      : [];
+    const headers = leadingCols.concat(['Long', 'Short', 'Triple', 'Free', 'On', '']);
+    return (
       <div className="bg-bg-secondary border border-border-primary rounded-md">
         <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-between">
           <h3 className="text-xs font-semibold text-text-primary">{title}</h3>
@@ -113,15 +148,27 @@ export default function SwapsPage() {
         <div className="overflow-visible">
           <table className="w-full">
             <thead><tr className="border-b border-border-primary bg-bg-tertiary/40">
-              {(scopeType === 'instrument' ? ['Instrument'] : scopeType === 'user' ? ['User', 'Instrument'] : []).concat(['Long', 'Short', 'Triple', 'Free', 'On', '']).map(c => (
+              {headers.map(c => (
                 <th key={c} className="text-left px-3 py-2 text-xxs font-medium text-text-tertiary uppercase tracking-wide">{c}</th>
               ))}
             </tr></thead>
             <tbody>
-              {items.length === 0 ? <tr><td colSpan={8} className="px-4 py-6 text-center text-xxs text-text-tertiary">No rules.</td></tr> : items.map(r => {
+              {items.length === 0 ? <tr><td colSpan={headers.length} className="px-4 py-6 text-center text-xxs text-text-tertiary">No rules.</td></tr> : items.map(r => {
                 const k = r._key;
                 return (
                   <tr key={k} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
+                    {scopeType === 'account_group' && (
+                      <td className="px-3 py-2">
+                        <select
+                          value={r.account_group_id || ''}
+                          onChange={e => updateRow(k, 'account_group_id', e.target.value || null)}
+                          className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-36"
+                        >
+                          <option value="">— Choose group —</option>
+                          {accountGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </td>
+                    )}
                     {scopeType === 'user' && (
                       <td className="px-3 py-2">
                         {r._user_label ? (
@@ -138,7 +185,7 @@ export default function SwapsPage() {
                         )}
                       </td>
                     )}
-                    {(scopeType === 'instrument' || scopeType === 'user') && (
+                    {(scopeType === 'instrument' || scopeType === 'user' || scopeType === 'account_group') && (
                       <td className="px-3 py-2"><select value={r.instrument_id || ''} onChange={e => updateRow(k, 'instrument_id', e.target.value || null)} className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-28"><option value="">All</option>{instruments.map(i => <option key={i.id} value={i.id}>{i.symbol}</option>)}</select></td>
                     )}
                     <td className="px-3 py-2"><input type="number" step="0.01" value={r.swap_long} onChange={e => updateRow(k, 'swap_long', parseFloat(e.target.value) || 0)} className="w-16 px-1.5 py-1 text-xs bg-bg-input border border-border-primary rounded font-mono tabular-nums text-text-primary" /></td>
@@ -155,6 +202,7 @@ export default function SwapsPage() {
         </div>
       </div>
     );
+  };
 
   return (
     <>
@@ -162,7 +210,11 @@ export default function SwapsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-text-primary">Swap Configuration</h1>
-            <p className="text-xxs text-text-tertiary mt-0.5">Priority: User &gt; Instrument &gt; Default. Applied daily at 21:00 UTC.</p>
+            <p className="text-xxs text-text-tertiary mt-0.5">
+              Priority: User &gt; Account Group &gt; Instrument &gt; Default. Applied hourly by the
+              overnight engine on every position open ≥24h. Swap-free Islamic users and tiers
+              skip charges entirely.
+            </p>
           </div>
           <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-buy rounded-md hover:bg-buy-light disabled:opacity-50 transition-fast">
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save All
@@ -170,6 +222,7 @@ export default function SwapsPage() {
         </div>
         {renderTable('Default (All Instruments)', globalRows, 'default')}
         {renderTable('Per Instrument', instrumentRows, 'instrument')}
+        {renderTable('Per Account Group (Tier override)', groupRows, 'account_group')}
         {renderTable('Per User (Override)', userRows, 'user')}
       </div>
     </>

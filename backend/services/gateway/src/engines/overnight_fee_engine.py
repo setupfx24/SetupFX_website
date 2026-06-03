@@ -31,11 +31,15 @@ from packages.common.src.models import (
     AccountGroup, InstrumentConfig, Position, PositionStatus,
     TradingAccount, Transaction, User,
 )
+from packages.common.src.instrument_pricing import (
+    resolve_swap_rate, DEFAULT_SWAP_DAILY_RATE,
+)
 
 logger = logging.getLogger("overnight-fee-engine")
 
-# 0.01% per day from Trading_Mechanism.docx.
-DAILY_RATE = Decimal("0.0001")
+# Kept as a module-level alias for back-compat with existing log lines;
+# actual per-position rate is resolved per tick via ``resolve_swap_rate``.
+DAILY_RATE = DEFAULT_SWAP_DAILY_RATE
 TICK_INTERVAL = 3600  # check hourly so a deploy mid-day catches up cleanly
 
 
@@ -127,14 +131,6 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
                 pos.last_swap_at = now
                 continue
 
-        # Skip swap-free instruments.
-        ic = (await db.execute(
-            select(InstrumentConfig).where(InstrumentConfig.instrument_id == pos.instrument_id)
-        )).scalar_one_or_none()
-        if ic is not None and bool(ic.swap_free):
-            pos.last_swap_at = now
-            continue
-
         leverage = int(account.leverage or 1)
         if leverage <= 1:
             # Account-level fully-funded — never charged. Stamp last_swap_at
@@ -151,8 +147,23 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             pos.last_swap_at = now
             continue
 
+        # Resolve the daily swap rate via the full SwapConfig priority chain
+        # (user → account_group → instrument → segment → default → InstrumentConfig
+        #  → hardcoded fallback). Side is "long" for BUY, "short" for SELL.
+        # ``is_swap_free`` short-circuits to no charge for this position.
+        pos_side = (pos.side or "long").lower()
+        rate, is_swap_free = await resolve_swap_rate(
+            db, instrument,
+            "long" if pos_side in ("buy", "long") else "short",
+            user_id=account.user_id,
+            account_group_id=account.account_group_id,
+        )
+        if is_swap_free or rate <= 0:
+            pos.last_swap_at = now
+            continue
+
         borrowed_fraction = (Decimal(leverage - 1) / Decimal(leverage))
-        fee = (notional * borrowed_fraction * DAILY_RATE).quantize(Decimal("0.00000001"))
+        fee = (notional * borrowed_fraction * rate).quantize(Decimal("0.00000001"))
         if fee <= 0:
             pos.last_swap_at = now
             continue
@@ -173,7 +184,7 @@ async def charge_due_positions(db: AsyncSession, now: Optional[datetime] = None)
             amount=-fee,
             balance_after=new_balance,
             reference_id=pos.id,
-            description=f"Overnight fee {DAILY_RATE * 100}% × borrowed {borrowed_fraction:.4f} × notional {notional:.2f}",
+            description=f"Overnight fee {rate * 100}% × borrowed {borrowed_fraction:.4f} × notional {notional:.2f}",
         ))
         charged += 1
 
