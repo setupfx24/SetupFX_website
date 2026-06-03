@@ -533,17 +533,56 @@ export default function OrderPanel() {
               </button>
             </div>
 
-            {/* Center spread badge — overlaps the gap between buttons */}
-            {tick && (
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                <span className={clsx(
-                  'inline-flex items-center font-mono font-semibold tabular-nums px-2 py-0.5 rounded-full bg-bg-card text-text-secondary border border-border-primary shadow-sm',
-                  isTradingTerminal ? 'text-[10px]' : 'text-xs',
-                )}>
-                  {(tick.spread / (instrumentInfo?.pip_size || 0.0001)).toFixed(0)}
-                </span>
-              </div>
-            )}
+            {/* Center spread badge — overlaps the gap between buttons.
+                Used to be a bare number "10" in a small circle, which
+                made it impossible to tell at a glance what it meant.
+                Now stacks a "SPREAD" label over the pip count + raw
+                price diff so traders can see exactly what's being
+                charged on the round trip. */}
+            {tick && (() => {
+              const pipSize = instrumentInfo?.pip_size || 0.0001;
+              const pips = tick.spread / pipSize;
+              const pipsLabel = pips >= 100 ? pips.toFixed(0) : pips.toFixed(1);
+              const priceDiff = tick.spread.toFixed(digits);
+              return (
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  <div
+                    className={clsx(
+                      'flex flex-col items-center rounded-lg bg-white shadow-md ring-1 ring-black/5 border border-[#E5E5E5]',
+                      isTradingTerminal ? 'px-2 py-1' : 'px-2.5 py-1.5',
+                    )}
+                  >
+                    <span
+                      className={clsx(
+                        'font-bold uppercase tracking-[0.08em] text-[#9CA3AF]',
+                        isTradingTerminal ? 'text-[8px] leading-[10px]' : 'text-[9px] leading-[11px]',
+                      )}
+                    >
+                      Spread
+                    </span>
+                    <span
+                      className={clsx(
+                        'font-mono font-bold tabular-nums text-[#E94E1B] leading-tight',
+                        isTradingTerminal ? 'text-[11px]' : 'text-sm',
+                      )}
+                    >
+                      {pipsLabel}
+                      <span className={clsx('ml-0.5 font-semibold text-[#6B7280]', isTradingTerminal ? 'text-[8px]' : 'text-[9px]')}>
+                        pip{pips === 1 ? '' : 's'}
+                      </span>
+                    </span>
+                    <span
+                      className={clsx(
+                        'font-mono tabular-nums text-[#9CA3AF] leading-none mt-0.5',
+                        isTradingTerminal ? 'text-[8px]' : 'text-[9px]',
+                      )}
+                    >
+                      {priceDiff}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* SL / TP — separate Add / Remove buttons. Click to toggle the
