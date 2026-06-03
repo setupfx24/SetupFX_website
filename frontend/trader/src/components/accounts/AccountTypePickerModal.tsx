@@ -177,7 +177,10 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
     // this drawer.
     <div
       className={clsx(
-        'fixed inset-0 z-[1000]',
+        // Bumped above the AppNavbar (sticky z-50) and the support FAB
+        // (z-75). Without this the navbar's backdrop-blur stacking
+        // context bled through the top of the drawer.
+        'fixed inset-0 z-[9999]',
         !open && 'pointer-events-none',
       )}
       aria-hidden={!open}
@@ -199,8 +202,12 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
         role="dialog"
         aria-modal="true"
         aria-label="Open account"
+        // Inline `background` is belt-and-suspenders: even if the
+        // bg-bg-card utility doesn't apply for any reason, the panel
+        // still renders fully opaque so the navbar can't bleed through.
+        style={{ background: 'var(--bg-card, #FFFFFF)' }}
         className={clsx(
-          'absolute top-0 right-0 h-full w-full sm:max-w-[640px] bg-bg-card border-l border-border-primary shadow-2xl',
+          'absolute top-0 right-0 h-full w-full sm:max-w-[640px] border-l border-border-primary shadow-2xl',
           'flex flex-col transform transition-transform duration-300 ease-out',
           open ? 'translate-x-0' : 'translate-x-full',
         )}
