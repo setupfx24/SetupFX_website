@@ -145,21 +145,21 @@ export default function TerminalLeftRail({
         <SectionLabel>Spaces</SectionLabel>
         <RailBtn
           title="Balanced layout"
-          active={activeSpace === 'balanced'}
+          active={activeSpace === 'balanced' && !chartExpanded}
           onClick={() => onSpaceChange('balanced')}
         >
           <LayoutGrid size={17} strokeWidth={1.75} />
         </RailBtn>
         <RailBtn
-          title="Chart focus — wider chart"
-          active={activeSpace === 'chart'}
-          onClick={() => onSpaceChange('chart')}
+          title={chartExpanded ? 'Exit fullscreen chart' : 'Fullscreen chart'}
+          active={chartExpanded}
+          onClick={onExpandFullChart}
         >
           <Maximize2 size={17} strokeWidth={1.75} />
         </RailBtn>
         <RailBtn
           title="Order focus — wider order column"
-          active={activeSpace === 'trading'}
+          active={activeSpace === 'trading' && !chartExpanded}
           onClick={() => onSpaceChange('trading')}
         >
           <PanelRight size={17} strokeWidth={1.75} />
