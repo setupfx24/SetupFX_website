@@ -1,9 +1,11 @@
 /** Layout limits for `/trading/terminal` split panes (used with persisted uiStore widths). */
 export const TERMINAL_RESIZE = {
-  /** Column split handles (watchlist / order panel). */
-  handleHitPx: 8,
+  /** Column split handles (watchlist / order panel). 14 px so users
+   *  can grab it without pixel-perfect aim — the 8 px we had was
+   *  invisible against the chart's TradingView iframe edge. */
+  handleHitPx: 14,
   /** Chart ↔ positions splitter — slightly wider so it is easier to grab above the TradingView iframe. */
-  bottomHandleHitPx: 12,
+  bottomHandleHitPx: 16,
   /** Minimum width of the center column (chart must stay usable). */
   chartMinWidth: 280,
   /** Minimum height of the chart stack above the bottom panel. */

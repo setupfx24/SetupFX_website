@@ -108,30 +108,61 @@ export default function PanelResizeHandle({
     'pointer-events-none rounded-full transition-[width,height,background-color] duration-150',
     isVertical ? 'absolute top-0 bottom-0 left-1/2 -translate-x-1/2' : 'absolute left-0 right-0 top-1/2 -translate-y-1/2',
     dragging
-      ? clsx('bg-buy', isVertical ? 'w-[3px]' : 'h-[3px]')
+      ? clsx('bg-accent', isVertical ? 'w-[3px]' : 'h-[3px]')
       : hover
-        ? clsx('bg-buy/55', isVertical ? 'w-[2px]' : 'h-[2px]')
-        : clsx('bg-border-primary', isVertical ? 'w-px' : 'h-px'),
+        ? clsx('bg-accent/60', isVertical ? 'w-[2px]' : 'h-[2px]')
+        : clsx('bg-border-primary', isVertical ? 'w-[2px]' : 'h-[2px]'),
+  );
+
+  // Grip dots — three small dots in the centre to signal "drag me".
+  // Visible always so users find the handle without hover hunting.
+  const dotClass = clsx(
+    'pointer-events-none rounded-full transition-colors duration-150',
+    dragging ? 'bg-accent' : hover ? 'bg-accent/60' : 'bg-border-secondary',
+    'w-[3px] h-[3px]',
   );
 
   return (
-    <div
-      role="separator"
-      aria-orientation={isVertical ? 'vertical' : 'horizontal'}
-      aria-label={isVertical ? 'Resize panel width' : 'Resize panel height'}
-      onPointerDown={onPointerDown}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => {
-        if (!dragActive.current) setHover(false);
-      }}
-      style={isVertical ? { width: hitSize } : { height: hitSize }}
-      className={clsx(
-        'shrink-0 relative z-[35] touch-none select-none bg-transparent',
-        isVertical ? 'cursor-col-resize' : 'cursor-row-resize',
-        className,
+    <>
+      <div
+        role="separator"
+        aria-orientation={isVertical ? 'vertical' : 'horizontal'}
+        aria-label={isVertical ? 'Resize panel width' : 'Resize panel height'}
+        onPointerDown={onPointerDown}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => {
+          if (!dragActive.current) setHover(false);
+        }}
+        style={isVertical ? { width: hitSize } : { height: hitSize }}
+        className={clsx(
+          'shrink-0 relative z-[35] touch-none select-none bg-transparent group',
+          isVertical ? 'cursor-col-resize' : 'cursor-row-resize',
+          className,
+        )}
+      >
+        <span className={lineClass} aria-hidden />
+        <span
+          aria-hidden
+          className={clsx(
+            'pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-[3px]',
+            isVertical ? 'flex-col' : 'flex-row',
+          )}
+        >
+          <span className={dotClass} />
+          <span className={dotClass} />
+          <span className={dotClass} />
+        </span>
+      </div>
+      {/* While dragging, lay an invisible full-viewport overlay so the
+          TradingView iframe (and any other embed) can't capture
+          pointermove events away from our listener. */}
+      {dragging && (
+        <div
+          aria-hidden
+          className="fixed inset-0 z-[60]"
+          style={{ cursor }}
+        />
       )}
-    >
-      <span className={lineClass} aria-hidden />
-    </div>
+    </>
   );
 }
