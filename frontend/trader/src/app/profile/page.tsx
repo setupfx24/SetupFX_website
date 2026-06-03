@@ -232,9 +232,14 @@ export default function ProfilePage() {
   const slideIndex = tabIndex >= 0 ? tabIndex : 0;
 
   return (
-    <DashboardShell mainClassName="p-0 flex flex-col min-h-0 overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        <div className="w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 space-y-5">
+    <DashboardShell>
+      {/* No mainClassName / inner scroll wrappers — they used to turn
+          <main> into a narrow flex column where DashboardShell's
+          1600px wrapper collapsed to content width, making the
+          Settings page render as a ~700px centred card on wide
+          monitors. The default shell layout (mx-auto max-w-[1600px]
+          + native main scroll) gives full width across the page. */}
+      <div className="space-y-5">
           <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card">
             <div
               className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
@@ -587,7 +592,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        </div>
       </div>
     </DashboardShell>
   );
