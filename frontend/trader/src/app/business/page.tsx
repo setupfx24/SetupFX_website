@@ -1,64 +1,93 @@
 'use client';
 
-
-
 import { useState, useEffect } from 'react';
-
 import { clsx } from 'clsx';
-
 import toast from 'react-hot-toast';
-
+import {
+  Users,
+  Briefcase,
+  Network,
+  Share2,
+  DollarSign,
+  TrendingUp,
+  Award,
+  CheckCircle2,
+  Copy,
+  ChevronRight,
+} from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
-
 import DemoLockGate from '@/components/demo/DemoLockGate';
-
 import { useAuthStore } from '@/stores/authStore';
-
 import { getErrorMessage } from '@/lib/errors';
-
 import api from '@/lib/api/client';
-
 
 
 type TabId = 'ib' | 'sub-broker' | 'network';
 
-
-
-const TABS: { id: TabId; label: string }[] = [
-
-  { id: 'ib', label: 'IB Program' },
-
-  { id: 'sub-broker', label: 'Sub-Broker' },
-
-  { id: 'network', label: 'My Network' },
-
+const TABS: { id: TabId; label: string; icon: typeof Users }[] = [
+  { id: 'ib', label: 'IB Program', icon: Users },
+  { id: 'sub-broker', label: 'Sub-Broker', icon: Briefcase },
+  { id: 'network', label: 'My Network', icon: Network },
 ];
 
+function fmt(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-
-function fmt(n: number) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-function fmtDate(d: string) { try { return new Date(d).toLocaleDateString(); } catch { return d; } }
+function fmtDate(d: string) {
+  try { return new Date(d).toLocaleDateString(); } catch { return d; }
+}
 
 function Spinner() {
   return (
-    <div className="flex justify-center py-16">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+    <div className="flex flex-col items-center justify-center gap-3 py-16">
+      <div className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#E94E1B] border-t-transparent" />
+      <span className="text-xs font-medium text-[#6B7280]">Loading…</span>
     </div>
   );
 }
 
+function StatCard({ label, value, icon: Icon, tone = 'default' }: {
+  label: string;
+  value: string;
+  icon: typeof Users;
+  tone?: 'default' | 'success' | 'warning' | 'accent';
+}) {
+  const toneClasses = {
+    default: { bg: 'bg-[#F5F5F5]', icon: 'text-[#0A0A0A]' },
+    success: { bg: 'bg-emerald-50', icon: 'text-emerald-600' },
+    warning: { bg: 'bg-amber-50', icon: 'text-amber-600' },
+    accent: { bg: 'bg-[#FCE6DD]', icon: 'text-[#E94E1B]' },
+  }[tone];
+  return (
+    <div className="rounded-2xl border border-[#E5E5E5] bg-white p-4">
+      <div className="flex items-center gap-3">
+        <div className={clsx('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', toneClasses.bg)}>
+          <Icon size={18} className={toneClasses.icon} strokeWidth={2.2} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[#9CA3AF]">{label}</p>
+          <p className="mt-0.5 truncate text-lg font-bold tabular-nums text-[#0A0A0A]">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
+function BenefitItem({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-3 text-left">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+        <CheckCircle2 size={13} className="text-emerald-600" strokeWidth={2.6} />
+      </span>
+      <span className="text-sm text-[#4B5563] leading-relaxed">{children}</span>
+    </li>
+  );
+}
 
 export default function BusinessPage() {
-
   const isDemo = useAuthStore((s) => s.user?.is_demo);
-
   const [tab, setTab] = useState<TabId>('ib');
-
-  const tabIndex = TABS.findIndex((t) => t.id === tab);
-
-  const slideIndex = tabIndex >= 0 ? tabIndex : 0;
 
   if (isDemo) {
     return (
@@ -73,781 +102,601 @@ export default function BusinessPage() {
     );
   }
 
-
-
   return (
-
     <DashboardShell>
-
-          <section className="relative overflow-hidden rounded-xl border border-border-primary bg-card mb-4 sm:mb-5">
-
-            <div
-
-              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-accent/[0.12] via-transparent to-accent/[0.05]"
-
-              aria-hidden
-
-            />
-
-            <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-8">
-
-              <h1 className="text-xl sm:text-3xl font-bold text-text-primary mb-2 leading-tight">Business</h1>
-
+      <div className="space-y-6">
+        {/* Hero header */}
+        <div className="relative overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white p-6 sm:p-8">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#FCE6DD] via-white to-white"
+            aria-hidden
+          />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FCE6DD] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#E94E1B]">
+                <Award size={12} strokeWidth={2.5} />
+                Partner Programs
+              </span>
+              <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#0A0A0A]">
+                Grow with SwissCresta
+              </h1>
+              <p className="mt-2 text-sm text-[#4B5563] leading-relaxed">
+                Refer traders, build a team, or partner as a sub-broker. Earn revenue share on every trade your network places.
+              </p>
             </div>
-
-          </section>
-
-          <div className="overflow-hidden rounded-xl border border-border-primary bg-card">
-
-            <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
-
-              <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-
-                <div
-
-                  className="absolute top-0 h-full w-1/3 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-
-                  style={{ transform: `translate3d(${slideIndex * 100}%,0,0)` }}
-
-                >
-
-                  <div
-
-                    className={clsx(
-
-                      'absolute inset-x-1 top-0 h-full rounded-t-2xl border-2 border-b-0 border-accent bg-card-nested',
-
-                      'animate-wallet-main-tab-glow',
-
-                    )}
-
-                  />
-
-                </div>
-
+            <div className="flex flex-wrap gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#0A0A0A]">
+                <DollarSign size={13} className="text-emerald-600" strokeWidth={2.5} />
+                Lifetime revenue share
               </div>
-
-              {TABS.map((t) => {
-
-                const active = tab === t.id;
-
-                return (
-
-                  <button
-
-                    key={t.id}
-
-                    type="button"
-
-                    onClick={() => setTab(t.id)}
-
-                    className={clsx(
-
-                      'relative z-10 flex-1 min-w-0 border-0 bg-transparent py-3.5 px-1 sm:px-2 text-xs sm:text-sm font-semibold outline-none',
-
-                      'transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50',
-
-                      active ? 'text-accent' : 'text-text-secondary hover:text-text-primary',
-
-                    )}
-
-                  >
-
-                    {active ? (
-
-                      <span className="relative inline-block animate-wallet-main-tab-text drop-shadow-[0_0_20px_rgba(99,102,241,0.7)]">
-
-                        {t.label}
-
-                      </span>
-
-                    ) : (
-
-                      <span className="relative inline-block truncate">{t.label}</span>
-
-                    )}
-
-                  </button>
-
-                );
-
-              })}
-
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-3 py-1.5 text-xs font-semibold text-[#0A0A0A]">
+                <TrendingUp size={13} className="text-[#E94E1B]" strokeWidth={2.5} />
+                Up to 5 levels deep
+              </div>
             </div>
+          </div>
+        </div>
 
-            <div key={tab} className="bg-card-nested p-4 md:p-6 animate-wallet-fund-enter-lg min-h-[200px]">
-
-              {tab === 'ib' && <IBTab />}
-
-              {tab === 'sub-broker' && <SubBrokerTab />}
-
-              {tab === 'network' && <NetworkTab />}
-
-            </div>
-
+        {/* Tabs strip */}
+        <div className="rounded-2xl border border-[#E5E5E5] bg-white">
+          <div className="flex border-b border-[#E5E5E5] px-2 sm:px-4">
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={clsx(
+                    'relative flex flex-1 items-center justify-center gap-2 px-2 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold transition-colors',
+                    active ? 'text-[#E94E1B]' : 'text-[#6B7280] hover:text-[#0A0A0A]',
+                  )}
+                >
+                  <Icon size={15} strokeWidth={2.2} />
+                  <span className="truncate">{t.label}</span>
+                  {active && (
+                    <span
+                      className="pointer-events-none absolute inset-x-3 -bottom-px h-[3px] rounded-t-full bg-[#E94E1B]"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
+          <div key={tab} className="p-4 sm:p-6 animate-wallet-fund-enter-lg min-h-[240px]">
+            {tab === 'ib' && <IBTab />}
+            {tab === 'sub-broker' && <SubBrokerTab />}
+            {tab === 'network' && <NetworkTab />}
+          </div>
+        </div>
+      </div>
     </DashboardShell>
-
   );
-
 }
-
-
-
 
 
 function IBTab() {
-
   const [status, setStatus] = useState<any>(null);
-
   const [dashboard, setDashboard] = useState<any>(null);
-
   const [referrals, setReferrals] = useState<any[]>([]);
-
   const [commissions, setCommissions] = useState<any[]>([]);
-
   const [loading, setLoading] = useState(true);
-
   const [applying, setApplying] = useState(false);
 
-
-
   useEffect(() => {
-
     (async () => {
-
       try {
-
         const s = await api.get<any>('/business/status');
-
         setStatus(s);
-
         if (s.is_ib) {
-
           const [d, r, c] = await Promise.all([
-
             api.get<any>('/business/ib/dashboard'),
-
             api.get<any>('/business/ib/referrals'),
-
             api.get<any>('/business/ib/commissions'),
-
           ]);
-
           setDashboard(d);
-
           setReferrals(r.items || []);
-
           setCommissions(c.items || []);
-
         }
-
       } catch {} finally { setLoading(false); }
-
     })();
-
   }, []);
 
-
-
   const handleApply = async () => {
-
     setApplying(true);
-
     try {
-
       await api.post('/business/apply', {});
-
       toast.success('IB application submitted!');
-
       const s = await api.get<any>('/business/status');
-
       setStatus(s);
-
-    } catch (e: unknown) { toast.error(getErrorMessage(e, 'Failed')); } finally { setApplying(false); }
-
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed'));
+    } finally {
+      setApplying(false);
+    }
   };
-
-
 
   if (loading) return <Spinner />;
 
-
-
   if (!status?.is_ib && status?.application_status === 'pending') {
-
     return (
-
-      <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-8 noise-texture text-center max-w-lg mx-auto">
-
-        <div className="text-2xl mb-2">⏳</div>
-
-        <h3 className="text-sm font-semibold text-text-primary">Application Pending</h3>
-
-        <p className="text-xxs text-text-tertiary mt-1">Your IB application is under review by the admin team.</p>
-
-      </div>
-
+      <PendingCard message="Your IB application is under review by the admin team." />
     );
-
   }
-
-
 
   if (!status?.is_ib) {
-
     return (
-
-      <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5">
-
-        <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become an Introducing Broker</h3>
-
-        <button
-
-          type="button"
-
-          onClick={handleApply}
-
-          disabled={applying}
-
-          className={clsx(
-
-            'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
-
-            applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(99,102,241,0.35)]',
-
-          )}
-
-        >
-
-          {applying ? 'Submitting...' : 'Apply Now'}
-
-        </button>
-
-      </div>
-
+      <CtaCard
+        eyebrow="IB Program"
+        title="Become an Introducing Broker"
+        subtitle="Refer traders to SwissCresta and earn a lifetime share of their trading commissions — up to 5 levels deep."
+        benefits={[
+          'Lifetime commission on every trade your referrals place',
+          'Multi-level network — earn from sub-referrals too',
+          'Personalised referral link and dashboard',
+          'Weekly automated payouts to your trading wallet',
+        ]}
+        cta={applying ? 'Submitting…' : 'Apply Now'}
+        onClick={handleApply}
+        disabled={applying}
+      />
     );
-
   }
 
-
-
   return (
-
-    <div className="space-y-4">
-
+    <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-        {[
-
-          { label: 'Total Earned', value: `$${fmt(dashboard?.total_earned || 0)}`, color: 'text-success' },
-
-          { label: 'Pending Payout', value: `$${fmt(dashboard?.pending_payout || 0)}`, color: 'text-warning' },
-
-          { label: 'Referrals', value: String(dashboard?.total_referrals || 0), color: 'text-accent' },
-
-          { label: 'Level', value: `L${dashboard?.level || 1}`, color: 'text-text-primary' },
-
-        ].map(c => (
-
-          <div key={c.label} className="rounded-xl border border-border-primary bg-card p-3 noise-texture">
-
-            <p className="text-xxs text-text-tertiary">{c.label}</p>
-
-            <p className={clsx('text-lg font-bold font-mono tabular-nums mt-0.5', c.color)}>{c.value}</p>
-
-          </div>
-
-        ))}
-
+        <StatCard label="Total Earned" value={`$${fmt(dashboard?.total_earned || 0)}`} icon={DollarSign} tone="success" />
+        <StatCard label="Pending Payout" value={`$${fmt(dashboard?.pending_payout || 0)}`} icon={TrendingUp} tone="warning" />
+        <StatCard label="Referrals" value={String(dashboard?.total_referrals || 0)} icon={Users} tone="accent" />
+        <StatCard label="Level" value={`L${dashboard?.level || 1}`} icon={Award} tone="default" />
       </div>
 
-
-
       {dashboard?.referral_link && (
-
-        <div className="rounded-xl border border-border-primary bg-card p-4 noise-texture">
-
-          <p className="text-xxs text-text-tertiary mb-2">Your Referral Link</p>
-
-          <div className="flex items-center gap-2">
-
-            <input type="text" readOnly value={dashboard.referral_link} className="flex-1 text-xs font-mono bg-bg-secondary border border-border-primary rounded-lg px-3 py-2 text-text-primary focus:outline-none" />
-
-            <button type="button" onClick={() => { navigator.clipboard.writeText(dashboard.referral_link); toast.success('Copied!'); }} className="shrink-0 px-3 py-2 text-xs font-semibold rounded-lg border border-accent text-accent hover:bg-accent hover:text-black transition-colors">Copy</button>
-
+        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <p className="text-sm font-semibold text-[#0A0A0A]">Your Referral Link</p>
           </div>
-
-          <p className="text-xxs text-text-tertiary mt-2">Code: <span className="text-accent font-mono font-bold">{dashboard.referral_code}</span></p>
-
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={dashboard.referral_link}
+              className="flex-1 rounded-lg border border-[#E5E5E5] bg-[#F5F5F5] px-3 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(dashboard.referral_link); toast.success('Copied!'); }}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#0A0A0A] px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-black transition-colors"
+            >
+              <Copy size={13} />
+              Copy
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-[#6B7280]">
+            Code: <span className="font-mono font-bold text-[#E94E1B]">{dashboard.referral_code}</span>
+          </p>
         </div>
-
       )}
-
-
 
       {referrals.length > 0 && (
-
-        <div className="rounded-xl border border-border-primary bg-card noise-texture overflow-hidden">
-
-          <div className="px-4 py-3 border-b border-border-primary"><h3 className="text-xs font-semibold text-text-primary">My Referrals</h3></div>
-
-          <table className="w-full text-xs">
-
-            <thead><tr className="border-b border-border-primary text-xxs text-text-tertiary">
-
-              <th className="px-4 py-2 text-left">User</th><th className="px-4 py-2 text-left">Joined</th><th className="px-4 py-2 text-right">Balance</th>
-
-            </tr></thead>
-
-            <tbody>
-
-              {referrals.map((r: any) => (
-
-                <tr key={r.id} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
-
-                  <td className="px-4 py-2"><p className="text-text-primary">{r.referred_user?.name}</p><p className="text-xxs text-text-tertiary">{r.referred_user?.email}</p></td>
-
-                  <td className="px-4 py-2 text-text-tertiary">{r.referred_user?.joined_at ? fmtDate(r.referred_user.joined_at) : '—'}</td>
-
-                  <td className="px-4 py-2 text-right font-mono text-text-primary">${fmt(r.total_deposit || 0)}</td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
+        <DataTable
+          title="My Referrals"
+          headers={['User', 'Joined', 'Balance']}
+          rows={referrals.map((r: any) => [
+            (
+              <div key={`u-${r.id}`}>
+                <p className="text-[#0A0A0A] font-medium">{r.referred_user?.name}</p>
+                <p className="text-[11px] text-[#9CA3AF]">{r.referred_user?.email}</p>
+              </div>
+            ),
+            <span key={`d-${r.id}`} className="text-[#6B7280]">{r.referred_user?.joined_at ? fmtDate(r.referred_user.joined_at) : '—'}</span>,
+            <span key={`b-${r.id}`} className="font-mono tabular-nums text-[#0A0A0A]">${fmt(r.total_deposit || 0)}</span>,
+          ])}
+          align={['left', 'left', 'right']}
+        />
       )}
-
-
 
       {commissions.length > 0 && (
-
-        <div className="rounded-xl border border-border-primary bg-card noise-texture overflow-hidden">
-
-          <div className="px-4 py-3 border-b border-border-primary"><h3 className="text-xs font-semibold text-text-primary">Commission History</h3></div>
-
-          <table className="w-full text-xs">
-
-            <thead><tr className="border-b border-border-primary text-xxs text-text-tertiary">
-
-              <th className="px-4 py-2 text-left">From</th><th className="px-4 py-2 text-left">Type</th><th className="px-4 py-2 text-left">Level</th><th className="px-4 py-2 text-right">Amount</th><th className="px-4 py-2 text-right">Status</th>
-
-            </tr></thead>
-
-            <tbody>
-
-              {commissions.map((c: any) => (
-
-                <tr key={c.id} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
-
-                  <td className="px-4 py-2"><p className="text-text-primary">{c.source_user?.name}</p></td>
-
-                  <td className="px-4 py-2 text-text-secondary capitalize">{c.commission_type?.replace('_', ' ')}</td>
-
-                  <td className="px-4 py-2 text-text-secondary">L{c.mlm_level}</td>
-
-                  <td className="px-4 py-2 text-right font-mono text-success">${fmt(c.amount || 0)}</td>
-
-                  <td className="px-4 py-2 text-right"><span className={clsx('px-1.5 py-0.5 rounded text-xxs font-medium', c.status === 'paid' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning')}>{c.status}</span></td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
+        <DataTable
+          title="Commission History"
+          headers={['From', 'Type', 'Level', 'Amount', 'Status']}
+          rows={commissions.map((c: any) => [
+            <span key={`s-${c.id}`} className="text-[#0A0A0A]">{c.source_user?.name}</span>,
+            <span key={`t-${c.id}`} className="text-[#6B7280] capitalize">{c.commission_type?.replace('_', ' ')}</span>,
+            <span key={`l-${c.id}`} className="text-[#6B7280]">L{c.mlm_level}</span>,
+            <span key={`a-${c.id}`} className="font-mono tabular-nums text-emerald-600">${fmt(c.amount || 0)}</span>,
+            (
+              <span
+                key={`st-${c.id}`}
+                className={clsx(
+                  'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                  c.status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+                )}
+              >
+                {c.status}
+              </span>
+            ),
+          ])}
+          align={['left', 'left', 'left', 'right', 'right']}
+        />
       )}
-
     </div>
-
   );
-
 }
-
-
-
 
 
 function SubBrokerTab() {
-
   const [status, setStatus] = useState<any>(null);
-
   const [dashboard, setDashboard] = useState<any>(null);
-
   const [loading, setLoading] = useState(true);
-
   const [applying, setApplying] = useState(false);
-
   const [companyName, setCompanyName] = useState('');
 
-
-
   useEffect(() => {
-
     (async () => {
-
       try {
-
         const s = await api.get<any>('/business/status');
-
         setStatus(s);
-
         if (s.is_ib) {
-
           try {
-
             const d = await api.get<any>('/business/sub-broker/dashboard');
-
             setDashboard(d);
-
           } catch {}
-
         }
-
       } catch {} finally { setLoading(false); }
-
     })();
-
   }, []);
 
-
-
   const handleApply = async () => {
-
     setApplying(true);
-
     try {
-
       await api.post('/business/apply-sub-broker', { company_name: companyName || undefined });
-
       toast.success('Sub-broker application submitted!');
-
       const s = await api.get<any>('/business/status');
-
       setStatus(s);
-
-    } catch (e: unknown) { toast.error(getErrorMessage(e, 'Failed')); } finally { setApplying(false); }
-
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed'));
+    } finally {
+      setApplying(false);
+    }
   };
-
-
 
   if (loading) return <Spinner />;
 
-
-
   if (status?.application_status === 'pending') {
-
-    return (
-
-      <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-8 noise-texture text-center max-w-lg mx-auto">
-
-        <div className="text-2xl mb-2">⏳</div>
-
-        <h3 className="text-sm font-semibold text-text-primary">Application Pending</h3>
-
-        <p className="text-xxs text-text-tertiary mt-1">Your sub-broker application is under review.</p>
-
-      </div>
-
-    );
-
+    return <PendingCard message="Your sub-broker application is under review." />;
   }
-
-
 
   if (dashboard) {
-
     return (
-
-      <div className="space-y-4">
-
+      <div className="space-y-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-          {[
-
-            { label: 'Clients', value: String(dashboard.direct_clients || 0), color: 'text-accent' },
-
-            { label: 'Total Earned', value: `$${fmt(dashboard.total_earned || 0)}`, color: 'text-success' },
-
-            { label: 'Pending', value: `$${fmt(dashboard.pending_payout || 0)}`, color: 'text-warning' },
-
-            { label: 'Commission', value: `$${fmt(dashboard.total_commission || 0)}`, color: 'text-text-primary' },
-
-          ].map(c => (
-
-            <div key={c.label} className="rounded-xl border border-border-primary bg-card p-3 noise-texture">
-
-              <p className="text-xxs text-text-tertiary">{c.label}</p>
-
-              <p className={clsx('text-lg font-bold font-mono tabular-nums mt-0.5', c.color)}>{c.value}</p>
-
-            </div>
-
-          ))}
-
+          <StatCard label="Clients" value={String(dashboard.direct_clients || 0)} icon={Users} tone="accent" />
+          <StatCard label="Total Earned" value={`$${fmt(dashboard.total_earned || 0)}`} icon={DollarSign} tone="success" />
+          <StatCard label="Pending" value={`$${fmt(dashboard.pending_payout || 0)}`} icon={TrendingUp} tone="warning" />
+          <StatCard label="Commission" value={`$${fmt(dashboard.total_commission || 0)}`} icon={Award} tone="default" />
         </div>
 
-
-
-        <div className="rounded-xl border border-border-primary bg-card p-4 noise-texture">
-
-          <p className="text-xxs text-text-tertiary mb-2">Your Referral Code</p>
-
-          <div className="flex items-center gap-2">
-
-            <span className="text-lg font-bold font-mono text-accent">{dashboard.referral_code}</span>
-
-            <button type="button" onClick={() => { navigator.clipboard.writeText(dashboard.referral_code); toast.success('Copied!'); }} className="px-2 py-1 text-xxs font-semibold rounded-lg border border-accent text-accent hover:bg-accent hover:text-black transition-colors">Copy</button>
-
+        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Share2 size={15} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <p className="text-sm font-semibold text-[#0A0A0A]">Your Referral Code</p>
           </div>
-
+          <div className="flex items-center gap-3">
+            <span className="rounded-lg bg-[#F5F5F5] px-4 py-2.5 text-lg font-bold font-mono text-[#E94E1B]">
+              {dashboard.referral_code}
+            </span>
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(dashboard.referral_code); toast.success('Copied!'); }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#0A0A0A] px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-black transition-colors"
+            >
+              <Copy size={13} />
+              Copy
+            </button>
+          </div>
         </div>
-
-
 
         {dashboard.clients?.length > 0 && (
-
-          <div className="rounded-xl border border-border-primary bg-card noise-texture overflow-hidden">
-
-            <div className="px-4 py-3 border-b border-border-primary"><h3 className="text-xs font-semibold text-text-primary">Your Clients</h3></div>
-
-            <table className="w-full text-xs">
-
-              <thead><tr className="border-b border-border-primary text-xxs text-text-tertiary">
-
-                <th className="px-4 py-2 text-left">Client</th><th className="px-4 py-2 text-left">Status</th><th className="px-4 py-2 text-right">Balance</th><th className="px-4 py-2 text-left">Joined</th>
-
-              </tr></thead>
-
-              <tbody>
-
-                {dashboard.clients.map((c: any) => (
-
-                  <tr key={c.user_id} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
-
-                    <td className="px-4 py-2"><p className="text-text-primary">{c.name}</p><p className="text-xxs text-text-tertiary">{c.email}</p></td>
-
-                    <td className="px-4 py-2"><span className={clsx('px-1.5 py-0.5 rounded text-xxs font-medium', c.status === 'active' ? 'bg-success/15 text-success' : 'bg-text-tertiary/15 text-text-tertiary')}>{c.status}</span></td>
-
-                    <td className="px-4 py-2 text-right font-mono text-text-primary">${fmt(c.total_balance || 0)}</td>
-
-                    <td className="px-4 py-2 text-text-tertiary">{c.joined_at ? fmtDate(c.joined_at) : '—'}</td>
-
-                  </tr>
-
-                ))}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
+          <DataTable
+            title="Your Clients"
+            headers={['Client', 'Status', 'Balance', 'Joined']}
+            rows={dashboard.clients.map((c: any) => [
+              (
+                <div key={`c-${c.user_id}`}>
+                  <p className="text-[#0A0A0A] font-medium">{c.name}</p>
+                  <p className="text-[11px] text-[#9CA3AF]">{c.email}</p>
+                </div>
+              ),
+              (
+                <span
+                  key={`s-${c.user_id}`}
+                  className={clsx(
+                    'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                    c.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600',
+                  )}
+                >
+                  {c.status}
+                </span>
+              ),
+              <span key={`b-${c.user_id}`} className="font-mono tabular-nums text-[#0A0A0A]">${fmt(c.total_balance || 0)}</span>,
+              <span key={`d-${c.user_id}`} className="text-[#6B7280]">{c.joined_at ? fmtDate(c.joined_at) : '—'}</span>,
+            ])}
+            align={['left', 'left', 'right', 'left']}
+          />
         )}
-
       </div>
-
     );
-
   }
 
-
-
   return (
-
-    <div className="rounded-xl border border-border-primary bg-card p-6 sm:p-10 noise-texture text-center space-y-5">
-
-      <h3 className="text-lg sm:text-xl font-bold text-text-primary">Become a Sub-Broker</h3>
-
-      <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">Partner with us as a sub-broker. Get your own referral code, manage clients, and earn revenue share on all their trading activity.</p>
-
-      <div className="max-w-sm mx-auto text-left">
-
-        <label className="text-xxs text-text-secondary block mb-1">Company Name (optional)</label>
-
-        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs border-border-primary focus:border-accent focus:ring-1 focus:ring-accent/30" />
-
-      </div>
-
-      <button
-
-        type="button"
-
-        onClick={handleApply}
-
-        disabled={applying}
-
-        className={clsx(
-
-          'w-full max-w-xs mx-auto px-6 py-3.5 rounded-xl text-sm font-bold transition-all border-2 border-accent',
-
-          applying ? 'opacity-50 cursor-not-allowed' : 'bg-accent text-black hover:brightness-110 shadow-[0_0_24px_rgba(99,102,241,0.35)]',
-
-        )}
-
-      >
-
-        {applying ? 'Submitting...' : 'Apply as Sub-Broker'}
-
-      </button>
-
-    </div>
-
+    <CtaCard
+      eyebrow="Sub-Broker"
+      title="Become a Sub-Broker"
+      subtitle="Partner with us as a sub-broker. Get your own referral code, manage clients and earn revenue share on all their trading activity."
+      benefits={[
+        'Direct revenue share on every client trade',
+        'Dedicated client management dashboard',
+        'Custom referral code for your business',
+        'Priority partner support and reporting',
+      ]}
+      cta={applying ? 'Submitting…' : 'Apply as Sub-Broker'}
+      onClick={handleApply}
+      disabled={applying}
+      extra={(
+        <div className="text-left">
+          <label className="block text-xs font-medium text-[#6B7280] mb-1.5">
+            Company Name <span className="text-[#9CA3AF]">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={companyName}
+            onChange={e => setCompanyName(e.target.value)}
+            placeholder="Your company name"
+            className="w-full rounded-xl border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm text-[#0A0A0A] placeholder:text-[#9CA3AF] outline-none focus:border-[#E94E1B] focus:ring-2 focus:ring-[#E94E1B]/15"
+          />
+        </div>
+      )}
+    />
   );
-
 }
-
-
-
 
 
 function NetworkTab() {
-
   const [tree, setTree] = useState<any>(null);
-
   const [loading, setLoading] = useState(true);
 
-
-
   useEffect(() => {
-
     (async () => {
-
       try {
-
         const res = await api.get<any>('/business/ib/tree');
-
         setTree(res);
-
       } catch {}
-
       setLoading(false);
-
     })();
-
   }, []);
-
-
 
   if (loading) return <Spinner />;
 
-  if (!tree) return <div className="rounded-xl border border-dashed border-border-primary bg-bg-secondary/50 py-16 px-4 text-center text-sm text-text-secondary max-w-lg mx-auto">You need to be an approved IB to see your network.</div>;
-
-
+  if (!tree) {
+    return (
+      <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#F5F5F5]/60 py-16 px-6 text-center max-w-xl mx-auto">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white border border-[#E5E5E5] mb-3">
+          <Network size={20} className="text-[#9CA3AF]" />
+        </div>
+        <p className="text-sm font-semibold text-[#0A0A0A]">No network yet</p>
+        <p className="mt-1 text-xs text-[#6B7280]">You need to be an approved IB to see your network.</p>
+      </div>
+    );
+  }
 
   return (
-
-    <div className="space-y-4">
-
-      <div className="rounded-xl border border-border-primary bg-card p-4 noise-texture">
-
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
         <div className="flex items-center justify-between mb-3">
-
-          <h3 className="text-sm font-semibold text-text-primary">Your MLM Network</h3>
-
-          <span className="text-xxs text-text-tertiary">{tree.total_nodes || 0} members</span>
-
+          <div className="flex items-center gap-2">
+            <Network size={16} className="text-[#E94E1B]" strokeWidth={2.4} />
+            <h3 className="text-sm font-semibold text-[#0A0A0A]">Your MLM Network</h3>
+          </div>
+          <span className="text-xs text-[#6B7280]">{tree.total_nodes || 0} members</span>
         </div>
-
-        <div className="flex items-center gap-3 text-xs">
-
-          <span className="text-text-tertiary">Your Code: <span className="text-accent font-mono font-bold">{tree.root?.referral_code}</span></span>
-
-          <span className="text-text-tertiary">Level: <span className="text-text-primary font-bold">L{tree.root?.level}</span></span>
-
-          <span className="text-text-tertiary">Total Earned: <span className="text-success font-mono font-bold">${fmt(tree.root?.total_earned || 0)}</span></span>
-
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+          <span className="text-[#6B7280]">
+            Your Code: <span className="font-mono font-bold text-[#E94E1B]">{tree.root?.referral_code}</span>
+          </span>
+          <span className="text-[#6B7280]">
+            Level: <span className="font-bold text-[#0A0A0A]">L{tree.root?.level}</span>
+          </span>
+          <span className="text-[#6B7280]">
+            Total Earned: <span className="font-mono font-bold text-emerald-600">${fmt(tree.root?.total_earned || 0)}</span>
+          </span>
         </div>
-
       </div>
 
-
-
       {tree.tree?.length > 0 ? (
-
-        <div className="rounded-xl border border-border-primary bg-card p-4 noise-texture">
-
-          <h4 className="text-xs font-semibold text-text-primary mb-3">Downline Tree</h4>
-
-          <div className="space-y-1">
-
+        <div className="rounded-2xl border border-[#E5E5E5] bg-white p-5">
+          <h4 className="text-sm font-semibold text-[#0A0A0A] mb-3">Downline Tree</h4>
+          <div className="space-y-0.5">
             {tree.tree.map((node: any) => <TreeNode key={node.id} node={node} depth={0} />)}
-
           </div>
-
         </div>
-
       ) : (
-
-        <div className="text-center py-8 text-xs text-text-tertiary">No downline members yet. Share your referral link to grow your network.</div>
-
+        <div className="rounded-2xl border border-dashed border-[#E5E5E5] bg-[#F5F5F5]/60 py-10 px-6 text-center text-sm text-[#6B7280]">
+          No downline members yet. Share your referral link to grow your network.
+        </div>
       )}
-
     </div>
-
   );
-
 }
-
-
-
 
 
 function TreeNode({ node, depth }: { node: any; depth: number }) {
-
   const [expanded, setExpanded] = useState(depth < 2);
-
   const hasChildren = node.children?.length > 0;
 
-
-
   return (
-
-    <div style={{ marginLeft: depth * 20 }}>
-
-      <button onClick={() => hasChildren && setExpanded(!expanded)} className="flex items-center gap-2 w-full text-left py-1.5 px-2 rounded hover:bg-bg-hover/30 transition-fast text-xs">
-
+    <div style={{ marginLeft: depth * 18 }}>
+      <button
+        onClick={() => hasChildren && setExpanded(!expanded)}
+        className="flex w-full items-center gap-2 rounded-lg py-1.5 px-2 text-left text-xs hover:bg-[#F5F5F5] transition-colors"
+      >
         {hasChildren ? (
-
-          <span className="text-text-tertiary">{expanded ? '▼' : '▶'}</span>
-
+          <ChevronRight
+            size={13}
+            className={clsx('text-[#9CA3AF] transition-transform', expanded && 'rotate-90')}
+          />
         ) : (
-
-          <span className="text-text-tertiary ml-1">•</span>
-
+          <span className="w-[13px] text-center text-[#D1D5DB]">•</span>
         )}
-
-        <span className="text-text-primary font-medium">{node.name || node.email}</span>
-
-        <span className="text-xxs text-accent font-mono">L{node.depth}</span>
-
-        <span className="text-xxs text-text-tertiary ml-auto font-mono">${fmt(node.total_earned || 0)}</span>
-
-        {!node.is_active && <span className="text-xxs px-1 py-0.5 rounded bg-danger/15 text-danger">inactive</span>}
-
+        <span className="font-medium text-[#0A0A0A]">{node.name || node.email}</span>
+        <span className="rounded-md bg-[#FCE6DD] px-1.5 py-0.5 text-[10px] font-mono font-bold text-[#E94E1B]">L{node.depth}</span>
+        <span className="ml-auto font-mono tabular-nums text-[#6B7280]">${fmt(node.total_earned || 0)}</span>
+        {!node.is_active && (
+          <span className="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">inactive</span>
+        )}
       </button>
-
       {expanded && hasChildren && node.children.map((child: any) => (
-
         <TreeNode key={child.id} node={child} depth={depth + 1} />
-
       ))}
-
     </div>
-
   );
-
 }
 
+
+/* ----------------------------------------------------------------------------
+   Shared sub-components
+   ------------------------------------------------------------------------ */
+
+function PendingCard({ message }: { message: string }) {
+  return (
+    <div className="mx-auto max-w-lg rounded-2xl border border-amber-200 bg-amber-50/50 p-8 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 mb-3">
+        <span className="text-xl">⏳</span>
+      </div>
+      <h3 className="text-base font-bold text-[#0A0A0A]">Application Pending</h3>
+      <p className="mt-1 text-sm text-[#6B7280]">{message}</p>
+    </div>
+  );
+}
+
+function CtaCard({
+  eyebrow,
+  title,
+  subtitle,
+  benefits,
+  cta,
+  onClick,
+  disabled,
+  extra,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  benefits: string[];
+  cta: string;
+  onClick: () => void;
+  disabled?: boolean;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white">
+        <div className="relative px-6 sm:px-8 pt-8 pb-6 text-center">
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#FCE6DD]/60 to-transparent"
+            aria-hidden
+          />
+          <div className="relative">
+            <span className="inline-flex items-center rounded-full bg-[#FCE6DD] px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#E94E1B]">
+              {eyebrow}
+            </span>
+            <h3 className="mt-3 text-xl sm:text-2xl font-bold text-[#0A0A0A]">{title}</h3>
+            <p className="mt-2 text-sm text-[#4B5563] leading-relaxed max-w-md mx-auto">{subtitle}</p>
+          </div>
+        </div>
+        <div className="border-t border-[#E5E5E5] px-6 sm:px-8 py-6">
+          <ul className="space-y-2.5 max-w-md mx-auto">
+            {benefits.map((b) => <BenefitItem key={b}>{b}</BenefitItem>)}
+          </ul>
+          {extra && <div className="mt-5 max-w-md mx-auto">{extra}</div>}
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={onClick}
+              disabled={disabled}
+              className={clsx(
+                'inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition-colors shadow-[0_2px_8px_rgba(233,78,27,0.25)] min-w-[200px]',
+                disabled
+                  ? 'bg-[#E94E1B]/60 cursor-not-allowed'
+                  : 'bg-[#E94E1B] hover:bg-[#C73E11]',
+              )}
+            >
+              {cta}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataTable({
+  title,
+  headers,
+  rows,
+  align,
+}: {
+  title: string;
+  headers: string[];
+  rows: React.ReactNode[][];
+  align: Array<'left' | 'right'>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#E5E5E5] bg-white">
+      <div className="px-5 py-3 border-b border-[#E5E5E5]">
+        <h3 className="text-sm font-semibold text-[#0A0A0A]">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
+              {headers.map((h, i) => (
+                <th
+                  key={h}
+                  className={clsx(
+                    'px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]',
+                    align[i] === 'right' ? 'text-right' : 'text-left',
+                  )}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((cells, ri) => (
+              <tr key={ri} className="border-b border-[#F5F5F5] last:border-b-0 hover:bg-[#FAFAFA]/60">
+                {cells.map((cell, ci) => (
+                  <td
+                    key={ci}
+                    className={clsx(
+                      'px-5 py-3',
+                      align[ci] === 'right' ? 'text-right' : 'text-left',
+                    )}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
