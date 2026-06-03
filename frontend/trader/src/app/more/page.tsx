@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationListener';
 import { useAuthStore } from '@/stores/authStore';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -55,13 +54,7 @@ export default function MorePage() {
         </div>
 
         {/* Centralized Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card rounded-xl p-4 flex flex-col items-center justify-center gap-3">
-            <span className="text-xs text-text-tertiary font-medium">Appearance</span>
-            <div className="transform scale-110">
-              <ThemeToggle />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-3">
           <div className="glass-card rounded-xl p-4 flex flex-col items-center justify-center gap-3">
             <span className="text-xs text-text-tertiary font-medium">Notifications</span>
             <div className="transform scale-110">

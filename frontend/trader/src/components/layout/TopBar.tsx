@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { wsManager, ConnectionStatus } from '@/lib/ws/wsManager';
 import { useAuthStore } from '@/stores/authStore';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -129,7 +128,6 @@ export default function TopBar() {
                 {process.env.NEXT_PUBLIC_APP_VERSION}
               </span>
             )}
-          <ThemeToggle compact />
           <div className={`hidden sm:block w-2 h-2 rounded-full shrink-0 self-center ${statusColor}`} title={wsStatus} />
           <NotificationBell />
           <div className="relative" ref={menuRef}>

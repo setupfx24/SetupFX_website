@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="google" content="notranslate" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var N='swisscresta-ui';var LEG=['novafx-ui','fxartha-ui'];if(!localStorage.getItem(N)){for(var i=0;i<LEG.length;i++){var v=localStorage.getItem(LEG[i]);if(v){localStorage.setItem(N,v);break;}}for(var j=0;j<LEG.length;j++){localStorage.removeItem(LEG[j]);}}var d=document.documentElement;d.setAttribute('data-theme','light');d.classList.add('theme-light');d.style.backgroundColor='#ffffff';d.style.color='#0A0A0A';}catch(e){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.backgroundColor='#ffffff';document.documentElement.style.color='#0A0A0A';}})();`,
+            __html: `(function(){try{var d=document.documentElement;d.setAttribute('data-theme','dark');d.classList.add('theme-dark');d.style.backgroundColor='#0a0a0a';d.style.color='#ffffff';}catch(e){document.documentElement.setAttribute('data-theme','dark');document.documentElement.style.backgroundColor='#0a0a0a';document.documentElement.style.color='#ffffff';}})();`,
           }}
         />
       </head>

@@ -3,7 +3,6 @@
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
-import { useUIStore } from '@/stores/uiStore';
 import { wsManager } from '@/lib/ws/wsManager';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
@@ -261,7 +260,6 @@ function TradingSession({ children }: { children: React.ReactNode }) {
 export default function TradingLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const terminalOnly = pathname?.startsWith('/trading/terminal');
-  const theme = useUIStore((s) => s.theme);
 
   const fallback = (
     <div className="flex-1 flex items-center justify-center text-text-tertiary text-sm bg-bg-primary">
@@ -274,11 +272,13 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
    * match — previously the wrapper hardcoded data-theme="dark" which
    * overrode the toggle and pinned the terminal to dark. */
   if (terminalOnly) {
-    const isDark = theme === 'dark';
+    // Dark-only application — light theme has been retired. uiStore.theme
+    // is no longer read here so the toggle removal can't be inadvertently
+    // undone by a stale persisted value.
     return (
       <div
-        className={`trading-page ${isDark ? 'theme-dark' : 'theme-light'} flex flex-col h-[100dvh] bg-bg-base min-h-0`}
-        data-theme={isDark ? 'dark' : 'light'}
+        className="trading-page theme-dark flex flex-col h-[100dvh] bg-bg-base min-h-0"
+        data-theme="dark"
       >
         <div className="flex-1 flex overflow-hidden min-h-0">
           <Suspense fallback={fallback}>
