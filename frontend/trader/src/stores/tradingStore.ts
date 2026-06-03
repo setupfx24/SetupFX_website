@@ -252,7 +252,19 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         return serverPos;
       });
 
-      set({ positions: merged });
+      // Preserve any fresh optimistic rows that didn't find a server
+      // twin in this snapshot. The position was just placed and the
+      // server's /positions view may simply not have caught up yet
+      // (poll ticks at 1.5s, fill may not be visible for a few hundred
+      // ms after POST /orders/). Without this, the optim row gets
+      // dropped here and reappears once the server catches up next
+      // tick — a visible flicker on every freshly opened trade.
+      const orphanedOptimistic = optimisticPrev.filter((p) => !optimMatched.has(p.id));
+      const finalPositions = orphanedOptimistic.length
+        ? [...orphanedOptimistic, ...merged]
+        : merged;
+
+      set({ positions: finalPositions });
     } catch {}
   },
 
