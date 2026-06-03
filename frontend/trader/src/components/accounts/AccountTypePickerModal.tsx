@@ -169,7 +169,19 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[1000]" aria-hidden={!open}>
+    // The outer fixed wrapper stays mounted across open/close so the
+    // slide animation has something to animate against. `pointer-events-
+    // none` while closed lets clicks pass through to the underlying
+    // page — without it, the invisible overlay swallowed every click
+    // including the "Open Account" trigger that's supposed to reopen
+    // this drawer.
+    <div
+      className={clsx(
+        'fixed inset-0 z-[1000]',
+        !open && 'pointer-events-none',
+      )}
+      aria-hidden={!open}
+    >
       {/* Backdrop. Fades in/out so the drawer slide doesn't feel detached. */}
       <div
         className={clsx(
