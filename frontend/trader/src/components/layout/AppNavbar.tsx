@@ -10,7 +10,7 @@
  *   - Center-left primary nav (Home, Accounts, Funds, Trade, Copy
  *     Trading, Affiliates, More dropdown)
  *   - Right side: crypto pill, solid-black Deposit pill, notification
- *     bell, locale globe, avatar menu
+ *     bell, avatar menu
  *
  * Mobile (<lg): logo on left, hamburger on right opens a slide-down
  * drawer with the vertical list.
@@ -26,7 +26,6 @@ import {
   ChevronDown,
   Copy,
   FileText,
-  Globe,
   Home,
   LayoutGrid,
   LineChart,
@@ -325,15 +324,6 @@ export default function AppNavbar() {
           <div className="text-[#0A0A0A]">
             <NotificationBell />
           </div>
-
-          {/* Locale globe (placeholder no-op) */}
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
-            aria-label="Change language"
-          >
-            <Globe size={18} strokeWidth={1.85} />
-          </button>
 
           {/* Avatar dropdown */}
           <div className="relative" ref={userRef}>

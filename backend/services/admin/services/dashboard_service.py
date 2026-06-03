@@ -16,10 +16,14 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     from packages.common.src.models import TradingAccount
 
-    # Total Users: matches User Management page — all except admin/super_admin.
+    # Total Users: real trader accounts only. Exclude every staff role
+    # (admin / super_admin / employee / manager / support) AND the shared
+    # demo user — those shouldn't inflate the customer count on the
+    # dashboard.
     total_users_q = await db.execute(
         select(func.count(User.id)).where(
-            User.role.notin_(["admin", "super_admin"]),
+            User.role.notin_(["admin", "super_admin", "employee", "manager", "support"]),
+            User.is_demo == False,  # noqa: E712 — SQLAlchemy needs literal False
         )
     )
     total_users = total_users_q.scalar() or 0
@@ -44,8 +48,16 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
         .where(TradeHistory.closed_at >= thirty_days_ago)
     )
     combined = open_users_q.union(closed_users_q).subquery()
+    # Same staff / demo exclusion as Total Users so the two numbers stay
+    # consistent — admin test trades shouldn't inflate Active Traders.
     active_traders_q = await db.execute(
         select(func.count(func.distinct(combined.c.user_id)))
+        .select_from(combined)
+        .join(User, User.id == combined.c.user_id)
+        .where(
+            User.role.notin_(["admin", "super_admin", "employee", "manager", "support"]),
+            User.is_demo == False,  # noqa: E712
+        )
     )
     active_traders = active_traders_q.scalar() or 0
 

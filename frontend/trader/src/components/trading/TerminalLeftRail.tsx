@@ -6,9 +6,6 @@ import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
 import {
   Search,
   Plus,
-  LayoutGrid,
-  Maximize2,
-  PanelRight,
   PanelBottom,
   ArrowDownUp,
   LayoutTemplate,
@@ -21,11 +18,14 @@ import {
 import { clsx } from 'clsx';
 import { wsManager, type ConnectionStatus } from '@/lib/ws/wsManager';
 
+/** Kept for API back-compat (callers pass activeSpace / onSpaceChange) —
+ *  the Spaces section itself has been removed from the rail. */
 export type TerminalSpaceId = 'balanced' | 'chart' | 'trading';
 
 interface TerminalLeftRailProps {
-  activeSpace: TerminalSpaceId;
-  onSpaceChange: (id: TerminalSpaceId) => void;
+  /** No longer driven by the rail; left in the type so parent calls compile. */
+  activeSpace?: TerminalSpaceId;
+  onSpaceChange?: (id: TerminalSpaceId) => void;
   terminalMarketsOpen: boolean;
   onToggleMarkets: () => void;
   bottomPanelCollapsed: boolean;
@@ -85,8 +85,6 @@ function RailBtn({
 }
 
 export default function TerminalLeftRail({
-  activeSpace,
-  onSpaceChange,
   terminalMarketsOpen,
   onToggleMarkets,
   bottomPanelCollapsed,
@@ -142,29 +140,12 @@ export default function TerminalLeftRail({
       </div>
 
       <div className="flex-1 flex flex-col items-center px-1.5 overflow-y-auto overflow-x-hidden min-h-0 py-1">
-        <SectionLabel>Spaces</SectionLabel>
-        <RailBtn
-          title="Balanced layout"
-          active={activeSpace === 'balanced' && !chartExpanded}
-          onClick={() => onSpaceChange('balanced')}
-        >
-          <LayoutGrid size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title={chartExpanded ? 'Exit fullscreen chart' : 'Fullscreen chart'}
-          active={chartExpanded}
-          onClick={onExpandFullChart}
-        >
-          <Maximize2 size={17} strokeWidth={1.75} />
-        </RailBtn>
-        <RailBtn
-          title="Order focus — wider order column"
-          active={activeSpace === 'trading' && !chartExpanded}
-          onClick={() => onSpaceChange('trading')}
-        >
-          <PanelRight size={17} strokeWidth={1.75} />
-        </RailBtn>
-
+        {/* The legacy "Spaces" section (Balanced / Chart focus / Order
+            focus preset widths) has been retired — the changes were too
+            subtle to notice and the Chart-focus icon overlapped with the
+            ChartCandlestick Panels button below. Users can now adjust
+            column widths directly via the resize handle between the
+            chart and the right rail. */}
         <SectionLabel>Panels</SectionLabel>
         <RailBtn
           title="Markets — symbols & prices"

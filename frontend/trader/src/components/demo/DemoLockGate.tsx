@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Lock, UserPlus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,7 +21,20 @@ type Props = {
  */
 export default function DemoLockGate({ feature, description, children }: Props) {
   const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
   if (!user?.is_demo) return <>{children}</>;
+
+  // The demo user is a shared session. A plain <Link href="/auth/register">
+  // would just bounce back to /dashboard because AuthProvider redirects
+  // authenticated users away from /auth/*. We sign out first, THEN push to
+  // the register page so the gate lets us through.
+  const startRealRegistration = () => {
+    try { logout(); } catch {/* ignore */}
+    // Give the auth store a tick to clear before the route change so the
+    // AuthProvider doesn't catch us mid-flight.
+    setTimeout(() => router.push('/auth/register'), 50);
+  };
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4 sm:p-8">
@@ -43,13 +57,14 @@ export default function DemoLockGate({ feature, description, children }: Props) 
             'This feature is only available on a real trading account. Register a live account to access deposits, IB rewards, copy trading and managed accounts.'}
         </p>
         <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
-          <Link
-            href="/auth/register"
+          <button
+            type="button"
+            onClick={startRealRegistration}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#E94E1B] text-white text-sm font-bold hover:bg-[#C73E11] transition-colors shadow-[0_2px_8px_rgba(233,78,27,0.25)]"
           >
             <UserPlus className="w-4 h-4" />
             Create real account
-          </Link>
+          </button>
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-border-primary bg-bg-secondary text-sm font-semibold text-text-primary hover:bg-bg-hover transition-colors"

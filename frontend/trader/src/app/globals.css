@@ -672,8 +672,22 @@ html {
  * is unbounded the toasts can spill past the modal regardless of the
  * inner max-width. */
 .swisscresta-toaster,
-.swisscresta-toaster > div {
+.swisscresta-toaster > div,
+.swisscresta-toaster div[role="status"],
+.swisscresta-toaster * {
   max-width: min(440px, calc(100vw - 32px)) !important;
+  box-sizing: border-box;
+}
+
+/* Override the inline transform-positioning wrapper react-hot-toast
+ * generates per-toast. The lib computes width: auto on it so the toast
+ * grows to content; clamp it here too. */
+.swisscresta-toaster > div > div {
+  max-width: min(440px, calc(100vw - 32px)) !important;
+  width: auto !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 
 .swisscresta-hot-toast {

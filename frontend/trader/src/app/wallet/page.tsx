@@ -1248,10 +1248,10 @@ function WalletPageContent() {
 
   if (loading) {
     return (
-      <DashboardShell mainClassName="flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#0A0A0A] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-[#6B7280]">Loading wallet...</span>
+      <DashboardShell>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
+          <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-medium text-[#6B7280]">Loading wallet…</span>
         </div>
       </DashboardShell>
     );
@@ -2402,10 +2402,10 @@ export default function WalletPage() {
   return (
     <Suspense
       fallback={
-        <DashboardShell mainClassName="flex items-center justify-center bg-white">
-          <div className="flex flex-col items-center gap-3 py-12">
-            <div className="w-8 h-8 border-2 border-[#0A0A0A] border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-[#6B7280]">Loading wallet…</span>
+        <DashboardShell>
+          <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 py-16">
+            <div className="w-10 h-10 border-[3px] border-[#E94E1B] border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm font-medium text-[#6B7280]">Loading wallet…</span>
           </div>
         </DashboardShell>
       }

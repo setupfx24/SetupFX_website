@@ -926,6 +926,7 @@ function LeveragePicker({
   onChanged: () => void;
 }) {
   const setActiveAccount = useTradingStore((s) => s.setActiveAccount);
+  const positions = useTradingStore((s) => s.positions);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -936,6 +937,14 @@ function LeveragePicker({
     if (!filtered.includes(maxLev)) filtered.push(maxLev);
     return Array.from(new Set(filtered)).sort((a, b) => a - b);
   }, [maxLev]);
+
+  // Backend blocks leverage changes when the account has open positions
+  // (account_service.py:548-552). Mirror that on the client so the user
+  // gets a clear locked indicator + tooltip BEFORE clicking, instead of
+  // a generic toast after the API rejects them.
+  const openOnThisAccount = positions.filter((p) => p.account_id === account.id).length;
+  const locked = openOnThisAccount > 0;
+  const lockReason = `You have ${openOnThisAccount} open position${openOnThisAccount === 1 ? '' : 's'} on this account. Close ${openOnThisAccount === 1 ? 'it' : 'them all'} to change leverage.`;
 
   useEffect(() => {
     if (!open) return;
@@ -967,15 +976,27 @@ function LeveragePicker({
     <div className="ml-auto relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((p) => !p)}
+        onClick={() => {
+          if (locked) {
+            toast(lockReason, { icon: '🔒', duration: 4000 });
+            return;
+          }
+          setOpen((p) => !p);
+        }}
         disabled={saving}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50"
-        title={`Max 1:${maxLev} — click to change`}
+        className={clsx(
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold transition-colors disabled:opacity-50',
+          locked
+            ? 'text-text-tertiary cursor-not-allowed bg-bg-secondary'
+            : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover',
+        )}
+        title={locked ? lockReason : `Max 1:${maxLev} — click to change`}
       >
+        {locked && <span aria-hidden>🔒</span>}
         1:{account.leverage}
-        <ChevronDown size={10} />
+        {!locked && <ChevronDown size={10} />}
       </button>
-      {open && (
+      {open && !locked && (
         <div
           className="absolute right-0 bottom-full mb-1 w-28 rounded-lg border border-border-primary shadow-xl py-1"
           style={{

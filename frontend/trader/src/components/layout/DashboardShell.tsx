@@ -12,7 +12,9 @@ import DashboardFooter from './DashboardFooter';
  *
  * The Vantage-inspired redesign replaces the previous sidebar +
  * AppHeader pair with a single sticky horizontal AppNavbar. Content
- * sits in a max-w-[1400px] centered wrapper directly beneath.
+ * sits in a max-w-[1600px] centered wrapper directly beneath — 1600 px
+ * is wide enough that 4K/ultrawide users no longer see a narrow column
+ * with huge empty margins, but still keeps long-form content readable.
  */
 export default function DashboardShell({
   children,
@@ -41,7 +43,7 @@ export default function DashboardShell({
           mainClassName,
         )}
       >
-        <div className="mx-auto max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           {children}
         </div>
         <DashboardFooter />
