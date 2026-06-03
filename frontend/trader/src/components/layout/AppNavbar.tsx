@@ -300,25 +300,31 @@ export default function AppNavbar() {
 
         {/* RIGHT — actions (lg+) */}
         <div className="hidden lg:flex items-center gap-2">
-          {/* Crypto deposit badge */}
-          <Link
-            href="/wallet"
-            prefetch={false}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-2.5 py-1 text-[12px] font-medium text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
-            aria-label="Crypto deposit"
-          >
-            <Bitcoin size={14} className="text-[#F7931A]" />
-            <span>Crypto</span>
-          </Link>
+          {/* Crypto + Deposit pills are hidden for try-with-demo users —
+              demo accounts run on play money so funding doesn't apply,
+              and clicking either would just bounce them to the
+              DemoLockGate on /wallet anyway. */}
+          {!user?.is_demo && (
+            <>
+              <Link
+                href="/wallet"
+                prefetch={false}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-2.5 py-1 text-[12px] font-medium text-[#0A0A0A] hover:bg-[#F5F5F5] transition-colors"
+                aria-label="Crypto deposit"
+              >
+                <Bitcoin size={14} className="text-[#F7931A]" />
+                <span>Crypto</span>
+              </Link>
 
-          {/* Deposit pill — solid black */}
-          <Link
-            href="/wallet"
-            prefetch={false}
-            className="inline-flex items-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-[#222] transition-colors"
-          >
-            Deposit
-          </Link>
+              <Link
+                href="/wallet"
+                prefetch={false}
+                className="inline-flex items-center rounded-full bg-[#0A0A0A] px-4 py-1.5 text-[13px] font-semibold text-white hover:bg-[#222] transition-colors"
+              >
+                Deposit
+              </Link>
+            </>
+          )}
 
           {/* Notifications */}
           <div className="text-[#0A0A0A]">
@@ -390,13 +396,15 @@ export default function AppNavbar() {
 
         {/* RIGHT — mobile (lg-) */}
         <div className="flex lg:hidden items-center gap-1">
-          <Link
-            href="/wallet"
-            prefetch={false}
-            className="inline-flex items-center rounded-full bg-[#0A0A0A] px-3 py-1.5 text-[12px] font-semibold text-white"
-          >
-            Deposit
-          </Link>
+          {!user?.is_demo && (
+            <Link
+              href="/wallet"
+              prefetch={false}
+              className="inline-flex items-center rounded-full bg-[#0A0A0A] px-3 py-1.5 text-[12px] font-semibold text-white"
+            >
+              Deposit
+            </Link>
+          )}
           <div className="text-[#0A0A0A]">
             <NotificationBell />
           </div>

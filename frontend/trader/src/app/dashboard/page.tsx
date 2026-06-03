@@ -293,20 +293,24 @@ function BrokerHome() {
           <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
-        <button
-          type="button"
-          onClick={() => router.push('/wallet')}
-          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
-        >
-          <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
-            <WalletIcon size={22} className="text-[#E94E1B]" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-text-primary truncate">Add Funds</p>
-            <p className="text-xs text-text-secondary mt-0.5">Deposit Now</p>
-          </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
-        </button>
+        {/* Add Funds tile is meaningless for try-with-demo users — demo
+            accounts are pre-funded with play money. */}
+        {!user?.is_demo && (
+          <button
+            type="button"
+            onClick={() => router.push('/wallet')}
+            className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#E94E1B] transition-colors flex items-center gap-4 text-left"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[#FCE6DD] flex items-center justify-center shrink-0">
+              <WalletIcon size={22} className="text-[#E94E1B]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-bold text-text-primary truncate">Add Funds</p>
+              <p className="text-xs text-text-secondary mt-0.5">Deposit Now</p>
+            </div>
+            <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#E94E1B] group-hover:translate-x-1 transition-all shrink-0" />
+          </button>
+        )}
       </div>
 
       <AccountBalanceCard
@@ -391,13 +395,17 @@ function AccountBalanceCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
-            style={{ background: '#E94E1B', color: '#ffffff' }}
-          >
-            <ArrowDownToLine size={14} /> Deposit
-          </Link>
+          {/* Deposit / Withdraw don't apply to demo accounts — play
+              money can't be funded or withdrawn. */}
+          {!a?.is_demo && (
+            <Link
+              href="/wallet"
+              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition-colors"
+              style={{ background: '#E94E1B', color: '#ffffff' }}
+            >
+              <ArrowDownToLine size={14} /> Deposit
+            </Link>
+          )}
           <a
             href={a ? tradeUrl(a.id) : '#'}
             target={a ? '_blank' : undefined}
@@ -411,13 +419,15 @@ function AccountBalanceCard({
           >
             Trade <ExternalLink size={13} />
           </a>
-          <Link
-            href="/wallet"
-            className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
-            style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
-          >
-            <ArrowUpFromLine size={14} /> Withdraw
-          </Link>
+          {!a?.is_demo && (
+            <Link
+              href="/wallet"
+              className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
+              style={{ border: '1px solid var(--border-primary)', color: 'var(--text-primary)' }}
+            >
+              <ArrowUpFromLine size={14} /> Withdraw
+            </Link>
+          )}
           <Link
             href="/accounts"
             className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hover:bg-bg-hover"
