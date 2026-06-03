@@ -236,8 +236,13 @@ INSERT INTO instruments (symbol, display_name, segment_id, base_currency, quote_
 UPDATE instruments SET contract_size = 100    WHERE symbol IN ('XAUUSD', 'XPTUSD');
 -- Silver: 5000 oz per standard lot
 UPDATE instruments SET contract_size = 5000   WHERE symbol = 'XAGUSD';
--- Energy: barrels / MMBtu per standard lot
-UPDATE instruments SET contract_size = 1000   WHERE symbol IN ('USOIL', 'UKOIL');
+-- Energy: mini oil contract — 100 barrels per lot (0.01 lot ≈ 1 barrel).
+-- Was 1000 (industry standard for "full" oil contracts), but on a retail
+-- platform that exposure was too punishing per minimum lot: a $0.40
+-- adverse move on 0.01 lot drained ~$4 instead of ~$0.40 like a
+-- comparable forex pair, surprising users used to small-money 0.01-lot
+-- positions. NATGAS stays at 10000 (MMBtu).
+UPDATE instruments SET contract_size = 100    WHERE symbol IN ('USOIL', 'UKOIL');
 UPDATE instruments SET contract_size = 10000  WHERE symbol = 'NATGAS';
 -- Indices: 1 unit per lot  (P&L = lots × 1 × point_change)
 UPDATE instruments SET contract_size = 1      WHERE symbol IN ('US30','US500','NAS100','UK100','GER40','US100','JPN225','AUS200');
