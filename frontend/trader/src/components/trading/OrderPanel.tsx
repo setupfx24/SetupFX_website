@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { Minus, Plus, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap } from 'lucide-react';
+import { Minus, Plus, X, ChevronDown, ChevronLeft, Wifi, WifiOff, Zap } from 'lucide-react';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { useUIStore } from '@/stores/uiStore';
 import api from '@/lib/api/client';
@@ -532,28 +532,38 @@ export default function OrderPanel() {
             )}
           </div>
 
-          {/* SL / TP toggles */}
-          <div className={clsx('flex items-center', isTradingTerminal ? 'gap-3 pt-1' : 'gap-5 pt-2')}>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <div
-                onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
-                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
-                style={{ background: slEnabled ? '#ef5350' : 'var(--bg-secondary)' }}
-              >
-                <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: slEnabled ? '18px' : '3px' }} />
-              </div>
-              <span className="text-[10px] uppercase font-semibold text-text-secondary">SL</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <div
-                onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
-                className="w-8 h-[18px] rounded-full relative transition-colors cursor-pointer border border-border-primary"
-                style={{ background: tpEnabled ? '#6366F1' : 'var(--bg-secondary)' }}
-              >
-                <div className="absolute top-[3px] w-2.5 h-2.5 rounded-full bg-white transition-all shadow-sm" style={{ left: tpEnabled ? '18px' : '3px' }} />
-              </div>
-              <span className="text-[10px] uppercase font-semibold text-text-secondary">TP</span>
-            </label>
+          {/* SL / TP — separate Add / Remove buttons. Click to toggle the
+              corresponding input field below; visually distinct red/blue
+              chips so the trader can tell them apart at a glance. */}
+          <div className={clsx('flex items-center flex-wrap', isTradingTerminal ? 'gap-2 pt-1' : 'gap-2 pt-2')}>
+            <button
+              type="button"
+              onClick={() => { setSlEnabled((p) => !p); if (slEnabled) setStopLoss(''); }}
+              className={clsx(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors border',
+                slEnabled
+                  ? 'bg-[#ef5350]/15 text-[#ef5350] border-[#ef5350]/40'
+                  : 'bg-bg-secondary text-text-secondary border-border-primary hover:border-[#ef5350]/40 hover:text-[#ef5350]',
+              )}
+              title={slEnabled ? 'Remove Stop Loss' : 'Add Stop Loss'}
+            >
+              {slEnabled ? <X size={11} /> : <Plus size={11} />}
+              SL
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTpEnabled((p) => !p); if (tpEnabled) setTakeProfit(''); }}
+              className={clsx(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors border',
+                tpEnabled
+                  ? 'bg-[#6366F1]/15 text-[#6366F1] border-[#6366F1]/40'
+                  : 'bg-bg-secondary text-text-secondary border-border-primary hover:border-[#6366F1]/40 hover:text-[#6366F1]',
+              )}
+              title={tpEnabled ? 'Remove Take Profit' : 'Add Take Profit'}
+            >
+              {tpEnabled ? <X size={11} /> : <Plus size={11} />}
+              TP
+            </button>
             {activeAccount && (
               <LeveragePicker
                 account={activeAccount}

@@ -13,6 +13,7 @@ import {
   Pencil,
   Check,
   X,
+  Plus,
   ChevronRight,
   TrendingUp,
   TrendingDown,
@@ -1179,21 +1180,64 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   </div>
                                 </div>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => setSltpEdit({
-                                    positionId: pos.id,
-                                    sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
-                                    tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
-                                  })}
-                                  className="text-left group cursor-pointer"
-                                  title="Click to edit SL/TP"
-                                >
-                                  <span className="text-text-tertiary">SL: {pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '—'}</span>
-                                  <br />
-                                  <span className="text-text-tertiary">TP: {pos.take_profit != null ? pos.take_profit.toFixed(d) : '—'}</span>
-                                  <Pencil className="w-2.5 h-2.5 inline ml-1 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
-                                </button>
+                                <div className="flex flex-col gap-1 items-start">
+                                  {pos.stop_loss != null ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSltpEdit({
+                                        positionId: pos.id,
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
+                                      })}
+                                      className="text-left group inline-flex items-center gap-1 cursor-pointer"
+                                      title="Click to edit Stop Loss"
+                                    >
+                                      <span className="text-[#ef5350]">SL: {pos.stop_loss.toFixed(d)}</span>
+                                      <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSltpEdit({
+                                        positionId: pos.id,
+                                        sl: '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
+                                      })}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-[#ef5350]/30 text-[#ef5350] bg-[#ef5350]/5 hover:bg-[#ef5350]/15 transition-colors"
+                                      title="Add Stop Loss"
+                                    >
+                                      <Plus className="w-2.5 h-2.5" /> SL
+                                    </button>
+                                  )}
+                                  {pos.take_profit != null ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSltpEdit({
+                                        positionId: pos.id,
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
+                                        tp: pos.take_profit != null ? pos.take_profit.toFixed(d) : '',
+                                      })}
+                                      className="text-left group inline-flex items-center gap-1 cursor-pointer"
+                                      title="Click to edit Take Profit"
+                                    >
+                                      <span className="text-[#6366F1]">TP: {pos.take_profit.toFixed(d)}</span>
+                                      <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 text-text-tertiary transition-opacity" />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSltpEdit({
+                                        positionId: pos.id,
+                                        sl: pos.stop_loss != null ? pos.stop_loss.toFixed(d) : '',
+                                        tp: '',
+                                      })}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-[#6366F1]/30 text-[#6366F1] bg-[#6366F1]/5 hover:bg-[#6366F1]/15 transition-colors"
+                                      title="Add Take Profit"
+                                    >
+                                      <Plus className="w-2.5 h-2.5" /> TP
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </td>
                             <td className={clsx(td, 'text-right pr-2')}>
