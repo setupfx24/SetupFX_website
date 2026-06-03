@@ -19,6 +19,18 @@ export const TRADINGVIEW_SYMBOL_MAP: Record<string, string> = {
   US30: 'TVC:DJI',
   US500: 'SP:SPX',
   NAS100: 'NASDAQ:NDX',
+  // US100 is the broker's alias for the same Nasdaq tech 100 index that
+  // NAS100 represents — point at the same chart so users don't see
+  // "symbol doesn't exist" on the alternate ticker.
+  US100: 'NASDAQ:NDX',
+  // International indices the backend serves (UK100/GER40/JPN225/AUS200).
+  // Without these entries the fallback to FX:<SYMBOL> hits TradingView's
+  // FX exchange — which doesn't carry index symbols, so the chart shows
+  // "This symbol doesn't exist" even though prices stream fine.
+  UK100: 'TVC:UKX',
+  GER40: 'TVC:DEU40',
+  JPN225: 'TVC:NI225',
+  AUS200: 'TVC:AS51',
   BTCUSD: 'BINANCE:BTCUSDT',
   ETHUSD: 'BINANCE:ETHUSDT',
   DOGUSD: 'BINANCE:DOGEUSDT',
