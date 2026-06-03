@@ -391,6 +391,17 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     return () => clearInterval(interval);
   }, [activeTab, loadHistory]);
 
+  // Push refresh: the trading layout broadcasts `trade:closed` whenever
+  // the SL/TP engine notifies us over WebSocket. Pull the new history row
+  // immediately instead of waiting up to 4s for the next poll, so a fill
+  // is visible the moment it happens — and works whether or not the
+  // History tab is the active one.
+  useEffect(() => {
+    const onClosed = () => { void loadHistory({ silent: true }); };
+    window.addEventListener('trade:closed', onClosed);
+    return () => window.removeEventListener('trade:closed', onClosed);
+  }, [loadHistory]);
+
   const closePosition = (id: string, lots?: number) => {
     unlockAudio();
     // Close modal instantly — don't wait for API

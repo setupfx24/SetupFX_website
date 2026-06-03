@@ -2,8 +2,10 @@
 
 import { Suspense, useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useTradingStore, type TradingAccount } from '@/stores/tradingStore';
 import { wsManager } from '@/lib/ws/wsManager';
+import { tradeSocket } from '@/lib/ws/tradeSocket';
 import { extractTicksFromPayload } from '@/lib/ws/normalizePricePayload';
 import api from '@/lib/api/client';
 import { sounds, unlockAudio } from '@/lib/sounds';
@@ -253,6 +255,54 @@ function TradingSession({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [pathname, accountQueryId, accounts, setActiveAccount, setPositions, setPendingOrders]);
+
+  /* Trade-event WebSocket. Subscribes to /ws/trades/{accountId} which
+   * forwards Redis pub/sub events from the SL/TP engine. Previously the
+   * client polled positions every 1.5s and silently played a sound when a
+   * row disappeared — the user never saw a toast for SL/TP fills, and the
+   * Closed Positions tab only refreshed every 4s while it was active, so
+   * the new row could take a full minute to surface. Now we react to
+   * `position_closed` instantly: refresh open positions + account, fire a
+   * toast naming the reason and P&L, and broadcast `trade:closed` so the
+   * PositionsPanel can pull the new history row immediately. */
+  useEffect(() => {
+    if (!accountQueryId) return;
+    tradeSocket.connect(accountQueryId);
+    const unsub = tradeSocket.subscribe((evt) => {
+      if (evt.type !== 'position_closed') return;
+
+      const reason = String(evt.reason ?? '');
+      const positionId = String(evt.position_id ?? '');
+      const rawProfit = Number(evt.profit ?? 0);
+      const profit = Number.isFinite(rawProfit) ? rawProfit : 0;
+
+      const closed = useTradingStore.getState().positions.find((p) => p.id === positionId);
+      const symbol = closed?.symbol ?? '';
+
+      if (positionId) useTradingStore.getState().removePosition(positionId);
+      void refreshPositions();
+      void refreshAccount();
+      window.dispatchEvent(new CustomEvent('trade:closed', { detail: { positionId, reason, profit, symbol } }));
+
+      if (reason === 'sl' || reason === 'tp') {
+        const label = reason === 'tp' ? 'Take Profit' : 'Stop Loss';
+        const pnlStr = profit >= 0 ? `+$${profit.toFixed(2)}` : `-$${Math.abs(profit).toFixed(2)}`;
+        const title = symbol ? `${label} hit · ${symbol}` : `${label} hit`;
+        if (reason === 'tp') {
+          toast.success(`${title}\nP&L: ${pnlStr}`, { duration: 5000 });
+          sounds.profit();
+        } else {
+          toast.error(`${title}\nP&L: ${pnlStr}`, { duration: 5000 });
+          sounds.loss();
+        }
+      }
+    });
+
+    return () => {
+      unsub();
+      tradeSocket.disconnect();
+    };
+  }, [accountQueryId, refreshPositions, refreshAccount]);
 
   return <>{children}</>;
 }
