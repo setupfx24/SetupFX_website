@@ -189,39 +189,63 @@ export default function TradingTerminalPage() {
     });
   }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
 
+  // Rail panel buttons are TOGGLES — clicking an already-active panel
+  // closes back to the "Order" default. Previously each handler only
+  // set its own panel ON, so users got stuck in News / Chart focus /
+  // Calc with no way to leave from the rail itself.
+  const resetAllPanels = useCallback(() => {
+    setTerminalMarketsOpen(false);
+    setTerminalNewsOpen(false);
+    setChartExpanded(false);
+    setTerminalCalcOpen(false);
+  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+
   const onPanelsSelectMarkets = useCallback(() => {
+    if (terminalMarketsOpen && !terminalNewsOpen && !chartExpanded && !terminalCalcOpen) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setChartExpanded(false);
     setTerminalCalcOpen(false);
     setTerminalMarketsOpen(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [terminalMarketsOpen, terminalNewsOpen, chartExpanded, terminalCalcOpen, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectOrder = useCallback(() => {
-    setTerminalNewsOpen(false);
-    setChartExpanded(false);
-    setTerminalCalcOpen(false);
-    setTerminalMarketsOpen(false);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+    resetAllPanels();
+  }, [resetAllPanels]);
 
   const onExpandFullChartFromRail = useCallback(() => {
+    if (chartExpanded) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setTerminalMarketsOpen(false);
     setTerminalCalcOpen(false);
     setChartExpanded(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [chartExpanded, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectNews = useCallback(() => {
+    if (terminalNewsOpen && !chartExpanded) {
+      resetAllPanels();
+      return;
+    }
     setChartExpanded(false);
     setTerminalCalcOpen(false);
     setTerminalNewsOpen(true);
-  }, [setTerminalNewsOpen]);
+  }, [terminalNewsOpen, chartExpanded, setTerminalNewsOpen, resetAllPanels]);
 
   const onPanelsSelectCalc = useCallback(() => {
+    if (terminalCalcOpen && !chartExpanded && !terminalNewsOpen) {
+      resetAllPanels();
+      return;
+    }
     setTerminalNewsOpen(false);
     setChartExpanded(false);
     setTerminalMarketsOpen(false);
     setTerminalCalcOpen(true);
-  }, [setTerminalMarketsOpen, setTerminalNewsOpen]);
+  }, [terminalCalcOpen, terminalNewsOpen, chartExpanded, setTerminalMarketsOpen, setTerminalNewsOpen, resetAllPanels]);
   const [lotSize, setLotSize] = useState('0.01');
   const [chartTabs, setChartTabs] = useState<string[]>([]);
   // orderSubmitting removed — MT5-style: never block rapid-fire clicks
