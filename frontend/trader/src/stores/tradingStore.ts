@@ -322,31 +322,42 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
         // GBPUSD, XAUUSD, BTCUSD…) this is a no-op.
         const base = (inst?.base_currency || (sym.length >= 6 ? sym.slice(0, 3) : '')).toUpperCase();
         const quote = (inst?.quote_currency || (sym.length >= 6 ? sym.slice(3, 6) : '')).toUpperCase();
-        if (quote && quote !== 'USD') {
+        // `pnlUsdReady` tells us whether the value in `pnl` is already in
+        // USD. We only overwrite pos.profit when it is — otherwise we
+        // leave the server's correctly-converted profit alone.
+        let pnlUsdReady = !quote || quote === 'USD';
+        if (!pnlUsdReady) {
           if (base === 'USD' && cp) {
             pnl = pnl / cp;
+            pnlUsdReady = true;
           } else {
             // Cross pair (e.g. GBPJPY, EURJPY) — convert QUOTE → USD
             // through whichever USD pair we already have streaming.
             // USDJPY is in the default watchlist, so JPY crosses are
-            // covered. If no cross-rate tick is loaded yet (rare, brief
-            // window on first connect), fall back to raw — the backend
-            // reconciles on close anyway.
-            // Previously this branch was a no-op comment, so JPY crosses
-            // rendered their raw quote-currency P&L (e.g. -89 JPY shown
-            // as "-$89.10" on a 0.01-lot GBPJPY trade).
+            // covered once that tick arrives.
             const usdQuote = state.prices[`USD${quote}`];
             if (usdQuote && usdQuote.bid) {
               pnl = pnl / usdQuote.bid;
+              pnlUsdReady = true;
             } else {
               const quoteUsd = state.prices[`${quote}USD`];
               if (quoteUsd && quoteUsd.bid) {
                 pnl = pnl * quoteUsd.bid;
+                pnlUsdReady = true;
               }
             }
           }
         }
-        return { ...pos, current_price: cp, profit: pnl };
+        // Race fix: at page-load the position's symbol may tick BEFORE
+        // the cross-rate symbol does (e.g. GBPJPY ticks before USDJPY
+        // arrives). Without this guard we'd overwrite the server's
+        // correctly-USD-converted profit with the raw quote-currency
+        // number for that brief window — making the P&L bounce between
+        // "-$0.66" and "-$89" until USDJPY finally streams in. Now we
+        // only overwrite when we actually have a USD value to write.
+        return pnlUsdReady
+          ? { ...pos, current_price: cp, profit: pnl }
+          : { ...pos, current_price: cp };
       }),
     };
   }),
