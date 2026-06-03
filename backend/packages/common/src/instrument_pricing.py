@@ -8,9 +8,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import (
-    ChargeConfig, SpreadConfig, Instrument, InstrumentConfig,
+    ChargeConfig, SpreadConfig, SwapConfig, Instrument, InstrumentConfig,
     AccountGroup, VipPass,
 )
+
+
+# Hardcoded daily swap rate (Trading_Mechanism.docx: 0.01%/day on borrowed capital).
+# Used as the last-resort fallback by ``resolve_swap_rate`` when no SwapConfig
+# row applies. Historically this lived in overnight_fee_engine as a module-level
+# constant, but moving it here keeps the rate resolution in one file.
+DEFAULT_SWAP_DAILY_RATE = Decimal("0.0001")
 
 
 # ─── VIP brokerage discount ─────────────────────────────────────────
@@ -56,6 +63,7 @@ async def resolve_spread_config(
     db: AsyncSession,
     instrument: Instrument,
     user_id: Optional[UUID] = None,
+    account_group_id: Optional[UUID] = None,
 ) -> Tuple[Decimal, str, Decimal]:
     """Returns (spread_value, spread_type, price_impact).
 
@@ -63,12 +71,20 @@ async def resolve_spread_config(
     "All" + specific overrides behave the same across charges and spreads:
       1. User override for this specific instrument
       2. User override global (user, null instrument)
-      3. Per-instrument rule (instrument scope, this instrument)
-      4. Per-segment rule (segment scope, this instrument's segment)
-      5. Default (all instruments)
-      6. Zero
+      3. Account-group + this instrument         (Layer C — new scope)
+      4. Account-group + any instrument          (Layer C — new scope)
+      5. Per-instrument rule
+      6. Per-segment rule
+      7. Default (all instruments) ``SpreadConfig``
+      8. ``AccountGroup.spread_markup_default``  (Layer A — tier-default fallback)
+      9. Zero
 
-    A specific instrument rule wins for that symbol; "All" fills in for the rest.
+    A specific rule wins for that symbol; broader rules fill in for the rest.
+
+    The ``account_group_id`` arg is best-effort: market-data tick widening
+    (which publishes ONE quote to all subscribers) passes ``None`` and only
+    gets the global default; per-tier widening happens at the gateway layer
+    (catalog snapshot + order fill) where the trader's account is known.
 
     ``price_impact`` on ``instrument_configs`` is returned for APIs but is **not**
     applied to Redis stream quotes — widths come only from ``spread_configs``
@@ -111,6 +127,40 @@ async def resolve_spread_config(
         urow2 = ur2.scalar_one_or_none()
         if urow2:
             return _to_tuple(urow2)
+
+    # Per-account-group scope (Layer C) — only checked when the caller knows
+    # the trader's group (gateway-side catalog + order fill); skipped by the
+    # global market-data tick widener.
+    if account_group_id is not None:
+        agir = await db.execute(
+            select(SpreadConfig)
+            .where(
+                func.lower(SpreadConfig.scope) == "account_group",
+                SpreadConfig.is_enabled == True,
+                SpreadConfig.user_id.is_(None),
+                SpreadConfig.account_group_id == account_group_id,
+                SpreadConfig.instrument_id == instrument.id,
+            )
+            .limit(1)
+        )
+        agirow = agir.scalar_one_or_none()
+        if agirow:
+            return _to_tuple(agirow)
+
+        agr = await db.execute(
+            select(SpreadConfig)
+            .where(
+                func.lower(SpreadConfig.scope) == "account_group",
+                SpreadConfig.is_enabled == True,
+                SpreadConfig.user_id.is_(None),
+                SpreadConfig.account_group_id == account_group_id,
+                SpreadConfig.instrument_id.is_(None),
+            )
+            .limit(1)
+        )
+        agrow = agr.scalar_one_or_none()
+        if agrow:
+            return _to_tuple(agrow)
 
     ir = await db.execute(
         select(SpreadConfig)
@@ -156,6 +206,16 @@ async def resolve_spread_config(
     default_cfg = dr.scalar_one_or_none()
     if default_cfg:
         return _to_tuple(default_cfg)
+
+    # Layer A — Tier-default fallback: when no SpreadConfig row matched at any
+    # scope, honour ``AccountGroup.spread_markup_default``. This is what makes
+    # the Account Types page's spread_markup field actually apply at execution.
+    if account_group_id is not None:
+        ag = (await db.execute(
+            select(AccountGroup).where(AccountGroup.id == account_group_id)
+        )).scalar_one_or_none()
+        if ag is not None and ag.spread_markup_default and Decimal(str(ag.spread_markup_default)) > 0:
+            return Decimal(str(ag.spread_markup_default)), "pips", pimp
 
     return Decimal("0"), "pips", pimp
 
@@ -235,10 +295,13 @@ async def resolve_commission(
     Priority (highest first):
       1. Admin per-user override + per-instrument
       2. Admin per-user override + any-instrument
-      3. Admin per-instrument
-      4. Admin per-segment
-      5. Admin default
-      6. Account-group commission_pct (Phase 2 smart-fee tier)
+      3. Account-group + this instrument             (Layer C — new scope)
+      4. Account-group + any instrument              (Layer C — new scope)
+      5. Admin per-instrument
+      6. Admin per-segment
+      7. Admin default
+      8. Account-group ``commission_default`` (per-lot)  (Layer A — tier default)
+      9. Account-group ``commission_pct`` (% of notional) (existing fallback)
       7. 0 — last resort, only if there are no admin rows AND no account_group
 
     If apply_xp_discount=True, the resolved value is multiplied by an XP-tier
@@ -280,6 +343,42 @@ async def resolve_commission(
             if urow2:
                 base_commission = _commission_from_config(urow2, lots, notional)
 
+    # Per-account-group scope (Layer C) — gateway-side only (account_group_id
+    # is required). Checked between user-scope and instrument-scope so a
+    # broker-wide instrument rule still wins over a tier-default but
+    # account-tier overrides beat a generic segment/default rule.
+    if base_commission is None and account_group_id is not None:
+        agir = await db.execute(
+            select(ChargeConfig)
+            .where(
+                func.lower(ChargeConfig.scope) == "account_group",
+                ChargeConfig.is_enabled == True,
+                ChargeConfig.user_id.is_(None),
+                ChargeConfig.account_group_id == account_group_id,
+                ChargeConfig.instrument_id == instrument.id,
+            )
+            .limit(1)
+        )
+        agirow = agir.scalar_one_or_none()
+        if agirow:
+            base_commission = _commission_from_config(agirow, lots, notional)
+
+        if base_commission is None:
+            agr = await db.execute(
+                select(ChargeConfig)
+                .where(
+                    func.lower(ChargeConfig.scope) == "account_group",
+                    ChargeConfig.is_enabled == True,
+                    ChargeConfig.user_id.is_(None),
+                    ChargeConfig.account_group_id == account_group_id,
+                    ChargeConfig.instrument_id.is_(None),
+                )
+                .limit(1)
+            )
+            agrow = agr.scalar_one_or_none()
+            if agrow:
+                base_commission = _commission_from_config(agrow, lots, notional)
+
     if base_commission is None:
         for scope, seg_id, inst_id in [
             ("instrument", None, instrument.id),
@@ -306,14 +405,19 @@ async def resolve_commission(
                 base_commission = _commission_from_config(cfg, lots, notional)
                 break
 
-    # Smart-fee fallback: when no admin ChargeConfig matches, charge the
-    # account-tier's commission_pct on the trade notional.
+    # Tier-default fallbacks (Layer A): when nothing else matched, honour the
+    # AccountGroup's own commission knobs. ``commission_default`` is a per-lot
+    # dollar amount; ``commission_pct`` is a percentage of notional. We prefer
+    # commission_default if set, then fall back to commission_pct.
     if base_commission is None and account_group_id is not None:
         ag = (await db.execute(
             select(AccountGroup).where(AccountGroup.id == account_group_id)
         )).scalar_one_or_none()
-        if ag is not None and ag.commission_pct is not None:
-            base_commission = notional * Decimal(str(ag.commission_pct))
+        if ag is not None:
+            if ag.commission_default is not None and Decimal(str(ag.commission_default)) > 0:
+                base_commission = Decimal(str(ag.commission_default)) * lots
+            elif ag.commission_pct is not None:
+                base_commission = notional * Decimal(str(ag.commission_pct))
 
     if base_commission is None:
         return Decimal("0")
@@ -340,3 +444,137 @@ def _commission_from_config(cfg: ChargeConfig, lots: Decimal, notional: Decimal)
     if ct in ("commission_percentage", "percentage", "spread_percentage"):
         return notional * (v / Decimal("100"))
     return v * lots
+
+
+async def resolve_swap_rate(
+    db: AsyncSession,
+    instrument: Instrument,
+    side: str,
+    *,
+    user_id: Optional[UUID] = None,
+    account_group_id: Optional[UUID] = None,
+) -> Tuple[Decimal, bool]:
+    """Returns ``(daily_rate, is_swap_free)`` for one open position.
+
+    ``daily_rate`` is the per-day swap rate to apply to the position's
+    borrowed notional. ``is_swap_free`` is True when the resolved config
+    explicitly marks the position swap-free (admin can do this per scope).
+
+    Priority chain (mirrors commission resolution):
+      1. User override + this instrument
+      2. User override + any instrument
+      3. Account-group + this instrument        (Layer C — new scope)
+      4. Account-group + any instrument         (Layer C — new scope)
+      5. Per-instrument SwapConfig
+      6. Per-segment SwapConfig
+      7. Default SwapConfig
+      8. InstrumentConfig.swap_long / swap_short
+      9. ``DEFAULT_SWAP_DAILY_RATE`` (hardcoded fallback so old positions still charge)
+
+    ``side`` is ``"long"`` / ``"short"`` (long positions pay swap_long, etc).
+    SwapConfig.swap_free=True at any matched scope short-circuits with rate=0.
+    """
+    side_l = (side or "long").lower()
+    is_long = side_l in ("long", "buy")
+
+    def _rate_from_swap_cfg(cfg: SwapConfig) -> Tuple[Decimal, bool]:
+        if bool(getattr(cfg, "swap_free", False)):
+            return Decimal("0"), True
+        raw = cfg.swap_long if is_long else cfg.swap_short
+        return Decimal(str(raw or 0)), False
+
+    # 1-2. User scope
+    if user_id is not None:
+        for inst_clause in (SwapConfig.instrument_id == instrument.id, SwapConfig.instrument_id.is_(None)):
+            r = await db.execute(
+                select(SwapConfig)
+                .where(
+                    func.lower(SwapConfig.scope) == "user",
+                    SwapConfig.is_enabled == True,
+                    SwapConfig.user_id == user_id,
+                    inst_clause,
+                )
+                .limit(1)
+            )
+            row = r.scalar_one_or_none()
+            if row:
+                return _rate_from_swap_cfg(row)
+
+    # 3-4. Account-group scope (Layer C)
+    if account_group_id is not None:
+        for inst_clause in (SwapConfig.instrument_id == instrument.id, SwapConfig.instrument_id.is_(None)):
+            r = await db.execute(
+                select(SwapConfig)
+                .where(
+                    func.lower(SwapConfig.scope) == "account_group",
+                    SwapConfig.is_enabled == True,
+                    SwapConfig.user_id.is_(None),
+                    SwapConfig.account_group_id == account_group_id,
+                    inst_clause,
+                )
+                .limit(1)
+            )
+            row = r.scalar_one_or_none()
+            if row:
+                return _rate_from_swap_cfg(row)
+
+    # 5. Per-instrument
+    r = await db.execute(
+        select(SwapConfig)
+        .where(
+            func.lower(SwapConfig.scope) == "instrument",
+            SwapConfig.is_enabled == True,
+            SwapConfig.user_id.is_(None),
+            SwapConfig.instrument_id == instrument.id,
+        )
+        .limit(1)
+    )
+    row = r.scalar_one_or_none()
+    if row:
+        return _rate_from_swap_cfg(row)
+
+    # 6. Per-segment
+    if instrument.segment_id:
+        r = await db.execute(
+            select(SwapConfig)
+            .where(
+                func.lower(SwapConfig.scope) == "segment",
+                SwapConfig.is_enabled == True,
+                SwapConfig.user_id.is_(None),
+                SwapConfig.segment_id == instrument.segment_id,
+            )
+            .limit(1)
+        )
+        row = r.scalar_one_or_none()
+        if row:
+            return _rate_from_swap_cfg(row)
+
+    # 7. Default SwapConfig
+    r = await db.execute(
+        select(SwapConfig)
+        .where(
+            func.lower(SwapConfig.scope) == "default",
+            SwapConfig.is_enabled == True,
+            SwapConfig.user_id.is_(None),
+            SwapConfig.instrument_id.is_(None),
+            SwapConfig.segment_id.is_(None),
+        )
+        .order_by(SwapConfig.created_at.desc())
+        .limit(1)
+    )
+    row = r.scalar_one_or_none()
+    if row:
+        return _rate_from_swap_cfg(row)
+
+    # 8. InstrumentConfig swap fields (legacy per-instrument storage)
+    ic = await _get_instrument_config_row(db, instrument.id)
+    if ic is not None:
+        if bool(getattr(ic, "swap_free", False)):
+            return Decimal("0"), True
+        raw = ic.swap_long if is_long else ic.swap_short
+        if raw is not None and Decimal(str(raw)) != 0:
+            return Decimal(str(raw)), False
+
+    # 9. Last-resort hardcoded fallback so existing positions keep being charged
+    # even before admins ever touch the swap config UI.
+    return DEFAULT_SWAP_DAILY_RATE, False

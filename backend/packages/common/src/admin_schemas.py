@@ -379,6 +379,7 @@ class ChargeConfigIn(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     charge_type: str
     value: float
     is_enabled: bool = True
@@ -390,6 +391,7 @@ class ChargeConfigOut(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     charge_type: str
     value: float
     is_enabled: bool
@@ -404,6 +406,7 @@ class SpreadConfigIn(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     spread_type: str
     value: float
     is_enabled: bool = True
@@ -415,6 +418,7 @@ class SpreadConfigOut(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     spread_type: str
     value: float
     is_enabled: bool
@@ -429,6 +433,7 @@ class SwapConfigIn(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     swap_long: float = 0
     swap_short: float = 0
     triple_swap_day: int = 3
@@ -442,6 +447,7 @@ class SwapConfigOut(BaseModel):
     segment_id: Optional[str] = None
     instrument_id: Optional[str] = None
     user_id: Optional[str] = None
+    account_group_id: Optional[str] = None
     swap_long: float
     swap_short: float
     triple_swap_day: int

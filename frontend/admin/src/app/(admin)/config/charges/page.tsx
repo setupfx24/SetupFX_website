@@ -7,12 +7,14 @@ import toast from 'react-hot-toast';
 import { ChevronDown, Loader2, Plus, Save, Search, Trash2, X } from 'lucide-react';
 
 interface Instrument { id: string; symbol: string; display_name: string; segment: string; segment_id: string | null; }
+interface AccountGroup { id: string; name: string; }
 interface ChargeRow {
   _key: string;
   scope: string;
   instrument_id: string | null;
   segment_id: string | null;
   user_id: string | null;
+  account_group_id: string | null;
   charge_type: string;
   value: number;
   is_enabled: boolean;
@@ -29,6 +31,7 @@ const CHARGE_TYPES = [
 
 export default function ChargesPage() {
   const [instruments, setInstruments] = useState<Instrument[]>([]);
+  const [accountGroups, setAccountGroups] = useState<AccountGroup[]>([]);
   const [rows, setRows] = useState<ChargeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,17 +44,21 @@ export default function ChargesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [instRes, chargeRes] = await Promise.all([
+      const [instRes, chargeRes, agRes] = await Promise.all([
         adminApi.get<{ items: Instrument[] }>('/config/instruments'),
         adminApi.get<any[]>('/config/charges'),
+        adminApi.get<{ items?: AccountGroup[] } | AccountGroup[]>('/account-types'),
       ]);
       setInstruments(instRes.items || []);
+      const ags = Array.isArray(agRes) ? agRes : (agRes?.items || []);
+      setAccountGroups(ags);
       setRows((chargeRes || []).map((c: any) => ({
         _key: newKey(),
         scope: c.scope,
         instrument_id: c.instrument_id,
         segment_id: c.segment_id,
         user_id: c.user_id,
+        account_group_id: c.account_group_id || null,
         charge_type: c.charge_type,
         value: c.value,
         is_enabled: c.is_enabled,
@@ -70,6 +77,7 @@ export default function ChargesPage() {
     setRows(prev => [...prev, {
       _key: newKey(),
       scope, instrument_id: null, segment_id: null, user_id: null,
+      account_group_id: null,
       charge_type: 'commission_per_lot', value: 7, is_enabled: true,
     }]);
   };
@@ -103,11 +111,15 @@ export default function ChargesPage() {
     // Commit delete to backend immediately so the row really disappears.
     try {
       const normalized = normalizeRows(next);
-      const cleaned = normalized.filter(r => !(r.scope === 'user' && !r.user_id));
+      const cleaned = normalized.filter(r =>
+        !(r.scope === 'user' && !r.user_id) &&
+        !(r.scope === 'account_group' && !r.account_group_id),
+      );
       await adminApi.put('/config/charges', {
         configs: cleaned.map(r => ({
           scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
-          user_id: r.user_id, charge_type: r.charge_type, value: r.value, is_enabled: r.is_enabled,
+          user_id: r.user_id, account_group_id: r.account_group_id,
+          charge_type: r.charge_type, value: r.value, is_enabled: r.is_enabled,
         })),
       });
       toast.success('Rule removed');
@@ -136,10 +148,16 @@ export default function ChargesPage() {
   };
 
   const saveAll = async () => {
-    // Drop invalid rows so the bulk save doesn't 400 — per-user rules require a user.
+    // Drop invalid rows so the bulk save doesn't 400 — per-user / per-account-group
+    // rules each require their FK to be set; otherwise the row is meaningless.
     const badUser = rows.find(r => r.scope === 'user' && !r.user_id);
     if (badUser) {
       toast.error('Pick a user for every Per-User rule or remove that row.');
+      return;
+    }
+    const badGroup = rows.find(r => r.scope === 'account_group' && !r.account_group_id);
+    if (badGroup) {
+      toast.error('Pick an account group for every Per-Account-Group rule or remove that row.');
       return;
     }
     const cleaned = normalizeRows(rows);
@@ -148,7 +166,8 @@ export default function ChargesPage() {
       await adminApi.put('/config/charges', {
         configs: cleaned.map(r => ({
           scope: r.scope, instrument_id: r.instrument_id, segment_id: r.segment_id,
-          user_id: r.user_id, charge_type: r.charge_type, value: r.value, is_enabled: r.is_enabled,
+          user_id: r.user_id, account_group_id: r.account_group_id,
+          charge_type: r.charge_type, value: r.value, is_enabled: r.is_enabled,
         })),
       });
       toast.success('Charges saved');
@@ -160,9 +179,19 @@ export default function ChargesPage() {
 
   const globalRows = rows.filter(r => r.scope === 'default');
   const instrumentRows = rows.filter(r => r.scope === 'instrument');
+  const groupRows = rows.filter(r => r.scope === 'account_group');
   const userRows = rows.filter(r => r.scope === 'user');
 
-  const renderTable = (title: string, items: ChargeRow[], scopeType: string) => (
+  const renderTable = (title: string, items: ChargeRow[], scopeType: string) => {
+    // Header columns vary by scope. account_group adds a Group + Instrument
+    // column pair (parallel to how Per-User works).
+    const leadingCols =
+      scopeType === 'instrument' ? ['Instrument']
+      : scopeType === 'account_group' ? ['Account Group', 'Instrument']
+      : scopeType === 'user' ? ['User', 'Instrument']
+      : [];
+    const headers = leadingCols.concat(['Charge Type', 'Value', 'On', '']);
+    return (
       <div className="bg-bg-secondary border border-border-primary rounded-md">
         <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-between">
           <h3 className="text-xs font-semibold text-text-primary">{title}</h3>
@@ -174,18 +203,30 @@ export default function ChargesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border-primary bg-bg-tertiary/40">
-                {(scopeType === 'instrument' ? ['Instrument'] : scopeType === 'user' ? ['User', 'Instrument'] : []).concat(['Charge Type', 'Value', 'On', '']).map(c => (
+                {headers.map(c => (
                   <th key={c} className="text-left px-3 py-2 text-xxs font-medium text-text-tertiary uppercase tracking-wide">{c}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-xxs text-text-tertiary">No rules. Click Add.</td></tr>
+                <tr><td colSpan={headers.length} className="px-4 py-6 text-center text-xxs text-text-tertiary">No rules. Click Add.</td></tr>
               ) : items.map((r) => {
                 const k = r._key;
                 return (
                   <tr key={k} className="border-b border-border-primary/50 hover:bg-bg-hover/30">
+                    {scopeType === 'account_group' && (
+                      <td className="px-3 py-2">
+                        <select
+                          value={r.account_group_id || ''}
+                          onChange={e => updateRow(k, 'account_group_id', e.target.value || null)}
+                          className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-36"
+                        >
+                          <option value="">— Choose group —</option>
+                          {accountGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </td>
+                    )}
                     {scopeType === 'user' && (
                       <td className="px-3 py-2">
                         {r._user_label ? (
@@ -209,7 +250,7 @@ export default function ChargesPage() {
                         )}
                       </td>
                     )}
-                    {(scopeType === 'instrument' || scopeType === 'user') && (
+                    {(scopeType === 'instrument' || scopeType === 'user' || scopeType === 'account_group') && (
                       <td className="px-3 py-2">
                         <select value={r.instrument_id || ''} onChange={e => updateRow(k, 'instrument_id', e.target.value || null)} className="text-xs py-1 pl-2 pr-6 appearance-none bg-bg-input border border-border-primary rounded text-text-primary w-32">
                           <option value="">All</option>
@@ -241,6 +282,7 @@ export default function ChargesPage() {
         </div>
       </div>
     );
+  };
 
   return (
     <>
@@ -249,9 +291,11 @@ export default function ChargesPage() {
           <div>
             <h1 className="text-lg font-semibold text-text-primary">Charges Configuration</h1>
             <p className="text-xxs text-text-tertiary mt-0.5">
-              Priority: User &gt; Instrument &gt; Default. Higher priority overrides lower. If there are{' '}
-              <strong className="text-text-secondary">no enabled rules</strong> in any section, client commission is{' '}
-              <strong className="text-text-secondary">$0</strong> (no hidden defaults).
+              Priority: User &gt; Account Group &gt; Instrument &gt; Default. Higher priority overrides lower.
+              If there are <strong className="text-text-secondary">no enabled rules</strong> in any section,
+              the account tier's <code className="px-1 rounded bg-bg-tertiary/60">commission_default</code> /
+              <code className="px-1 rounded bg-bg-tertiary/60">commission_pct</code> from the Account Types
+              page is used as a final fallback.
             </p>
           </div>
           <button onClick={saveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-buy rounded-md hover:bg-buy-light disabled:opacity-50 transition-fast">
@@ -261,6 +305,7 @@ export default function ChargesPage() {
 
         {renderTable('Default (All Instruments)', globalRows, 'default')}
         {renderTable('Per Instrument', instrumentRows, 'instrument')}
+        {renderTable('Per Account Group (Tier override)', groupRows, 'account_group')}
         {renderTable('Per User (Override)', userRows, 'user')}
       </div>
     </>
