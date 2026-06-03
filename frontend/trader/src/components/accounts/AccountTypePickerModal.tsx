@@ -146,7 +146,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
       open={open}
       onClose={onClose}
       title="Set up account details"
-      width="2xl"
+      width="5xl"
       className="border border-border-primary bg-bg-card max-h-[92vh] flex flex-col shadow-2xl"
       headerClassName="border-b border-border-primary bg-bg-card [&_h3]:text-text-primary"
       bodyClassName="bg-bg-card p-5 sm:p-6"
@@ -199,7 +199,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                     type="button"
                     onClick={() => setSelectedId(g.id)}
                     className={clsx(
-                      'relative text-left rounded-xl p-4 transition-all',
+                      'relative text-left rounded-xl p-5 transition-all',
                       sel ? 'ring-2 ring-[#E94E1B]/60' : '',
                     )}
                     style={{
