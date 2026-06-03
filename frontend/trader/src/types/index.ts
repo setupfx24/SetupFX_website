@@ -81,9 +81,6 @@ export interface PlaceOrderRequest {
   take_profit?: number;
   stop_limit_price?: number;
   comment?: string;
-  /** Smart Trade Mode — when true, position uses no leverage and is
-   *  exempt from the overnight (swap) fee. Margin = full notional. */
-  fully_funded?: boolean;
 }
 
 export interface PendingOrder {
