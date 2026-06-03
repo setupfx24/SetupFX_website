@@ -91,7 +91,7 @@ function toTradingAccount(row: AccountRow): TradingAccount {
   };
 }
 
-type AccountKindFilter = 'live' | 'demo';
+type AccountKindFilter = 'all' | 'live' | 'demo';
 type ViewMode = 'grid' | 'list';
 
 export default function AccountsPage() {
@@ -219,7 +219,8 @@ export default function AccountsPage() {
     if (user?.is_demo) return rows.filter((a) => a.is_demo);
     return rows.filter((a) => {
       if ((a as { is_active?: boolean }).is_active === false) return false;
-      /* Live/Demo toggle from the new filter row. */
+      /* Live/Demo filter — 'all' passes both through; 'live' hides demo;
+         'demo' hides live. */
       if (kindFilter === 'live' && a.is_demo) return false;
       if (kindFilter === 'demo' && !a.is_demo) return false;
       /* Account-group filter — 'all' or a specific group id. */
@@ -316,8 +317,15 @@ export default function AccountsPage() {
                 {!user?.is_demo && (
                   <>
                     <FilterDropdown
-                      label={kindFilter === 'live' ? 'Live Account' : 'Demo Account'}
+                      label={
+                        kindFilter === 'all'
+                          ? 'All Accounts'
+                          : kindFilter === 'live'
+                            ? 'Live Account'
+                            : 'Demo Account'
+                      }
                       options={[
+                        { id: 'all', label: 'All Accounts' },
                         { id: 'live', label: 'Live Account' },
                         { id: 'demo', label: 'Demo Account' },
                       ]}
