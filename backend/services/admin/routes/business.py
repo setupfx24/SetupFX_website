@@ -202,6 +202,23 @@ async def get_ib_referrals(
     return await business_service.get_ib_referrals(ib_id=agent_id, page=page, per_page=per_page, db=db)
 
 
+@router.get("/ib/agents/{agent_id}/commissions")
+async def get_ib_commissions(
+    agent_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    # Upper bound bumped to 2000 to support the PDF-export "fetch everything in
+    # one shot" call. Pages of 20 are still the default for the on-screen table.
+    per_page: int = Query(50, ge=1, le=2000),
+    status_filter: str | None = Query(None, alias="status"),
+    admin: User = Depends(require_permission("ib.view")),
+    db: AsyncSession = Depends(get_db),
+):
+    return await business_service.get_ib_commissions(
+        ib_id=agent_id, page=page, per_page=per_page,
+        status_filter=status_filter, db=db,
+    )
+
+
 @router.put("/ib/agents/{agent_id}/parent")
 async def set_parent_ib(
     agent_id: uuid.UUID,

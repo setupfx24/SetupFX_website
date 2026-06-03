@@ -701,6 +701,72 @@ async def get_ib_referrals(ib_id: uuid.UUID, page: int, per_page: int, db: Async
     return {"referrals": items, "total": total, "page": page}
 
 
+async def get_ib_commissions(
+    ib_id: uuid.UUID, page: int, per_page: int, status_filter: str | None, db: AsyncSession,
+) -> dict:
+    """Per-IB commission history. Each row is one IBCommission payout (one MLM-level slice
+    of one trade). Joined with the source trader's email so admins can see who generated it."""
+    query = select(IBCommission).where(IBCommission.ib_id == ib_id)
+    if status_filter:
+        query = query.where(IBCommission.status == status_filter)
+
+    total = (await db.execute(
+        select(func.count()).select_from(query.subquery())
+    )).scalar() or 0
+
+    # Pull the IB row once for header totals so the UI can show context without a second call.
+    ib_row = (await db.execute(
+        select(IBProfile, User.email, User.first_name, User.last_name)
+        .join(User, IBProfile.user_id == User.id)
+        .where(IBProfile.id == ib_id)
+    )).first()
+    ib_meta = None
+    if ib_row:
+        ib, email, fn, ln = ib_row
+        ib_meta = {
+            "id": str(ib.id),
+            "user_email": email,
+            "user_name": f"{fn or ''} {ln or ''}".strip(),
+            "referral_code": ib.referral_code,
+            "total_earned": float(ib.total_earned or 0),
+        }
+
+    rows = (await db.execute(
+        query.order_by(IBCommission.created_at.desc())
+        .offset((page - 1) * per_page).limit(per_page)
+    )).scalars().all()
+
+    # Batch-fetch the source trader emails so we don't N+1 the user lookup.
+    src_ids = list({c.source_user_id for c in rows if c.source_user_id})
+    src_map: dict[uuid.UUID, dict] = {}
+    if src_ids:
+        for u in (await db.execute(
+            select(User.id, User.email, User.first_name, User.last_name).where(User.id.in_(src_ids))
+        )).all():
+            src_map[u.id] = {"email": u.email, "name": f"{u.first_name or ''} {u.last_name or ''}".strip()}
+
+    items = []
+    for c in rows:
+        src = src_map.get(c.source_user_id, {})
+        items.append({
+            "id": str(c.id),
+            "source_user_id": str(c.source_user_id) if c.source_user_id else None,
+            "source_user_email": src.get("email"),
+            "source_user_name": src.get("name"),
+            "source_trade_id": str(c.source_trade_id) if c.source_trade_id else None,
+            "commission_type": c.commission_type,
+            "amount": float(c.amount or 0),
+            "mlm_level": c.mlm_level,
+            "status": c.status,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        })
+
+    return {
+        "items": items, "total": total, "page": page, "per_page": per_page,
+        "ib": ib_meta,
+    }
+
+
 # ─── Copy-Trade Master Management ──────────────────────────────
 
 async def list_masters(page: int, per_page: int, db: AsyncSession) -> dict:
