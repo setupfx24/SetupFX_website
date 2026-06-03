@@ -222,7 +222,7 @@ export default function BanksPage() {
           <button
             type="button"
             onClick={openAdd}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-buy text-white rounded-md hover:bg-buy-dark transition-fast"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-accent text-white rounded-md hover:bg-accent-dark transition-fast"
           >
             <Plus size={14} />
             Add Bank Account

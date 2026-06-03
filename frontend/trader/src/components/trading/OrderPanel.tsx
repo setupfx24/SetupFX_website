@@ -486,7 +486,7 @@ export default function OrderPanel() {
 
           {/* Sell / Buy Vantage-style pills with center spread badge */}
           <div className="relative">
-            <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-1' : 'gap-1.5')}>
+            <div className={clsx('grid grid-cols-2', isTradingTerminal ? 'gap-8' : 'gap-9')}>
               <button
                 type="button"
                 onClick={() => setSide('sell')}

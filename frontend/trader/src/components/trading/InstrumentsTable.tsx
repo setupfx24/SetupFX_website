@@ -308,8 +308,12 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
         </button>
       </div>
 
+      {/* Header + rows share a horizontal scroll container so the columns
+          keep their width and scroll together on narrow/tablet viewports
+          instead of being clipped. */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-x-auto">
       {/* Table header */}
-      <div className="shrink-0 grid grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-b border-border-primary bg-bg-secondary">
+      <div className="shrink-0 grid min-w-[820px] grid-cols-[minmax(160px,1.6fr)_minmax(80px,1fr)_minmax(80px,1fr)_70px_80px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(140px,1.4fr)] gap-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-b border-border-primary bg-bg-secondary">
         <div>Instruments</div>
         <div className="text-right">Bid</div>
         <div className="text-right">Ask</div>
@@ -321,7 +325,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
       </div>
 
       {/* Table rows */}
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 min-h-0 min-w-[820px] overflow-y-auto">
         {rows.length === 0 ? (
           <div className="flex items-center justify-center h-full text-xs text-text-tertiary">
             No instruments match
@@ -424,6 +428,7 @@ export default function InstrumentsTable({ onExitMarkets, onViewNews }: Instrume
             );
           })
         )}
+      </div>
       </div>
     </div>
   );

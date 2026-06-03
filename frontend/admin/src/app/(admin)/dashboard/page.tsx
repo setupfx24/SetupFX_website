@@ -422,6 +422,7 @@ export default function DashboardPage() {
             ) : livePositions.length === 0 ? (
               <p className="text-xs text-text-tertiary text-center py-6">No open positions</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-xs min-w-[640px]">
                 <thead>
                   <tr className="text-left text-text-tertiary border-b border-border-primary">
@@ -461,6 +462,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>

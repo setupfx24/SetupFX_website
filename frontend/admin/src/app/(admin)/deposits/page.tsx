@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi, getAdminApiBase } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { downloadReportPdf, fmtMoney, fmtWhen } from '@/lib/pdf';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -11,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  FileText,
   History,
   Loader2,
   X,
@@ -424,20 +426,67 @@ export default function DepositsPage() {
   const currentTotal = activeTab === 'deposits' ? depositsTotal : activeTab === 'withdrawals' ? withdrawalsTotal : transactionsTotal;
   const totalPages = Math.max(1, Math.ceil(currentTotal / PAGE_SIZE));
 
+  const handleExportPdf = () => {
+    if (currentItems.length === 0) { toast.error('Nothing to export'); return; }
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (activeTab === 'deposits') {
+      void downloadReportPdf({
+        title: 'Deposits Report',
+        subtitleLines: [`Status: ${statusFilter}`, methodFilter !== 'all' ? `Method: ${methodFilter}` : ''].filter(Boolean),
+        columns: [
+          { header: 'ID', mono: true }, { header: 'User' }, { header: 'Amount', align: 'right', mono: true },
+          { header: 'Method' }, { header: 'Transaction ID', mono: true }, { header: 'Status' }, { header: 'Date', mono: true },
+        ],
+        rows: deposits.map((d) => [d.id, d.user_name || d.user_email || '—', fmtMoney(d.amount), d.method, d.transaction_id || '—', statusLabel(d.status), fmtWhen(d.created_at)]),
+        filename: `swisscresta-deposits-${stamp}.pdf`,
+      });
+    } else if (activeTab === 'withdrawals') {
+      void downloadReportPdf({
+        title: 'Withdrawals Report',
+        subtitleLines: [`Status: ${statusFilter}`],
+        columns: [
+          { header: 'ID', mono: true }, { header: 'User' }, { header: 'Amount', align: 'right', mono: true },
+          { header: 'Method' }, { header: 'Status' }, { header: 'Date', mono: true },
+        ],
+        rows: withdrawals.map((w) => [w.id, w.user_name || w.user_email || '—', fmtMoney(w.amount), w.method, statusLabel(w.status), fmtWhen(w.created_at)]),
+        filename: `swisscresta-withdrawals-${stamp}.pdf`,
+      });
+    } else {
+      void downloadReportPdf({
+        title: 'Money-flow History',
+        columns: [
+          { header: 'Type' }, { header: 'User' }, { header: 'Amount', align: 'right', mono: true },
+          { header: 'Description' }, { header: 'Date', mono: true },
+        ],
+        rows: transactions.map((t) => [t.type, t.user_name || t.user_email || '—', fmtMoney(t.amount), t.description || '—', fmtWhen(t.created_at)]),
+        filename: `swisscresta-money-history-${stamp}.pdf`,
+      });
+    }
+  };
+
   return (
     <>
-      <div className="p-6 space-y-4">
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Deposits & Withdrawals</h1>
-          <p className="text-xxs text-text-tertiary mt-0.5">
-            Review and manage funding requests
-          </p>
+      <div className="p-3 sm:p-6 space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary">Deposits & Withdrawals</h1>
+            <p className="text-xxs text-text-tertiary mt-0.5">
+              Review and manage funding requests
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary text-xs font-medium text-text-primary transition-fast hover:bg-bg-hover shrink-0"
+          >
+            <FileText size={14} className="text-text-secondary" /> Download PDF
+          </button>
         </div>
 
         <div className="bg-bg-secondary border border-border-primary rounded-md">
           {/* Tabs */}
-          <div className="flex items-center justify-between border-b border-border-primary">
-            <div className="flex gap-1 p-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-primary">
+            <div className="flex gap-1 p-1 overflow-x-auto max-w-full">
               {TABS.map((t) => {
                 const Icon = t.icon;
                 return (
@@ -460,7 +509,7 @@ export default function DepositsPage() {
             </div>
 
             {/* Status filter — hide for history tab */}
-            <div className={cn('pr-3 flex items-center gap-2', activeTab === 'history' && 'hidden')}>
+            <div className={cn('px-3 pb-2 sm:pb-0 flex flex-wrap items-center gap-2', activeTab === 'history' && 'hidden')}>
               {/* Method filter — only meaningful on the Deposits tab. */}
               {activeTab === 'deposits' && (
                 <>
