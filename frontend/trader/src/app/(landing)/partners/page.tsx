@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import Disclaimer from '@/landing/marketing/Disclaimer'
 import {
   Handshake,
   DollarSign,
@@ -260,6 +261,8 @@ export default function PartnersPage() {
           </p>
         </div>
       </section>
+
+      <Disclaimer />
     </div>
   )
 }

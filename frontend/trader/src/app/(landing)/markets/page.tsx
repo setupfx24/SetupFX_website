@@ -70,7 +70,7 @@ export default function MarketsPage() {
                 </span>
                 <h2 className="text-xl font-bold text-gray-900">{title}</h2>
                 <p className="text-sm text-gray-600 leading-relaxed">{body}</p>
-                <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-[#E94E1B] group-hover:gap-2 transition-all">
+                <span className="fx-explore-btn mt-auto w-fit text-sm">
                   Explore <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
                 </span>
               </Link>

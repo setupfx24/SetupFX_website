@@ -15,10 +15,7 @@ export default function ExploreLink({
   className = '',
 }: ExploreLinkProps) {
   return (
-    <a
-      href={href}
-      className={`group inline-flex items-center gap-1.5 text-sm font-semibold text-[#E94E1B] hover:text-[#E94E1B] transition-colors ${className}`}
-    >
+    <a href={href} className={`fx-explore-btn group w-fit ${className}`}>
       <span>{children}</span>
       <ArrowRight
         className="w-4 h-4 transition-transform group-hover:translate-x-0.5"

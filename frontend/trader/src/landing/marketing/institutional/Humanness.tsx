@@ -1,5 +1,4 @@
 import Eyebrow from '../ui/Eyebrow'
-import Button from '../ui/Button'
 import ImagePlaceholder from '../ui/ImagePlaceholder'
 import { HEADING_SECTION } from '../ui/headings'
 
@@ -21,12 +20,9 @@ export default function Humanness() {
                 insights to help grow your business.
               </p>
               <div className="mt-6">
-                <Button
-                  variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-[#E94E1B] px-6 py-3 rounded-md"
-                >
+                <button type="button" className="fx-explore-btn">
                   Explore
-                </Button>
+                </button>
               </div>
             </div>
             <div className="lg:col-span-6 relative min-h-[260px]">

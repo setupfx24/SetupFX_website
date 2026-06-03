@@ -165,6 +165,34 @@
   }
   .fx-btn-link:hover { color: var(--fx-gold); }
 
+  /* ── Squishy 3D "Explore" pill ─────────────────────────────
+     Cream face sitting on a solid orange base + soft drop, so it
+     reads as a physical, pressable button. On :active the face
+     drops into its base (the "squish"). Orange theme = #E94E1B;
+     base/drop use a darker orange (#B23A12) instead of black. */
+  .fx-explore-btn {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: #FBF8F2;
+    color: #E94E1B;
+    font-weight: 700;
+    line-height: 1;
+    padding: .7rem 1.5rem;
+    border-radius: 9999px;
+    border: 2px solid #E94E1B;
+    box-shadow: 0 2px 0 0 #B23A12,
+                0 6px 12px -5px rgba(178,58,18,0.45);
+    transform: translateY(0);
+    transition: transform .12s cubic-bezier(.2,.8,.3,1.2),
+                box-shadow .12s ease, background .12s ease;
+    cursor: pointer;
+  }
+  .fx-explore-btn:hover { background: #FFFDF8; }
+  .fx-explore-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 0 #B23A12,
+                0 2px 6px -2px rgba(178,58,18,0.40);
+  }
+
   /* ── Type ──────────────────────────────────────────────── */
   .fx-eyebrow {
     display: inline-flex; align-items: center; gap: .5rem;

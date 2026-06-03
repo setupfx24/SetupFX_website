@@ -1,4 +1,5 @@
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react'
+import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = { title: 'Contact Us — SwissCresta' }
 
@@ -119,6 +120,8 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+
+      <Disclaimer />
     </div>
   )
 }

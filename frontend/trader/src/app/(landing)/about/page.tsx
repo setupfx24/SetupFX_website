@@ -1,4 +1,5 @@
 import { Users, Target, Shield, Globe } from 'lucide-react'
+import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = { title: 'About Us — SwissCresta' }
 
@@ -88,31 +89,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Leadership Team</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto">
-              Led by industry veterans from top financial institutions and technology companies.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: 'Alex Chen', role: 'CEO & Co-Founder', desc: 'Former Goldman Sachs trader with 15+ years in institutional trading.' },
-              { name: 'Sarah Johnson', role: 'CTO & Co-Founder', desc: 'Tech lead at Bloomberg, expert in low-latency trading systems.' },
-              { name: 'Michael Roberts', role: 'Head of Compliance', desc: 'Former SEC regulator, ensures full regulatory compliance globally.' },
-            ].map(({ name, role, desc }) => (
-              <div key={name} className="bg-white rounded-xl p-8 border border-gray-200">
-                <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4" />
-                <h3 className="font-bold text-gray-900 text-center mb-2">{name}</h3>
-                <p className="text-[#E94E1B] text-center text-sm font-semibold mb-3">{role}</p>
-                <p className="text-gray-500 text-sm text-center">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Disclaimer />
     </div>
   )
 }
