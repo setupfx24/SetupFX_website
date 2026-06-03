@@ -66,15 +66,15 @@ export const useUIStore = create<UIState>()(
       terminalMarketsOpen: false,
       terminalNewsOpen: false,
 
-      setTheme: (t) => {
-        document.documentElement.setAttribute('data-theme', t);
-        set({ theme: t });
-      },
-      toggleTheme: () => {
-        const next = get().theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        set({ theme: next });
-      },
+      // The uiStore theme is scoped to the trading TERMINAL only — its
+      // wrapper at trading/layout.tsx reads `theme` and applies the
+      // class + data-theme on the .trading-page div. We deliberately
+      // do NOT touch <html>.data-theme here: writing to the document
+      // root would flip every other page (dashboard, portfolio,
+      // wallet, etc.) into dark mode just because the user toggled
+      // the terminal's local theme.
+      setTheme: (t) => set({ theme: t }),
+      toggleTheme: () => set({ theme: get().theme === 'dark' ? 'light' : 'dark' }),
       setWatchlistWidth: (w) =>
         set({ watchlistWidth: Math.max(WATCHLIST_MIN_PX, Math.min(WATCHLIST_MAX_PX, w)) }),
       setOrderPanelWidth: (w) => set({ orderPanelWidth: Math.max(250, Math.min(560, w)) }),
