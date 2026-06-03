@@ -272,13 +272,13 @@ export default function TradingLayout({ children }: { children: React.ReactNode 
    * match — previously the wrapper hardcoded data-theme="dark" which
    * overrode the toggle and pinned the terminal to dark. */
   if (terminalOnly) {
-    // Dark-only application — light theme has been retired. uiStore.theme
-    // is no longer read here so the toggle removal can't be inadvertently
-    // undone by a stale persisted value.
+    // Light-only application — dark theme has been retired. uiStore.theme
+    // is no longer read here so a stale persisted value can't flip the
+    // terminal back to dark.
     return (
       <div
-        className="trading-page theme-dark flex flex-col h-[100dvh] bg-bg-base min-h-0"
-        data-theme="dark"
+        className="trading-page theme-light flex flex-col h-[100dvh] bg-bg-base min-h-0"
+        data-theme="light"
       >
         <div className="flex-1 flex overflow-hidden min-h-0">
           <Suspense fallback={fallback}>
