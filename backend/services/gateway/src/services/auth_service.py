@@ -534,6 +534,18 @@ async def login_user(
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
 
+    # Staff accounts must log in via the admin portal — never the trader
+    # frontend. Done AFTER the password check so we don't reveal which
+    # emails belong to admins (no enumeration via differing error
+    # responses); done BEFORE 2FA + token issuance so staff credentials
+    # never mint a trader session, even if the staff user accidentally
+    # submitted them to the wrong form.
+    STAFF_ROLES = ("admin", "super_admin", "employee", "manager", "support")
+    if user.role in STAFF_ROLES:
+        raise AuthServiceError(
+            "Staff accounts must sign in via the admin portal.", 403
+        )
+
     # Maintenance mode: only admin / super_admin / employee roles may log in.
     if user.role not in ("admin", "super_admin", "employee"):
         from packages.common.src.settings_store import get_bool_setting
@@ -761,6 +773,15 @@ async def google_oauth(
     if user.status == "blocked":
         raise AuthServiceError("Account has been blocked", 403)
 
+    # Same staff-only block as login_user(): if a staff user happens to
+    # have the trader Google flow hit their existing email, refuse to
+    # mint a trader session for them. New OAuth signups always default
+    # to role="user" above, so this only fires for pre-existing staff.
+    if user.role in ("admin", "super_admin", "employee", "manager", "support"):
+        raise AuthServiceError(
+            "Staff accounts must sign in via the admin portal.", 403
+        )
+
     # Single commit point — issue_auth_json_response below adds session + refresh
     # rows and commits once. Any failure above raises before commit, so the
     # outer route handler's rollback restores a clean state.
@@ -804,6 +825,13 @@ async def refresh_token(request: Request, db: AsyncSession) -> JSONResponse:
         raise AuthServiceError("Invalid or expired session", 401)
     user = await db.get(User, row.user_id)
     if not user or user.status in ("banned", "blocked"):
+        raise AuthServiceError("Not authenticated", 401)
+    # If a staff role somehow still holds a trader refresh token (e.g.
+    # issued before the login-side block was added), refuse to renew it.
+    # The session will die on next refresh instead of cycling forever.
+    if user.role in ("admin", "super_admin", "employee", "manager", "support"):
+        row.revoked = True
+        await db.flush()
         raise AuthServiceError("Not authenticated", 401)
     row.revoked = True
     await db.flush()
