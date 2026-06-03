@@ -175,9 +175,23 @@ export default function OrderPanel() {
     setLots(Math.max(0.01, parseFloat((lotsNum + delta).toFixed(2))).toString());
   };
 
+  // 1-second grace window after a click during which the button stays
+  // visually stable (no opacity-flash to disabled) even if hasEnoughMargin
+  // briefly flickers while the account refresh and the optimistic position
+  // settle. Without this the button appeared to "disappear" for a second
+  // after every trade.
+  const justClickedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [recentlyClicked, setRecentlyClicked] = useState(false);
+  const markRecentlyClicked = () => {
+    setRecentlyClicked(true);
+    if (justClickedRef.current) clearTimeout(justClickedRef.current);
+    justClickedRef.current = setTimeout(() => setRecentlyClicked(false), 1000);
+  };
+
   const handleSubmit = async () => {
     unlockAudio();
     if (!activeAccount) return;
+    markRecentlyClicked();
     if (orderTab === 'market' && !marketStatus.isOpen) {
       toast.error(marketStatus.reason || 'Market is closed');
       return;
@@ -812,8 +826,8 @@ export default function OrderPanel() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
-                className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
+                disabled={!recentlyClicked && (!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
+                className="w-full py-4 rounded-xl text-[15px] font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
                 style={{
                   background: side === 'buy' ? '#2962FF' : '#ef5350',
                   color: '#fff',
@@ -874,8 +888,8 @@ export default function OrderPanel() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid}
-              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-transform duration-75 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.96]"
+              disabled={!recentlyClicked && (!hasEnoughMargin || !meetsMinBalance || !activeAccount || (orderTab === 'market' && !marketStatus.isOpen) || !pendingTriggerValid)}
+              className="w-full py-2.5 rounded-lg text-sm font-black tracking-wide uppercase transition-[transform,opacity] duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97]"
               style={{
                 background: side === 'buy' ? '#2962FF' : '#ef5350',
                 color: '#fff',
