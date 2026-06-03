@@ -10,7 +10,7 @@ import {
   Settings, Sliders, BarChart3, Gift, Image, HeadphonesIcon,
   UserCog, ChevronDown, ChevronRight, Network, Share2,
   DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
-  Receipt, Layers, ShieldCheck, ScrollText, BookOpen,
+  Receipt, Layers, ShieldCheck, ScrollText, BookOpen, X,
 } from 'lucide-react';
 
 interface NavItem {
@@ -67,12 +67,38 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings', href: '/settings', icon: Settings, perm: '_super_admin' },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  mobileOpen = false,
+  onClose,
+}: {
+  mobileOpen?: boolean;
+  onClose?: () => void;
+} = {}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['Config', 'Business']);
   const [permissions, setPermissions] = useState<string[]>(['*']);
   const [employeeRole, setEmployeeRole] = useState<string>('super_admin');
+
+  // Track viewport so the desktop "collapse" state never hides labels in the
+  // mobile drawer (the drawer is always full-width on phones).
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    onClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // On phones the drawer is always expanded; collapse is a desktop-only affordance.
+  const showLabels = !collapsed || isMobile;
 
   useEffect(() => {
     (async () => {
@@ -104,22 +130,36 @@ export default function AdminSidebar() {
   return (
     <div className={cn(
       'flex flex-col h-full glass-card border-r border-border-primary/50 transition-all duration-300',
-      collapsed ? 'w-14' : 'w-60',
+      // Mobile: off-canvas drawer, fixed and slides in/out.
+      'fixed inset-y-0 left-0 z-50 w-60 max-w-[82vw] -translate-x-full',
+      mobileOpen && 'translate-x-0 shadow-2xl',
+      // Desktop (md+): in-flow flex child, collapsible.
+      'md:static md:z-auto md:translate-x-0 md:max-w-none md:shadow-none',
+      collapsed ? 'md:w-14' : 'md:w-60',
     )}>
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
-        {collapsed ? (
+        {!showLabels ? (
           <img src="/logo.png" alt="SwissCresta" className="w-7 h-7 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center min-w-0">
             <img src="/swisscresta-logo.png" alt="SwissCresta" className="h-7 w-auto object-contain shrink-0" />
           </Link>
         )}
+        {/* Desktop collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className={cn('p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10', !collapsed && 'ml-auto')}
+          className={cn('hidden md:block p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10', !collapsed && 'ml-auto')}
         >
           {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+        {/* Mobile close button */}
+        <button
+          onClick={() => onClose?.()}
+          className="md:hidden ml-auto p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10"
+          aria-label="Close menu"
+        >
+          <X size={18} />
         </button>
       </div>
 
@@ -139,14 +179,14 @@ export default function AdminSidebar() {
                   )}
                 >
                   <item.icon size={16} />
-                  {!collapsed && (
+                  {showLabels && (
                     <>
                       <span className="flex-1 text-left">{item.label}</span>
                       {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                     </>
                   )}
                 </button>
-                {isExpanded && !collapsed && (
+                {isExpanded && showLabels && (
                   <div className="ml-4 border-l border-border-primary">
                     {item.children.filter(c => hasAccess(c.perm)).map((child) => (
                       <Link
@@ -180,7 +220,7 @@ export default function AdminSidebar() {
               )}
             >
               <item.icon size={16} />
-              {!collapsed && (
+              {showLabels && (
                 <>
                   <span>{item.label}</span>
                   {item.badge && item.badge > 0 && (

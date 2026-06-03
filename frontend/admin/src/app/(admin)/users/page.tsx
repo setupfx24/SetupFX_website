@@ -432,7 +432,7 @@ export default function UsersPage() {
 
   return (
     <>
-      <div className="p-6 space-y-5 min-w-0 max-w-full">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 min-w-0 max-w-full">
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -451,7 +451,7 @@ export default function UsersPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-bg-secondary border border-border-primary rounded-lg p-5 space-y-4">
+        <div className="bg-bg-secondary border border-border-primary rounded-lg p-3 sm:p-5 space-y-3 sm:space-y-4">
           <div className="relative max-w-lg">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input
@@ -465,19 +465,19 @@ export default function UsersPage() {
               )}
             />
           </div>
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-4">
             {([
               { label: 'Status', value: statusFilter, onChange: (v: string) => { setStatusFilter(v); setPage(1); }, options: [{ v: '', t: 'All statuses' }, { v: 'active', t: 'Active' }, { v: 'suspended', t: 'Suspended' }, { v: 'banned', t: 'Banned' }, { v: 'pending', t: 'Pending' }] },
               { label: 'KYC', value: kycFilter, onChange: (v: string) => { setKycFilter(v); setPage(1); }, options: [{ v: '', t: 'All KYC' }, { v: 'verified', t: 'Verified' }, { v: 'pending', t: 'Pending' }, { v: 'rejected', t: 'Rejected' }] },
               { label: 'Group', value: groupFilter, onChange: setGroupFilter, options: [{ v: '', t: 'All groups' }, { v: 'Retail', t: 'Retail' }, { v: 'IB', t: 'IB' }, { v: 'VIP', t: 'VIP' }] },
             ] as const).map(f => (
-              <div key={f.label}>
-                <label className="block text-xs font-medium text-text-tertiary mb-1.5">{f.label}</label>
-                <div className="relative min-w-[160px]">
-                  <select value={f.value} onChange={e => f.onChange(e.target.value)} className="w-full text-sm py-2.5 pl-3 pr-9 appearance-none bg-bg-input border border-border-primary rounded-lg">
+              <div key={f.label} className="min-w-0 sm:flex-none">
+                <label className="block text-[11px] sm:text-xs font-medium text-text-tertiary mb-1 sm:mb-1.5">{f.label}</label>
+                <div className="relative sm:min-w-[160px]">
+                  <select value={f.value} onChange={e => f.onChange(e.target.value)} className="w-full text-xs sm:text-sm py-2 sm:py-2.5 pl-2.5 sm:pl-3 pr-7 sm:pr-9 appearance-none bg-bg-input border border-border-primary rounded-lg truncate">
                     {f.options.map(o => <option key={o.v || 'all'} value={o.v}>{o.t}</option>)}
                   </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  <ChevronDown size={14} className="pointer-events-none absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
                 </div>
               </div>
             ))}
@@ -486,7 +486,7 @@ export default function UsersPage() {
 
         {/* Users Table */}
         <div className="bg-bg-secondary border border-border-primary rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b-2 border-border-primary bg-bg-tertiary/50">
@@ -568,6 +568,67 @@ export default function UsersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-border-primary/40">
+            {!loading && sorted.map(u => (
+              <div key={u.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <Link href={`/users/${u.id}`} className="flex items-center gap-2.5 min-w-0">
+                    <div className="relative shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-buy/10 border border-buy/20 flex items-center justify-center">
+                        <UserRound size={16} className="text-buy" />
+                      </div>
+                      <span
+                        className={cn(
+                          'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-bg-secondary',
+                          u.is_online ? 'bg-success' : 'bg-text-tertiary/60',
+                        )}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-text-primary truncate">{u.name}</div>
+                      <div className="text-xs text-text-secondary truncate">{u.email}</div>
+                    </div>
+                  </Link>
+                  <div data-actions-menu className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => toggleActions(u.id, e)}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border-primary text-text-secondary transition-fast hover:bg-bg-hover hover:text-text-primary"
+                    >
+                      <MoreHorizontal size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn('inline-flex px-2 py-0.5 rounded text-[10px] font-semibold', kycBadge(u.kyc_status))}>{u.kyc_status}</span>
+                  <span className={cn('inline-flex px-2 py-0.5 rounded text-[10px] font-semibold', statusBadge(u.status))}>{u.status}</span>
+                  <span className="text-[10px] text-text-tertiary">{u.group}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-text-tertiary mb-0.5">Balance</div>
+                    <div className="font-mono tabular-nums font-medium text-text-primary">${formatMoney(u.balance)}</div>
+                    {u.main_wallet_balance !== undefined && (
+                      <div className="text-[10px] text-text-tertiary font-mono tabular-nums mt-0.5">
+                        W ${formatMoney(u.main_wallet_balance)} · T ${formatMoney(u.trading_balance ?? 0)}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-text-tertiary mb-0.5">Equity</div>
+                    <div className="font-mono tabular-nums font-medium text-text-primary">${formatMoney(u.equity)}</div>
+                  </div>
+                </div>
+
+                <div className="font-mono text-[10px] text-text-tertiary" title={u.id}>ID {u.id.slice(0, 8)}…</div>
+              </div>
+            ))}
+          </div>
+
           {loading && <TableSkeleton />}
           {!loading && sorted.length === 0 && (
             <div className="px-6 py-16 text-center text-sm text-text-tertiary">No users match filters</div>

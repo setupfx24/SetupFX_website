@@ -24,7 +24,9 @@ import {
   RefreshCcw,
   CheckCircle2,
   Hourglass,
+  FileText,
 } from 'lucide-react';
+import { downloadWalletStatementPdf } from '@/lib/pdf/walletStatementPdf';
 
 // Razorpay popup integration removed — local-banking flow replaces it.
 // Admin can still attach Razorpay payment-links per request from the
@@ -216,6 +218,7 @@ function WalletPageContent() {
   const linkedWalletAddress = useAuthStore((s) => s.user?.wallet_address || '');
   // Prefill the Razorpay Checkout email field.
   const userEmail = useAuthStore((s) => s.user?.email || '');
+  const userFullName = useAuthStore((s) => [s.user?.first_name, s.user?.last_name].filter(Boolean).join(' '));
   // KYC gate (Card / UPI only). Read here so we can both block submit and
   // surface an inline notice in the Card / UPI panel.
   const kycStatus = useAuthStore((s) => (s.user?.kyc_status || '').toLowerCase());
@@ -2069,11 +2072,34 @@ function WalletPageContent() {
   const renderHistoryTab = () => (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       <div className="lg:col-span-2 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-[#0A0A0A]">Recent transactions</h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (historyItems.length === 0) { toast.error('No transactions to export'); return; }
+              void downloadWalletStatementPdf(
+                historyItems.map((it) => ({
+                  type: it.type, method: it.method, amount: it.amount,
+                  currency: it.currency, status: it.status, created_at: it.created_at,
+                })),
+                {
+                  accountName: userFullName || undefined,
+                  accountEmail: userEmail || undefined,
+                  currency: wallet?.currency || 'USD',
+                  totalDeposited: wallet?.total_deposited,
+                  totalWithdrawn: wallet?.total_withdrawn,
+                  currentBalance: wallet?.balance,
+                },
+              );
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#E5E5E5] bg-white text-xs font-medium text-[#0A0A0A] transition hover:bg-[#F9FAFB] shrink-0"
+          >
+            <FileText size={14} className="text-[#6B7280]" /> Statement PDF
+          </button>
         </div>
-        <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-white">
-          <div className="grid grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">
+        <div className="overflow-x-auto rounded-xl border border-[#E5E5E5] bg-white">
+          <div className="grid min-w-[560px] grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] text-xs font-semibold uppercase tracking-wide text-[#6B7280] bg-[#F9FAFB] px-4 py-3 border-b border-[#E5E5E5]">
             <span>Type</span>
             <span>Method</span>
             <span className="text-right">Amount</span>
@@ -2099,7 +2125,7 @@ function WalletPageContent() {
               return (
                 <div
                   key={`${it.id}-${it.type}`}
-                  className="grid grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] items-center px-4 py-3 text-sm border-b border-[#F0F0F0] last:border-b-0"
+                  className="grid min-w-[560px] grid-cols-[1fr_1.2fr_1fr_1.4fr_1fr] items-center px-4 py-3 text-sm border-b border-[#F0F0F0] last:border-b-0"
                 >
                   <div className="font-medium text-[#0A0A0A] capitalize truncate">{t || 'transaction'}</div>
                   <div className="text-[#6B7280] truncate">{prettyMethod(it.method)}</div>

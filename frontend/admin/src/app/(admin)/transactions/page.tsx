@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { adminApi } from '@/lib/api';
 import { formatCurrencySigned, formatDateTime } from '@/lib/formatters';
+import { downloadReportPdf, fmtMoney, fmtWhen } from '@/lib/pdf';
 import toast from 'react-hot-toast';
 import {
   ArrowDownCircle,
@@ -12,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Download,
+  FileText,
   Loader2,
   Receipt,
   Search,
@@ -218,15 +221,84 @@ export default function TransactionsPage() {
     },
   ];
 
+  const exportRows = () =>
+    transactions.map((t) => [
+      typeLabel(t.type),
+      t.user_name || t.user_email || '—',
+      t.account_number || '—',
+      formatCurrencySigned(t.amount),
+      t.balance_after != null ? fmtMoney(t.balance_after) : '—',
+      t.description || '—',
+      t.admin_name || t.admin_email || 'System',
+      fmtWhen(t.created_at),
+    ]);
+
+  const handleExportPdf = () => {
+    if (transactions.length === 0) { toast.error('No transactions to export'); return; }
+    void downloadReportPdf({
+      title: 'Transactions Report',
+      subtitleLines: [
+        typeFilter !== 'all' ? `Type filter: ${typeFilter}` : 'Type filter: all',
+        search ? `Search: ${search}` : '',
+      ].filter(Boolean),
+      columns: [
+        { header: 'Type' }, { header: 'User' }, { header: 'Account', mono: true },
+        { header: 'Amount', align: 'right', mono: true },
+        { header: 'Balance After', align: 'right', mono: true },
+        { header: 'Description' }, { header: 'Admin By' }, { header: 'Date', mono: true },
+      ],
+      rows: exportRows(),
+      filename: `swisscresta-transactions-${new Date().toISOString().slice(0, 10)}.pdf`,
+    });
+  };
+
+  const handleExportCsv = () => {
+    if (transactions.length === 0) { toast.error('No transactions to export'); return; }
+    const headers = ['Type', 'User', 'Email', 'Account', 'Amount', 'Balance After', 'Description', 'Admin By', 'Date'];
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [headers.map(esc).join(',')];
+    for (const t of transactions) {
+      lines.push([
+        typeLabel(t.type), t.user_name || '', t.user_email || '', t.account_number || '',
+        t.amount, t.balance_after ?? '', t.description || '', t.admin_name || t.admin_email || 'System', t.created_at,
+      ].map(esc).join(','));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `swisscresta-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
-      <div className="p-6 space-y-4">
+      <div className="p-3 sm:p-6 space-y-4">
         {/* Header */}
-        <div>
-          <h1 className="text-lg font-semibold text-text-primary">Admin Transactions</h1>
-          <p className="text-xxs text-text-tertiary mt-0.5">
-            Complete record of all admin financial operations — deposits, withdrawals, fund adjustments and credits
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-text-primary">Admin Transactions</h1>
+            <p className="text-xxs text-text-tertiary mt-0.5">
+              Complete record of all admin financial operations — deposits, withdrawals, fund adjustments and credits
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleExportPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary text-xs font-medium text-text-primary transition-fast hover:bg-bg-hover"
+            >
+              <FileText size={14} className="text-text-secondary" /> PDF
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border-primary bg-bg-secondary text-xs font-medium text-text-primary transition-fast hover:bg-bg-hover"
+            >
+              <Download size={14} className="text-text-secondary" /> CSV
+            </button>
+          </div>
         </div>
 
         {/* Summary cards */}
@@ -331,7 +403,7 @@ export default function TransactionsPage() {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full min-w-[1100px]">
                     <thead>
                       <tr className="border-b border-border-primary bg-bg-tertiary/40">
@@ -431,6 +503,44 @@ export default function TransactionsPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="md:hidden divide-y divide-border-primary/50">
+                  {transactions.map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={() => setSelectedTxn(t)}
+                      className="p-4 space-y-2 transition-fast hover:bg-bg-hover cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {typeIcon(t.type)}
+                          <span className={cn('inline-flex px-1.5 py-0.5 rounded-sm text-xxs font-medium capitalize', typeBadge(t.type))}>
+                            {typeLabel(t.type)}
+                          </span>
+                        </div>
+                        <span className={cn('text-sm font-mono tabular-nums font-semibold shrink-0', t.amount >= 0 ? 'text-success' : 'text-danger')}>
+                          {formatMoney(t.amount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-text-primary truncate">{t.user_name || t.user_email || '—'}</span>
+                        <span className="text-text-tertiary font-mono tabular-nums shrink-0">{t.account_number || '—'}</span>
+                      </div>
+                      {t.description && (
+                        <p className="text-xxs text-text-secondary line-clamp-2">{t.description}</p>
+                      )}
+                      <div className="flex items-center justify-between gap-2 text-xxs text-text-tertiary">
+                        <span className="font-mono tabular-nums">
+                          {t.balance_after !== null
+                            ? `Bal $${Math.abs(t.balance_after).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : ''}
+                        </span>
+                        <span className="font-mono tabular-nums whitespace-nowrap">{formatDate(t.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Pagination */}

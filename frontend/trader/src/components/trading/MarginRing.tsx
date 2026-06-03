@@ -48,6 +48,18 @@ function MarginRingInner({ marginLevel, size = 64, className }: Props) {
     ? `${(labelPct / 1000).toFixed(1)}k%`
     : `${labelPct.toFixed(0)}%`;
 
+  // Shrink the value font so long labels (e.g. "13.5k%") never overflow the
+  // ring's inner diameter. Inner width ≈ size - 2*stroke; mono glyphs are
+  // ~0.62em wide, so cap the font at what fits the label's char count.
+  const innerWidth = size - 2 * stroke;
+  const valueFont = Math.max(
+    9,
+    Math.min(
+      Math.round(size * 0.22),
+      Math.floor((innerWidth * 0.92) / (labelText.length * 0.62)),
+    ),
+  );
+
   return (
     <div
       className={clsx('relative flex items-center justify-center', className)}
@@ -76,16 +88,16 @@ function MarginRingInner({ marginLevel, size = 64, className }: Props) {
           style={{ transition: 'stroke-dashoffset 600ms ease, stroke 300ms ease' }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-1">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-0.5">
         <span
           className="uppercase tracking-wider text-text-tertiary leading-none font-semibold"
-          style={{ fontSize: Math.max(7, Math.round(size * 0.14)) }}
+          style={{ fontSize: Math.max(7, Math.round(size * 0.13)) }}
         >
           Margin
         </span>
         <span
-          className="font-extrabold font-mono tabular-nums leading-none mt-1"
-          style={{ fontSize: Math.max(10, Math.round(size * 0.22)), color }}
+          className="font-extrabold font-mono tabular-nums leading-none mt-0.5"
+          style={{ fontSize: valueFont, color }}
         >
           {labelText}
         </span>

@@ -88,7 +88,7 @@ async def list_users(
     status_filter: str | None, kyc_filter: str | None,
     group_id: str | None, db: AsyncSession,
 ) -> dict:
-    query = select(User).where(User.role.notin_(["admin", "super_admin"]), User.is_demo == False)
+    query = select(User).where(User.role.notin_(["admin", "super_admin"]))
 
     if search:
         term = f"%{search}%"
