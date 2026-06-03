@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Loader2, CheckCircle, XCircle, Users, RefreshCw, Edit, Settings, Plus, Trash2, Star, AlertTriangle, ChevronRight, ChevronDown, GitBranch, ArrowRightLeft, UserX } from 'lucide-react';
@@ -117,6 +118,9 @@ export default function IBPage() {
   const [transferModal, setTransferModal] = useState<{ userId: string; userName: string; currentIbId?: string } | null>(null);
   const [transferTargetIb, setTransferTargetIb] = useState('');
   const [allAgents, setAllAgents] = useState<IBAgent[]>([]);
+
+  // Row click → /business/ib/[id] full detail page (replaces the inline modal).
+  const router = useRouter();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -487,7 +491,12 @@ export default function IBPage() {
                       </thead>
                       <tbody>
                         {agents.map((agent) => (
-                          <tr key={agent.id} className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover">
+                          <tr
+                            key={agent.id}
+                            onClick={() => router.push(`/business/ib/${agent.id}`)}
+                            className="border-b border-border-primary/50 transition-fast hover:bg-bg-hover cursor-pointer"
+                            title="View full IB detail + commission history"
+                          >
                             <td className="px-4 py-2.5">
                               <div className="flex items-center gap-1.5">
                                 <Users size={12} className="text-text-tertiary" />
@@ -502,7 +511,7 @@ export default function IBPage() {
                             <td className="px-4 py-2.5 text-xs text-warning text-right font-mono tabular-nums">${formatMoney(agent.pending_payout)}</td>
                             <td className="px-4 py-2.5 text-xs text-text-tertiary">{agent.created_at ? new Date(agent.created_at).toLocaleDateString() : '—'}</td>
                             <td className="px-4 py-2.5 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                 <button
                                   onClick={() => { setEditCommissionModal(agent); setCommissionPlan(agent.commission_plan_id || 'default'); setCustomPerLot(agent.custom_commission_per_lot?.toString() || ''); setCustomPerTrade(agent.custom_commission_per_trade?.toString() || ''); }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xxs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-fast"

@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 
-type TypeFilter = 'all' | 'deposit' | 'withdrawal' | 'adjustment' | 'credit';
+type TypeFilter = 'all' | 'deposit' | 'withdrawal' | 'adjustment' | 'credit' | 'ib_commission';
 
 interface TransactionRecord {
   id: string;
@@ -49,6 +49,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: 'withdrawal', label: 'Withdrawal' },
   { value: 'adjustment', label: 'Fund Add/Deduct' },
   { value: 'credit', label: 'Credit' },
+  { value: 'ib_commission', label: 'IB Commission' },
 ];
 
 function typeIcon(type: string) {
@@ -61,6 +62,8 @@ function typeIcon(type: string) {
       return <Receipt size={14} className="text-buy" />;
     case 'credit':
       return <CreditCard size={14} className="text-warning" />;
+    case 'ib_commission':
+      return <Receipt size={14} className="text-success" />;
     default:
       return <Receipt size={14} className="text-text-tertiary" />;
   }
@@ -76,6 +79,8 @@ function typeBadge(type: string) {
       return 'bg-buy/15 text-buy';
     case 'credit':
       return 'bg-warning/15 text-warning';
+    case 'ib_commission':
+      return 'bg-success/15 text-success';
     default:
       return 'bg-text-tertiary/15 text-text-tertiary';
   }
@@ -91,6 +96,8 @@ function typeLabel(type: string) {
       return 'Fund Adj.';
     case 'credit':
       return 'Credit';
+    case 'ib_commission':
+      return 'IB Commission';
     default:
       return type;
   }
