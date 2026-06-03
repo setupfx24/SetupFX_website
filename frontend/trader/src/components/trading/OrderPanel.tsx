@@ -657,11 +657,11 @@ export default function OrderPanel() {
               target). Only renders on the Pending tab. */}
           {orderTab === 'pending' && (
             <div className="pt-2 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary shrink-0">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary block mb-1.5">
                   Pending type
                 </span>
-                <div className="flex rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
+                <div className="grid grid-cols-3 rounded-md overflow-hidden border border-border-primary bg-bg-secondary">
                   {([
                     { k: 'limit' as const, label: 'Limit' },
                     { k: 'stop' as const, label: 'Stop' },
@@ -674,7 +674,7 @@ export default function OrderPanel() {
                         type="button"
                         onClick={() => setPendingKind(k)}
                         className={clsx(
-                          'px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap',
+                          'px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap',
                           active
                             ? 'bg-accent/15 text-accent'
                             : 'text-text-tertiary hover:text-text-primary',
@@ -835,9 +835,15 @@ export default function OrderPanel() {
         {isTradingTerminal ? (
           <div className="shrink-0 border-t border-border-primary bg-bg-secondary px-2 pt-2 pb-2 space-y-1.5">
             <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-card border border-border-primary">
-              <span className="text-[10px] text-text-tertiary">Exec. Price</span>
+              <span className="text-[10px] text-text-tertiary">
+                {orderTab === 'pending' ? 'Trigger' : 'Exec. Price'}
+              </span>
               <span className="text-xs font-mono font-semibold text-text-primary">
-                {execPrice > 0 ? execPrice.toFixed(digits) : '—'}
+                {orderTab === 'pending'
+                  ? (Number.isFinite(parseFloat(triggerPrice)) && parseFloat(triggerPrice) > 0
+                      ? parseFloat(triggerPrice).toFixed(digits)
+                      : '—')
+                  : (execPrice > 0 ? execPrice.toFixed(digits) : '—')}
               </span>
             </div>
             <div className="flex items-center justify-between gap-1 px-1 text-[9px] text-text-tertiary">
@@ -858,6 +864,11 @@ export default function OrderPanel() {
             {hasEnoughMargin && !meetsMinBalance && (
               <div className="text-[10px] text-red-500 font-semibold text-center leading-tight">
                 Min ${minDepositGate.toFixed(0)} balance required
+              </div>
+            )}
+            {orderTab === 'pending' && !pendingTriggerValid && hasEnoughMargin && meetsMinBalance && (
+              <div className="text-[10px] text-warning font-semibold text-center leading-tight">
+                Enter a trigger price to place the order
               </div>
             )}
             <button
