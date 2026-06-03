@@ -202,13 +202,21 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
       // merge, every poll briefly unmounts + remounts every row.
       //
       // Match heuristic: optimistic position (id prefix "optim-")
-      // matches a server position by account_id + symbol + side +
-      // lots, picked within a 10s open-time window. Heuristic is
-      // intentionally tight — open_price gets a small tolerance only
-      // because the user's optimistic price may differ from the
-      // server fill by a tick or two during a fast-moving market.
+      // matches a server position by account_id + symbol + side + lots
+      // AND must be FRESH — created within the last 5 seconds. Without
+      // the freshness cap a user who rapid-fires 88 identical trades
+      // ends up with 88 optim-* ids that never reconcile to real UUIDs
+      // because every server row keeps matching the still-present
+      // optimistic rows, so bulk close (which filters out optim ids)
+      // can't act on any of them.
       const prevPositions = get().positions;
-      const optimisticPrev = prevPositions.filter((p) => p.id.startsWith('optim-'));
+      const FRESH_OPTIM_WINDOW_MS = 5_000;
+      const now = Date.now();
+      const optimisticPrev = prevPositions.filter((p) => {
+        if (!p.id.startsWith('optim-')) return false;
+        const t = p.created_at ? Date.parse(p.created_at) : 0;
+        return Number.isFinite(t) && now - t < FRESH_OPTIM_WINDOW_MS;
+      });
       const optimMatched = new Set<string>();
 
       const merged = list.map((p: Record<string, unknown>) => {
