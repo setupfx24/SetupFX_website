@@ -3,7 +3,6 @@
 import { useMemo, memo } from 'react';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
-import { useUIStore } from '@/stores/uiStore';
 import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
 
 const TIMELINE_EMBED_ORIGIN = 'https://www.tradingview-widget.com/embed-widget/timeline/';
@@ -52,7 +51,6 @@ function TradingViewNewsTimelineInner({
   useDarkEmbed = true,
 }: TradingViewNewsTimelineProps = {}) {
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
-  const theme = useUIStore((s) => s.theme);
 
   const effectiveSymbol = symbolOverride ?? selectedSymbol ?? 'EURUSD';
 
@@ -61,8 +59,8 @@ function TradingViewNewsTimelineInner({
     [effectiveSymbol],
   );
 
-  const colorTheme: 'dark' | 'light' =
-    useDarkEmbed ? 'dark' : theme === 'light' ? 'light' : 'dark';
+  // App is light-only.
+  const colorTheme: 'dark' | 'light' = 'light';
   /** Opaque dark panel reads as black; transparent can look grey on some shells */
   const isTransparent = false;
 

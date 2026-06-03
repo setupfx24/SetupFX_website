@@ -2,7 +2,6 @@
 
 import { useMemo, memo } from 'react';
 import { clsx } from 'clsx';
-import { useUIStore } from '@/stores/uiStore';
 
 const EVENTS_EMBED_ORIGIN = 'https://www.tradingview-widget.com/embed-widget/events/';
 
@@ -55,8 +54,8 @@ function TradingViewEventsCalendarInner({
   importanceFilter = '-1,0,1',
   countryFilter = ALL_COUNTRY_FILTER,
 }: TradingViewEventsCalendarProps) {
-  const theme = useUIStore((s) => s.theme);
-  const colorTheme: 'dark' | 'light' = themeOverride ?? (theme === 'light' ? 'light' : 'dark');
+  // App is light-only.
+  const colorTheme: 'dark' | 'light' = themeOverride ?? 'light';
   const isTransparent = false;
 
   const iframeSrc = useMemo(

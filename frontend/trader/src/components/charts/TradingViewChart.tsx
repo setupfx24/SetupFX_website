@@ -4,7 +4,6 @@ import { useMemo, memo } from 'react';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
 import { useTradingStore } from '@/stores/tradingStore';
-import { useUIStore } from '@/stores/uiStore';
 import { toTradingViewSymbol } from '@/lib/tradingViewSymbols';
 
 /**
@@ -62,9 +61,10 @@ function buildWidgetEmbedUrl(
 function TradingViewChartInner() {
   const pathname = usePathname();
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
-  const theme = useUIStore((s) => s.theme);
+  // App is light-only. The uiStore theme was previously read here; pinning
+  // tvTheme keeps any stale persisted "dark" from leaking into the chart.
   const onTradingTerminal = Boolean(pathname?.startsWith('/trading/terminal'));
-  const tvTheme: 'dark' | 'light' = theme === 'light' ? 'light' : 'dark';
+  const tvTheme: 'dark' | 'light' = 'light';
   const interval = onTradingTerminal ? '5' : '15';
 
   const src = useMemo(
