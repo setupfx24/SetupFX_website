@@ -30,7 +30,10 @@ async def get_kyc_file(document_id: uuid.UUID, db: AsyncSession) -> FileResponse
 
 
 async def list_kyc_pending(page: int, per_page: int, db: AsyncSession) -> dict:
-    query = select(User).where(User.kyc_status == "submitted")
+    query = select(User).where(
+        User.kyc_status == "submitted",
+        User.role.notin_(["admin", "super_admin"]),
+    )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -71,7 +74,10 @@ async def list_kyc_pending(page: int, per_page: int, db: AsyncSession) -> dict:
 
 
 async def list_kyc_approved(page: int, per_page: int, db: AsyncSession) -> dict:
-    query = select(User).where(User.kyc_status == "approved")
+    query = select(User).where(
+        User.kyc_status == "approved",
+        User.role.notin_(["admin", "super_admin"]),
+    )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -114,7 +120,10 @@ async def list_kyc_approved(page: int, per_page: int, db: AsyncSession) -> dict:
 
 
 async def list_kyc_rejected(page: int, per_page: int, db: AsyncSession) -> dict:
-    query = select(User).where(User.kyc_status == "rejected")
+    query = select(User).where(
+        User.kyc_status == "rejected",
+        User.role.notin_(["admin", "super_admin"]),
+    )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 

@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { adminApi } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatNumber, formatDateTime } from '@/lib/formatters';
+import { downloadReportPdf, fmtMoney, fmtWhen } from '@/lib/pdf';
 import {
   ArrowLeft, ArrowDownCircle, ArrowUpCircle, CreditCard, DollarSign,
   Loader2, Mail, MapPin, Phone, Shield, UserRound, Wallet, Activity,
-  TrendingUp, TrendingDown, History as HistoryIcon, Receipt,
+  TrendingUp, TrendingDown, History as HistoryIcon, Receipt, FileText,
 } from 'lucide-react';
 
 // Per-user comprehensive ledger view. The page is tabbed so the load
@@ -287,6 +288,29 @@ export default function UserDetailPage() {
   const grossProfit = trades.length > 0 ? trades.filter(t => t.profit > 0).reduce((s, t) => s + t.profit, 0) : null;
   const grossLoss = trades.length > 0 ? trades.filter(t => t.profit < 0).reduce((s, t) => s + t.profit, 0) : null;
 
+  const handleDownloadStatement = () => {
+    void downloadReportPdf({
+      title: 'Account Statement',
+      subtitleLines: [
+        `User: ${name}  ·  ${user.email}`,
+        `Phone: ${user.phone || '—'}  ·  Country: ${user.country || '—'}`,
+        `Status: ${user.status}  ·  KYC: ${user.kyc_status}  ·  Joined: ${fmtWhen(user.created_at)}`,
+        `Total deposits: ${fmtMoney(total_deposit)}  ·  Total withdrawals: ${fmtMoney(total_withdrawal)}  ·  Closed trades: ${total_trades}  ·  Open positions: ${open_positions}`,
+      ],
+      columns: [
+        { header: 'Account', mono: true }, { header: 'Balance', align: 'right', mono: true },
+        { header: 'Credit', align: 'right', mono: true }, { header: 'Equity', align: 'right', mono: true },
+        { header: 'Margin Used', align: 'right', mono: true }, { header: 'Free Margin', align: 'right', mono: true },
+        { header: 'Leverage', align: 'right' }, { header: 'Type' },
+      ],
+      rows: accounts.map((a) => [
+        a.account_number, fmtMoney(a.balance), fmtMoney(a.credit), fmtMoney(a.equity),
+        fmtMoney(a.margin_used), fmtMoney(a.free_margin), `1:${a.leverage}`, a.is_demo ? 'Demo' : 'Real',
+      ]),
+      filename: `swisscresta-statement-${name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`,
+    });
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Back + Header */}
@@ -307,6 +331,13 @@ export default function UserDetailPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold capitalize', statusColor(user.status))}>{user.status}</span>
             <span className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold', kycColor(user.kyc_status))}>KYC: {user.kyc_status}</span>
+            <button
+              type="button"
+              onClick={handleDownloadStatement}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-primary bg-bg-secondary text-xs font-semibold text-text-primary transition-fast hover:bg-bg-hover"
+            >
+              <FileText size={14} className="text-text-secondary" /> Statement PDF
+            </button>
           </div>
         </div>
       </div>

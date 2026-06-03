@@ -1,0 +1,8 @@
+# Local dev override (auto-loaded by `docker compose`).
+# Host port 8000 is occupied by an unrelated project (ems-backend),
+# so the gateway is exposed on 8002 here instead. Inter-container
+# traffic is unaffected — frontends still reach it at http://gateway:8000.
+services:
+  gateway:
+    ports: !override
+      - "8002:8000"

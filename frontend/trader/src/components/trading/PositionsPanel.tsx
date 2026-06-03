@@ -701,14 +701,13 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
       ]
     : [];
 
-  const th = 'text-left text-[10px] font-bold uppercase tracking-wider text-text-tertiary px-2 py-2 whitespace-nowrap';
-  const td = 'px-2 py-2 text-[11px] sm:text-xs text-text-primary tabular-nums align-middle';
-  const theadRowClass = clsx(!isTerminal && 'border-b border-border-glass/50');
-  const tbodyRowClass = clsx(
-    isTerminal
-      ? 'hover:bg-white/[0.04] transition-colors'
-      : 'border-b border-border-glass/30 hover:bg-bg-hover/25 transition-colors',
-  );
+  const th = 'text-left text-[10px] font-bold uppercase tracking-wider text-text-tertiary px-3 py-2.5 whitespace-nowrap';
+  const td = 'px-3 py-2.5 text-[11px] sm:text-xs text-text-primary tabular-nums align-middle';
+  // Right-aligned variants for numeric columns (qty / prices / P&L) so values line up.
+  const thNum = clsx(th, '!text-right');
+  const tdNum = clsx(td, 'text-right');
+  const theadRowClass = 'border-b border-border-primary/60 bg-bg-secondary/40';
+  const tbodyRowClass = 'border-b border-border-primary/25 hover:bg-bg-hover/40 transition-colors';
 
   const tabTitle = (id: TabId) =>
     id === 'open' ? 'Positions' : id === 'history' ? 'Closed Positions' : 'Pending';
@@ -1098,12 +1097,10 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Symbol</th>
                         <th className={th}>Type</th>
                         <th className={th}>Side</th>
-                        <th className={th}>Qty</th>
-                        <th className={th}>Open</th>
-                        <th className={th}>Current</th>
-                        <th className={th}>
-                          <span className="block">P&amp;L</span>
-                        </th>
+                        <th className={thNum}>Qty</th>
+                        <th className={thNum}>Open</th>
+                        <th className={thNum}>Current</th>
+                        <th className={thNum}>P&amp;L</th>
                         <th className={th}>SL / TP</th>
                         <th className={clsx(th, 'text-right pr-3')}>Action</th>
                       </tr>
@@ -1130,19 +1127,19 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             <td className={td}>
                               <span
                                 className={clsx(
-                                  'font-bold uppercase',
-                                  pos.side === 'buy' ? 'text-buy' : 'text-sell',
+                                  'inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide',
+                                  pos.side === 'buy' ? 'bg-buy/12 text-buy' : 'bg-sell/12 text-sell',
                                 )}
                               >
                                 {pos.side}
                               </span>
                             </td>
-                            <td className={td}>{pos.lots}</td>
-                            <td className={clsx(td, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
-                            <td className={clsx(td, 'font-mono')}>
+                            <td className={tdNum}>{pos.lots}</td>
+                            <td className={clsx(tdNum, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
+                            <td className={clsx(tdNum, 'font-mono')}>
                               {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
                             </td>
-                            <td className={clsx(td, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
+                            <td className={clsx(tdNum, 'font-mono font-bold tabular-nums')} style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
                               {net >= 0 ? '+' : ''}${net.toFixed(2)}
                             </td>
                             <td className={clsx(td, 'text-[10px]')}>
@@ -1191,7 +1188,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex flex-col gap-1 items-start">
+                                <div className="flex flex-wrap gap-1.5 items-center">
                                   {pos.stop_loss != null ? (
                                     <button
                                       type="button"

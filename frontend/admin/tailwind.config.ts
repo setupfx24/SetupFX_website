@@ -28,15 +28,16 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* SwissCresta brand orange — every generic UI accent in admin
-         * resolves through `accent.*`. `buy` keeps the trading-context
-         * blue convention (buy = blue) and is independent of the brand. */
+        /* SwissCresta brand orange. Admin generic UI accents resolve
+         * through `accent.*`, and `buy` was historically used as a
+         * generic primary too — so it's repointed to the brand orange
+         * to keep every button/icon on-theme (sell stays red). */
         buy: {
-          DEFAULT: '#1E66F5',
-          light: '#4D87F9',
-          dark: '#0E4FCF',
-          bg: 'rgba(30,102,245,0.08)',
-          glow: 'rgba(30,102,245,0.25)',
+          DEFAULT: '#E94E1B',
+          light: '#FB7B4E',
+          dark: '#C73E11',
+          bg: 'rgba(233,78,27,0.08)',
+          glow: 'rgba(233,78,27,0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
