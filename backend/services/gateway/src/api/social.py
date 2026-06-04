@@ -256,6 +256,19 @@ async def pamm_master_trades(
     )
 
 
+@router.get("/copies/{allocation_id}/trades")
+async def copy_allocation_trades(
+    allocation_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Follower's copy-trade history for one subscription (open + closed),
+    for any copy type (signal / mam / pamm)."""
+    return await social_service.copy_allocation_trades(
+        allocation_id=allocation_id, user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.get("/master-investors")
 async def master_investors(
     current_user: dict = Depends(get_current_user),

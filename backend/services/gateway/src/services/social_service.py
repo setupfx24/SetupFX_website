@@ -13,7 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
-    Referral,
+    Referral, AccountGroup,
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
@@ -296,8 +296,22 @@ async def start_copy(
         wallet_bal = user.main_wallet_balance or Decimal("0")
         if wallet_bal < amount:
             raise HTTPException(status_code=400, detail=f"Insufficient wallet balance (available: {wallet_bal})")
+        # Attach a real account group so spread/commission/min-lot resolution
+        # and the account-summary UI work. Without it the account_group FK is
+        # NULL and downstream group lookups fall back to defaults. Best-effort:
+        # if the Standard group is missing we still create the account (the
+        # copy engine drives trades, not a manual order pipeline).
+        std_grp_q = await db.execute(
+            select(AccountGroup).where(
+                AccountGroup.name == "Standard",
+                AccountGroup.is_demo == False,  # noqa: E712
+                AccountGroup.is_active == True,  # noqa: E712
+            ).limit(1)
+        )
+        std_grp = std_grp_q.scalar_one_or_none()
         investor_account = TradingAccount(
             user_id=user_id,
+            account_group_id=std_grp.id if std_grp else None,
             account_number=_gen_investor_account_number("signal"),
             balance=amount,
             equity=amount,
@@ -495,6 +509,8 @@ async def my_copies(user_id: UUID, db: AsyncSession) -> dict:
 
     items = []
     for alloc, master, first_name, last_name in rows:
+        ctype = (alloc.copy_type or "signal").lower()
+        open_count, closed_count = await _allocation_trade_counts(alloc, master, ctype, db)
         items.append({
             "id": str(alloc.id), "master_id": str(master.id),
             "provider_name": f"{first_name or ''} {last_name or ''}".strip(),
@@ -503,9 +519,49 @@ async def my_copies(user_id: UUID, db: AsyncSession) -> dict:
             "total_return_pct": float(master.total_return_pct),
             "copy_type": alloc.copy_type or "signal",
             "status": alloc.status,
+            "open_trades": open_count,
+            "closed_trades": closed_count,
+            "total_trades": open_count + closed_count,
             "created_at": alloc.created_at.isoformat() if alloc.created_at else None,
         })
     return {"items": items, "total": len(items)}
+
+
+async def _allocation_trade_counts(
+    allocation: InvestorAllocation, master: MasterAccount, copy_type: str, db: AsyncSession,
+) -> tuple[int, int]:
+    """(open_count, closed_count) of copied trades for one allocation.
+
+    - signal/mam: counts the follower's own mirrored positions (CopyTrade rows).
+    - pamm: there are no per-investor copies — the investor shares the master's
+      pool — so we report the master's own open positions + closed-trade count.
+    """
+    if copy_type == "pamm":
+        if not master.account_id:
+            return 0, 0
+        open_q = await db.execute(
+            select(func.count()).where(
+                Position.account_id == master.account_id,
+                Position.status == "open",
+            )
+        )
+        closed_q = await db.execute(
+            select(func.count()).where(TradeHistory.account_id == master.account_id)
+        )
+        return int(open_q.scalar() or 0), int(closed_q.scalar() or 0)
+
+    counts_q = await db.execute(
+        select(CopyTrade.status, func.count())
+        .where(CopyTrade.investor_allocation_id == allocation.id)
+        .group_by(CopyTrade.status)
+    )
+    open_count = closed_count = 0
+    for status_val, cnt in counts_q.all():
+        if status_val == "open":
+            open_count = int(cnt or 0)
+        elif status_val == "closed":
+            closed_count = int(cnt or 0)
+    return open_count, closed_count
 
 
 async def stop_copy(allocation_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
@@ -1210,6 +1266,23 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
     )
     open_positions = open_pos_q.scalar() or 0
 
+    # Copy-trade mirrors generated across ALL of this master's followers
+    # (open + closed). This is distinct from the master's own trade counts
+    # above — it's how many follower-side copies this master has spawned.
+    copy_counts_q = await db.execute(
+        select(CopyTrade.status, func.count())
+        .join(InvestorAllocation, CopyTrade.investor_allocation_id == InvestorAllocation.id)
+        .where(InvestorAllocation.master_id == master.id)
+        .group_by(CopyTrade.status)
+    )
+    copy_open_count = 0
+    copy_closed_count = 0
+    for status_val, cnt in copy_counts_q.all():
+        if status_val == "open":
+            copy_open_count = cnt or 0
+        elif status_val == "closed":
+            copy_closed_count = cnt or 0
+
     # Commission / performance fee earned by this master
     from packages.common.src.models import Transaction
     fee_q = await db.execute(
@@ -1235,6 +1308,9 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "today_trades": today_row[0] or 0,
         "today_profit": float(today_row[1] or 0),
         "open_positions": open_positions,
+        "copy_open_count": copy_open_count,
+        "copy_closed_count": copy_closed_count,
+        "copy_total_count": copy_open_count + copy_closed_count,
         "commission_earned": commission_earned,
         "performance_fee_pct": float(master.performance_fee_pct),
         "management_fee_pct": float(master.management_fee_pct),
@@ -1772,9 +1848,93 @@ async def pamm_master_trades(
 
     return {
         "allocation_id": str(allocation_id),
+        "copy_type": "pamm",
         "your_ratio_pct": round(ratio * 100, 4),
         "open_trades": open_trades,
         "closed_trades": closed_trades,
+        "open_count": len(open_trades),
+        "closed_count": len(closed_trades),
+    }
+
+
+async def copy_allocation_trades(
+    allocation_id: UUID, user_id: UUID, db: AsyncSession,
+) -> dict:
+    """Per-subscription copy-trade history for the follower who owns this
+    allocation. Works for every copy type:
+
+    - pamm  → delegates to pamm_master_trades (master pool + your_share).
+    - signal/mam → the follower's OWN mirrored positions on their copy
+      sub-account (open Positions + closed TradeHistory rows).
+    """
+    from packages.common.src.models import Position, TradeHistory, Instrument
+
+    alloc_q = await db.execute(
+        select(InvestorAllocation).where(
+            InvestorAllocation.id == allocation_id,
+            InvestorAllocation.investor_user_id == user_id,
+        )
+    )
+    allocation = alloc_q.scalar_one_or_none()
+    if not allocation:
+        raise HTTPException(status_code=404, detail="Copy subscription not found")
+
+    ctype = (allocation.copy_type or "signal").lower()
+    if ctype == "pamm":
+        return await pamm_master_trades(allocation_id, user_id, db)
+
+    acct_id = allocation.investor_account_id
+
+    open_q = await db.execute(
+        select(Position, Instrument)
+        .join(Instrument, Position.instrument_id == Instrument.id)
+        .where(Position.account_id == acct_id, Position.status == "open")
+        .order_by(Position.created_at.desc())
+    )
+    open_trades = []
+    for pos, inst in open_q.all():
+        open_trades.append({
+            "id": str(pos.id),
+            "symbol": inst.symbol,
+            "side": pos.side.value if hasattr(pos.side, "value") else str(pos.side),
+            "lots": float(pos.lots),
+            "open_price": float(pos.open_price),
+            "opened_at": pos.created_at.isoformat() if pos.created_at else None,
+            "pnl": float(pos.profit or 0),
+            "status": "open",
+        })
+
+    closed_q = await db.execute(
+        select(TradeHistory, Instrument)
+        .join(Instrument, TradeHistory.instrument_id == Instrument.id)
+        .where(TradeHistory.account_id == acct_id)
+        .order_by(TradeHistory.closed_at.desc())
+        .limit(200)
+    )
+    closed_trades = []
+    for th, inst in closed_q.all():
+        closed_trades.append({
+            "id": str(th.id),
+            "symbol": inst.symbol,
+            "side": th.side.value if hasattr(th.side, "value") else str(th.side),
+            "lots": float(th.lots),
+            "open_price": float(th.open_price),
+            "close_price": float(th.close_price),
+            "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+            "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+            "pnl": float(th.profit or 0),
+            "close_reason": ("manual" if (th.close_reason or "").lower() == "admin"
+                             else (th.close_reason or "manual")),
+            "status": "closed",
+        })
+
+    return {
+        "allocation_id": str(allocation_id),
+        "copy_type": ctype,
+        "open_trades": open_trades,
+        "closed_trades": closed_trades,
+        "open_count": len(open_trades),
+        "closed_count": len(closed_trades),
     }
 
 

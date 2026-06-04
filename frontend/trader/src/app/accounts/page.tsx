@@ -16,6 +16,7 @@ import {
   Wallet,
   ArrowDownToLine,
   TrendingUp,
+  Users,
 } from 'lucide-react';
 import DashboardShell from '@/components/layout/DashboardShell';
 import { Button } from '@/components/ui/Button';
@@ -702,6 +703,15 @@ function AccountCard({
           >
             {isActive ? 'Active' : 'Inactive'}
           </span>
+          {isManagedAccount && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-[#FCE6DD] px-2 py-0.5 text-xs font-medium text-[#E94E1B]"
+              title="Copy-trading account — trades are mirrored from the master you follow"
+            >
+              <Users size={12} />
+              Copy Trading
+            </span>
+          )}
           {alias ? (
             <div className="min-w-0 flex flex-col leading-tight">
               <span className="truncate text-sm font-semibold text-[#0A0A0A]" title={alias}>

@@ -64,6 +64,12 @@ class CopyTradeEngine:
     def __init__(self):
         self._running = False
         self._master_positions: dict[str, set[str]] = defaultdict(set)
+        # Allocations that have already been "seeded" with the master's
+        # currently-open positions (catch-up for followers who subscribe
+        # mid-trade). Keyed by master_id -> set of allocation_ids. In-memory
+        # only; a process restart re-seeds, but the _open_copy dedup guard
+        # makes that a no-op for copies that already exist.
+        self._seeded_allocations: dict[str, set[str]] = defaultdict(set)
 
     @staticmethod
     def compute_lot_size(
@@ -241,6 +247,42 @@ class CopyTradeEngine:
                 "process_master master=%s: total_pool=0, skipping PAMM/MAM opens this cycle",
                 master_id_str,
             )
+
+        # ── Catch-up for newly-joined followers ─────────────────────────────
+        # The new_positions diff below only mirrors trades the master opens
+        # AFTER this cycle. A follower who subscribes while the master already
+        # holds open positions would otherwise never receive them (the master
+        # position is already in prev_master_pos_ids, so it's never "new").
+        # Seed each allocation once with the master's currently-open positions.
+        seeded = self._seeded_allocations[master_id_str]
+        for investor in active_investors:
+            alloc_key = str(investor.id)
+            if alloc_key in seeded:
+                continue
+            # PAMM investors pool on the master account — no sub-account opens.
+            if resolve_copy_type(investor, master) == "pamm":
+                seeded.add(alloc_key)
+                continue
+            investor_account = await db.get(TradingAccount, investor.investor_account_id)
+            if not investor_account or not investor_account.is_active:
+                # Account not ready yet — retry next cycle, don't mark seeded.
+                continue
+            for pos_id in current_master_pos_ids:
+                await self._open_copy(
+                    master,
+                    master_open[pos_id],
+                    investor,
+                    investor_account,
+                    master_account,
+                    total_pool,
+                    db,
+                )
+            seeded.add(alloc_key)
+            if current_master_pos_ids:
+                logger.info(
+                    "Catch-up: seeded allocation=%s with %d open master position(s)",
+                    investor.id, len(current_master_pos_ids),
+                )
 
         new_positions = current_master_pos_ids - prev_master_pos_ids
         closed_positions = prev_master_pos_ids - current_master_pos_ids
