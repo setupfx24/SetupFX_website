@@ -808,12 +808,15 @@ function AccountCard({
           <button
             type="button"
             onClick={onTrade}
-            disabled={isManagedAccount}
-            title={isManagedAccount ? 'Managed account — trades are placed by the master' : undefined}
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-[#E94E1B] hover:text-[#E94E1B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              isManagedAccount
+                ? 'Managed account — trades are mirrored from the master. Open the terminal to view the copied positions.'
+                : undefined
+            }
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-[#E94E1B] hover:text-[#E94E1B] transition-colors"
           >
             <TrendingUp size={15} />
-            Trade
+            {isManagedAccount ? 'View Trades' : 'Trade'}
           </button>
         </div>
       </div>
