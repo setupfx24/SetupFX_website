@@ -66,13 +66,18 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
+# Docs are an opt-in exposure (security audit M6). Previously this
+# exposed the full admin OpenAPI spec on any environment that wasn't
+# tagged exactly "development". Now docs only mount when ENVIRONMENT is
+# explicitly dev/local.
+_EXPOSE_DOCS = app_settings.ENVIRONMENT in ("development", "local")
 app = FastAPI(
     title="SwissCresta Admin API",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs" if app_settings.ENVIRONMENT == "development" else None,
-    redoc_url="/redoc" if app_settings.ENVIRONMENT == "development" else None,
-    openapi_url="/openapi.json" if app_settings.ENVIRONMENT == "development" else None,
+    docs_url="/docs" if _EXPOSE_DOCS else None,
+    redoc_url="/redoc" if _EXPOSE_DOCS else None,
+    openapi_url="/openapi.json" if _EXPOSE_DOCS else None,
 )
 
 app.add_middleware(

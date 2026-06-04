@@ -185,14 +185,20 @@ async def lifespan(app: FastAPI):
     await redis_client.close()
 
 
+# Docs are an opt-in exposure (security audit M6). Previously this was
+# "expose unless ENVIRONMENT == 'development' is false", so a staging
+# box left at the default value would leak the full OpenAPI spec — every
+# endpoint and schema — to the public internet. Now we only mount them
+# for explicitly tagged dev/local environments.
+_EXPOSE_DOCS = settings.ENVIRONMENT in ("development", "local")
 app = FastAPI(
     title="SwissCresta Gateway",
     version="1.0.0",
     description="Forex CFD B-Book Trading Platform API",
     lifespan=lifespan,
-    docs_url="/docs" if settings.ENVIRONMENT == "development" else None,
-    redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
-    openapi_url="/openapi.json" if settings.ENVIRONMENT == "development" else None,
+    docs_url="/docs" if _EXPOSE_DOCS else None,
+    redoc_url="/redoc" if _EXPOSE_DOCS else None,
+    openapi_url="/openapi.json" if _EXPOSE_DOCS else None,
 )
 
 app.add_middleware(

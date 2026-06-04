@@ -22,6 +22,11 @@ services:
     ports:
       - "127.0.0.1:8003:8001"
     restart: always
+    environment:
+      # Admin API is reached exclusively from the admin SPA — never from
+      # the trader or marketing domain. Lock CORS to admin.swisscresta.com
+      # so a compromise of the other surfaces can't pivot here.
+      CORS_ORIGINS: https://admin.swisscresta.com
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
 
   gateway:
@@ -29,7 +34,13 @@ services:
       - "127.0.0.1:8002:8000"
     restart: always
     environment:
-      CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
+      # Marketing site (swisscresta.com) is intentionally NOT in this
+      # allow-list: it has no business calling the API, and its inclusion
+      # combined with COOKIE_DOMAIN=.swisscresta.com made an XSS on the
+      # marketing site trivially credentialed-request the gateway as any
+      # logged-in user. Browsers hit the API same-origin via the
+      # trader-frontend proxy, so only the two app subdomains need it.
+      CORS_ORIGINS: https://trade.swisscresta.com,https://admin.swisscresta.com
       COOKIE_DOMAIN: .swisscresta.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
