@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.config import get_settings
 from packages.common.src.database import get_db
+from packages.common.src.rate_limit import rate_limit_http
 from dependencies import get_current_admin, ADMIN_COOKIE_NAME
 from packages.common.src.models import User
 from packages.common.src.admin_schemas import AdminLoginRequest, AdminLoginResponse, AdminRefreshRequest
@@ -57,6 +58,12 @@ async def admin_login(
     SameSite=strict. We deliberately strip it from the JSON body so that
     an XSS shell, an intercepted browser response, or a curl session that
     forgot to ignore the body cannot exfiltrate the bearer credential."""
+    # Throttle per client IP. Admin accounts grant full money movement
+    # and impersonation, so the bucket is significantly tighter than the
+    # trader login (which sits at 40/min): 10 attempts per 60s ≈ 1 every
+    # 6 seconds, enough to retype a wrong password but not enough for
+    # credential stuffing / spraying. Audit finding H1.
+    rate_limit_http(request, "admin-login", 10, 60.0)
     result = await auth_service.admin_login(body=body, db=db)
     _set_admin_cookie(response, request, result.access_token)
     return result.model_dump(exclude={"access_token", "token_type"})
@@ -71,6 +78,7 @@ async def admin_refresh(
 ):
     """Same body-stripping as `/login` — refresh result returns the new
     token only via the HttpOnly cookie."""
+    rate_limit_http(request, "admin-refresh", 30, 60.0)
     result = await auth_service.admin_refresh(body=body, db=db)
     _set_admin_cookie(response, request, result.access_token)
     return result.model_dump(exclude={"access_token", "token_type"})

@@ -1,11 +1,9 @@
 """Auth Service — Registration, login, token management, demo user, 2FA, password reset."""
-import ipaddress
 import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from time import monotonic
 
 import pyotp
 from fastapi import Request
@@ -42,25 +40,6 @@ class AuthServiceError(Exception):
         super().__init__(detail)
 
 
-# ─── Utility: IP parsing ─────────────────────────────────────────────────
-
-def _parse_one_ip(raw: str) -> str | None:
-    h = raw.strip()
-    if not h:
-        return None
-    if "," in h:
-        h = h.split(",")[0].strip()
-    if h.startswith("[") and "]" in h:
-        h = h[1 : h.index("]")]
-    if "%" in h:
-        h = h.split("%", 1)[0]
-    try:
-        ipaddress.ip_address(h)
-        return h
-    except ValueError:
-        return None
-
-
 def _allowed_origins() -> set[str]:
     raw = (get_settings().CORS_ORIGINS or "").split(",")
     return {o.strip().rstrip("/") for o in raw if o.strip()}
@@ -90,86 +69,13 @@ def assert_same_origin(request: Request) -> None:
     raise AuthServiceError("Origin not allowed", 403)
 
 
-def client_ip_for_inet(request: Request) -> str | None:
-    """Return a value PostgreSQL INET accepts, or None."""
-    ff = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
-    if ff:
-        for part in ff.split(","):
-            got = _parse_one_ip(part)
-            if got:
-                return got
-    host = request.client.host if request.client else None
-    return _parse_one_ip(str(host)) if host else None
-
-
-# ─── Utility: rate limiting ──────────────────────────────────────────────
-
-_LOCAL_RATE_BUCKETS: dict[str, list[float]] = {}
-
-
-def rate_limit_http(request: Request, bucket: str, max_requests: int, window_sec: float) -> None:
-    """Sliding-window rate limiter, scoped to (bucket, client IP).
-
-    Best-effort: tries Redis first via fire-and-forget asyncio scheduling
-    (so we never block the request hot path on Redis latency), and falls
-    back to a per-process in-memory window if Redis is unreachable.
-
-    Raises HTTPException(429) when the cap is exceeded. Whitelisting is
-    by IP; if `client_ip_for_inet` returns None (e.g. unit test request
-    with no client) the bucket is keyed on the bucket name alone.
-
-    Earlier this was a no-op, which left every auth endpoint (login,
-    register, password reset, 2FA, wallet nonce) wide open to brute
-    force / credential stuffing / OTP guessing. Production must always
-    have it on.
-    """
-    from fastapi import HTTPException
-
-    ip = client_ip_for_inet(request) or "anon"
-    key = f"rl:{bucket}:{ip}"
-    now = monotonic()
-    floor = now - window_sec
-
-    # Local fallback path. Trim, count, decide. Cheap.
-    arr = _LOCAL_RATE_BUCKETS.setdefault(key, [])
-    while arr and arr[0] < floor:
-        arr.pop(0)
-    if len(arr) >= max_requests:
-        retry_after = max(1, int(arr[0] + window_sec - now))
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many requests — retry after {retry_after}s.",
-            headers={"Retry-After": str(retry_after)},
-        )
-    arr.append(now)
-
-    # Best-effort Redis cross-process sync — fire-and-forget so a Redis
-    # blip never makes auth slower than it already is. Multi-pod
-    # deployments rely on this for cluster-wide counting.
-    try:
-        from packages.common.src.redis_client import redis_client
-        async def _sync():
-            try:
-                pipe = redis_client.pipeline()
-                pipe.zremrangebyscore(key, 0, floor)
-                pipe.zadd(key, {f"{now}:{ip}": now})
-                pipe.zcard(key)
-                pipe.expire(key, int(window_sec) + 5)
-                _, _, count, _ = await pipe.execute()
-                if count > max_requests:
-                    # Cross-process counter saw too many — bump the local
-                    # bucket so the next request from this pod also fails
-                    # without re-querying Redis.
-                    _LOCAL_RATE_BUCKETS[key] = [now] * max_requests
-            except Exception:
-                pass
-        import asyncio
-        try:
-            asyncio.create_task(_sync())
-        except RuntimeError:
-            pass
-    except Exception:
-        pass
+# Rate-limit helpers were lifted into packages/common so the admin API
+# can share them. Re-exported here for back-compat with the existing
+# `from .auth_service import rate_limit_http` callers across the gateway.
+from packages.common.src.rate_limit import (  # noqa: F401  (re-export)
+    client_ip_for_inet,
+    rate_limit_http,
+)
 
 
 # ─── Utility: cookies ────────────────────────────────────────────────────

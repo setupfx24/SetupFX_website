@@ -286,8 +286,62 @@ def _ws_token_from_websocket(ws: WebSocket, fallback_query_token: str | None) ->
     return fallback_query_token
 
 
+def _admin_ws_token(ws: WebSocket, fallback_query_token: str | None) -> str | None:
+    """Same cookie-first pattern as the trader token, but reads the
+    admin HttpOnly cookie (`fx_admin` by default) and falls back to the
+    query string only if the cookie is missing. Audit H4 — previously
+    admin WS only accepted ?token=, dumping the admin JWT into nginx
+    access logs and the browser history."""
+    cookie_name = (get_settings().ADMIN_COOKIE_NAME or "fx_admin").strip()
+    cookie_token = ws.cookies.get(cookie_name)
+    if cookie_token:
+        return cookie_token
+    return fallback_query_token
+
+
+def _verify_admin_ws_token(token: str | None) -> dict | None:
+    """Decode an admin JWT (separate secret + claim shape from trader
+    tokens). Returns a normalised dict or None on any failure.
+
+    Admin tokens carry `admin_id` not `sub`, are signed with
+    ADMIN_JWT_SECRET, and have type="admin"; trader tokens decoded by
+    `_verify_ws_token` will not pass this check — which is the point."""
+    if not token:
+        return None
+    try:
+        import jwt as _jwt
+        st = get_settings()
+        payload = _jwt.decode(token, st.ADMIN_JWT_SECRET, algorithms=[st.ADMIN_JWT_ALGORITHM])
+        if payload.get("type") != "admin":
+            return None
+        return {"admin_id": UUID(payload["admin_id"]), "role": payload.get("role", "")}
+    except Exception:
+        return None
+
+
+def _check_ws_origin(websocket: WebSocket) -> bool:
+    """Reject WebSocket handshakes whose Origin header isn't on our
+    allow-list. Browsers send cookies on cross-origin WS handshakes
+    regardless of SameSite, so a malicious page could otherwise open
+    a credentialed WS and stream the user's events. Audit M2.
+
+    Non-browser callers (no Origin header) are allowed through — they
+    still have to present a valid token in the next step. CORS allow-list
+    is empty in dev → also allowed through so localhost flows still work.
+    """
+    origin = (websocket.headers.get("origin") or "").strip().rstrip("/")
+    if not origin:
+        return True
+    if not _cors_origins:
+        return True
+    return origin in _cors_origins
+
+
 @app.websocket("/ws/prices")
 async def price_stream(websocket: WebSocket, token: str | None = Query(default=None)):
+    if not _check_ws_origin(websocket):
+        await websocket.close(code=4003, reason="Origin not allowed")
+        return
     effective = _ws_token_from_websocket(websocket, token)
     if effective:
         user = _verify_ws_token(effective)
@@ -322,6 +376,9 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
 
 @app.websocket("/ws/trades/{account_id}")
 async def trade_stream(websocket: WebSocket, account_id: str, token: str | None = Query(default=None)):
+    if not _check_ws_origin(websocket):
+        await websocket.close(code=4003, reason="Origin not allowed")
+        return
     effective = _ws_token_from_websocket(websocket, token)
     user = _verify_ws_token(effective)
     if not user:
@@ -382,9 +439,19 @@ async def trade_stream(websocket: WebSocket, account_id: str, token: str | None 
 
 
 @app.websocket("/ws/admin")
-async def admin_stream(websocket: WebSocket, token: str = Query()):
-    user = _verify_ws_token(token)
-    if not user or user["role"] not in ("admin", "super_admin"):
+async def admin_stream(websocket: WebSocket, token: str | None = Query(default=None)):
+    if not _check_ws_origin(websocket):
+        await websocket.close(code=4003, reason="Origin not allowed")
+        return
+    # Cookie-first (audit H4) so the admin JWT never ends up in nginx
+    # access logs or browser history the way ?token= did. Query string
+    # stays as a last-resort fallback for non-browser clients. Decode
+    # uses ADMIN_JWT_SECRET — a trader token cannot pass this check
+    # even if JWT_SECRET == ADMIN_JWT_SECRET in some envs (the type
+    # claim still has to be "admin").
+    effective = _admin_ws_token(websocket, token)
+    admin = _verify_admin_ws_token(effective)
+    if not admin or admin["role"] not in ("admin", "super_admin"):
         await websocket.close(code=4003, reason="Admin access required")
         return
 
