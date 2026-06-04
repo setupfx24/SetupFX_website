@@ -61,7 +61,36 @@ interface CopySubscription {
   total_return_pct: number;
   copy_type: string;
   status: string;
+  open_trades?: number;
+  closed_trades?: number;
+  total_trades?: number;
   created_at: string;
+}
+
+interface CopyTradeRow {
+  id: string;
+  symbol: string;
+  side: string;
+  lots: number;
+  open_price: number;
+  close_price?: number;
+  opened_at?: string | null;
+  closed_at?: string | null;
+  pnl?: number;
+  your_share?: number;
+  master_pnl?: number;
+  close_reason?: string;
+  status: string;
+}
+
+interface CopyTradesResponse {
+  allocation_id: string;
+  copy_type: string;
+  open_trades: CopyTradeRow[];
+  closed_trades: CopyTradeRow[];
+  open_count: number;
+  closed_count: number;
+  your_ratio_pct?: number;
 }
 
 interface PaginatedResponse<T> {
@@ -796,6 +825,9 @@ function MyCopiesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stoppingId, setStoppingId] = useState<string | null>(null);
+  const [tradesTarget, setTradesTarget] = useState<CopySubscription | null>(null);
+  const [tradesData, setTradesData] = useState<CopyTradesResponse | null>(null);
+  const [tradesLoading, setTradesLoading] = useState(false);
   const [refillTarget, setRefillTarget] = useState<CopySubscription | null>(null);
   const [refillAmount, setRefillAmount] = useState('');
   const [refilling, setRefilling] = useState(false);
@@ -857,6 +889,21 @@ function MyCopiesTab() {
     fetchWalletBal();
   };
 
+  const openTrades = async (c: CopySubscription) => {
+    setTradesTarget(c);
+    setTradesData(null);
+    setTradesLoading(true);
+    try {
+      const res = await api.get<CopyTradesResponse>(`/social/copies/${c.id}/trades`);
+      setTradesData(res);
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load copy trades'));
+      setTradesTarget(null);
+    } finally {
+      setTradesLoading(false);
+    }
+  };
+
   const submitRefill = async () => {
     if (!refillTarget) return;
     const amt = parseFloat(refillAmount);
@@ -915,9 +962,17 @@ function MyCopiesTab() {
               <span>Allocated: <span className="text-text-primary font-medium">${c.allocation_amount.toLocaleString()}</span></span>
               <span>PnL: <span className={clsx('font-medium', c.total_profit >= 0 ? 'text-buy' : 'text-sell')}>{c.total_profit >= 0 ? '+' : ''}${c.total_profit.toLocaleString()}</span></span>
               <span>ROI: <span className={clsx('font-medium', c.total_return_pct >= 0 ? 'text-buy' : 'text-sell')}>{c.total_return_pct >= 0 ? '+' : ''}{c.total_return_pct.toFixed(2)}%</span></span>
+              <span>Trades: <span className="text-text-primary font-medium">{c.open_trades ?? 0} open</span> · <span className="text-text-primary font-medium">{c.closed_trades ?? 0} closed</span></span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => openTrades(c)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-primary text-text-secondary hover:text-text-primary hover:border-accent transition-all"
+            >
+              Trades
+            </button>
             {c.status === 'active' && (
               <button
                 type="button"
@@ -949,6 +1004,71 @@ function MyCopiesTab() {
           </div>
         </div>
       ))}
+
+      {/* Copy-trades history modal */}
+      {tradesTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setTradesTarget(null)}>
+          <div className="absolute inset-0 bg-bg-base/75 backdrop-blur-sm" />
+          <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl bg-bg-secondary border border-border-glass">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-primary">
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary">Copy Trades — {tradesTarget.provider_name}</h3>
+                {tradesData && (
+                  <p className="text-xxs text-text-tertiary mt-0.5">
+                    {tradesData.open_count} open · {tradesData.closed_count} closed
+                    {typeof tradesData.your_ratio_pct === 'number' ? ` · your share ${tradesData.your_ratio_pct}%` : ''}
+                  </p>
+                )}
+              </div>
+              <button type="button" onClick={() => setTradesTarget(null)} className="text-text-tertiary hover:text-text-primary text-lg">✕</button>
+            </div>
+            <div className="overflow-y-auto p-4 space-y-4">
+              {tradesLoading && <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>}
+              {!tradesLoading && tradesData && (() => {
+                const pammShare = tradesData.copy_type === 'pamm';
+                const pnlOf = (t: CopyTradeRow) => pammShare ? (t.your_share ?? 0) : (t.pnl ?? 0);
+                const rows = [...tradesData.open_trades, ...tradesData.closed_trades];
+                if (rows.length === 0) return <EmptyState message="No copy trades yet for this subscription" />;
+                return (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-text-tertiary text-left">
+                        <th className="py-1.5 font-medium">Symbol</th>
+                        <th className="py-1.5 font-medium">Side</th>
+                        <th className="py-1.5 font-medium text-right">Lots</th>
+                        <th className="py-1.5 font-medium text-right">Open</th>
+                        <th className="py-1.5 font-medium text-right">Close</th>
+                        <th className="py-1.5 font-medium text-right">P&amp;L</th>
+                        <th className="py-1.5 font-medium text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((t) => {
+                        const pnl = pnlOf(t);
+                        return (
+                          <tr key={t.id} className="border-t border-border-primary/50">
+                            <td className="py-1.5 text-text-primary font-medium">{t.symbol}</td>
+                            <td className={clsx('py-1.5 font-medium uppercase', t.side === 'buy' ? 'text-buy' : 'text-sell')}>{t.side}</td>
+                            <td className="py-1.5 text-right tabular-nums text-text-secondary">{t.lots}</td>
+                            <td className="py-1.5 text-right tabular-nums text-text-secondary">{t.open_price}</td>
+                            <td className="py-1.5 text-right tabular-nums text-text-secondary">{t.close_price ?? '—'}</td>
+                            <td className={clsx('py-1.5 text-right tabular-nums font-medium', pnl >= 0 ? 'text-buy' : 'text-sell')}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}</td>
+                            <td className="py-1.5 text-right">
+                              <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-medium', t.status === 'open' ? 'bg-buy/20 text-buy' : 'bg-text-tertiary/20 text-text-tertiary')}>
+                                {t.status === 'closed' && t.close_reason ? t.close_reason : t.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Refill Modal */}
       {refillTarget && (
@@ -1731,6 +1851,28 @@ function MyDashboardTab() {
           <div>
             <p className="text-xxs text-text-tertiary">Win Rate</p>
             <p className={clsx('text-lg font-bold font-mono tabular-nums', (data.win_rate || 0) >= 50 ? 'text-buy' : 'text-sell')}>{data.win_rate?.toFixed(1) || '0.0'}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Copy Trades Generated — mirrors spawned across all followers */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-3 border-b border-border-primary">
+          <h3 className="text-sm font-semibold text-text-primary">Copy Trades</h3>
+          <p className="text-xxs text-text-tertiary mt-0.5">Mirrored trades generated across all your followers&apos; accounts</p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 p-4">
+          <div>
+            <p className="text-xxs text-text-tertiary">Open</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-buy">{data.copy_open_count || 0}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Closed</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{data.copy_closed_count || 0}</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Total</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-text-primary">{data.copy_total_count || 0}</p>
           </div>
         </div>
       </div>
