@@ -163,9 +163,10 @@ async def login_as_user(
     Permission `users.impersonate` is a separate grant from `users.view`
     so a low-privilege analyst with "users.view" cannot impersonate a
     customer. Super-admins bypass automatically. Audit-logged on every
-    successful start."""
+    successful start. The service additionally refuses to impersonate
+    any staff role unless the caller is super_admin (audit H5)."""
     return await user_service.login_as_user(
-        user_id=user_id, admin_id=admin.id,
+        user_id=user_id, admin_id=admin.id, admin_role=admin.role,
         ip_address=request.client.host if request.client else None, db=db,
     )
 

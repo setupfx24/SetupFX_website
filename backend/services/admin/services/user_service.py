@@ -598,7 +598,8 @@ async def kill_switch(
 
 
 async def login_as_user(
-    user_id: uuid.UUID, admin_id: uuid.UUID, ip_address: str | None, db: AsyncSession,
+    user_id: uuid.UUID, admin_id: uuid.UUID, admin_role: str,
+    ip_address: str | None, db: AsyncSession,
 ) -> dict:
     """Issue a single-use, short-TTL redemption code instead of returning
     the impersonation JWT directly.
@@ -624,6 +625,19 @@ async def login_as_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Privilege guard (audit H5). Even if a non-super-admin somehow holds
+    # the `users.impersonate` permission (via Employee.extra_permissions
+    # or a future role-table edit), they MUST NOT be able to impersonate
+    # a higher-privileged account — that would mint a super_admin JWT
+    # and trivially escalate. Only super_admin can impersonate other
+    # staff accounts.
+    if user.role in ("admin", "super_admin", "employee", "manager", "support"):
+        if admin_role != "super_admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Only super_admin can impersonate staff accounts.",
+            )
 
     expire = datetime.utcnow() + timedelta(hours=2)
     payload = {
