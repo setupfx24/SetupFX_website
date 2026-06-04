@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
+from packages.common.src.rate_limit import rate_limit_http
 from packages.common.src.schemas import (
     DepositRequest,
     InternalWalletTransferRequest,
@@ -55,9 +56,13 @@ async def fetch_deposit_bank_details(
 @router.post("/deposit", status_code=201)
 async def create_deposit(
     req: DepositRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # Tight cap on money-creating endpoints — 20/min per IP is well
+    # above any human pace but blocks scripted abuse / fraud attempts.
+    rate_limit_http(request, "wallet-deposit", 20, 60.0)
     return await wallet_service.create_deposit(
         req=req, user_id=current_user["user_id"], db=db,
     )
@@ -68,6 +73,7 @@ async def create_deposit(
 
 @router.post("/deposit/manual", status_code=201)
 async def create_manual_deposit(
+    request: Request,
     amount: Decimal = Form(...),
     transaction_id: str = Form(...),
     file: UploadFile = File(...),
@@ -78,6 +84,7 @@ async def create_manual_deposit(
     """Manual bank / UPI deposit: user uploads payment proof; goes to admin
     queue for review. Body is multipart/form-data (not JSON) because of the
     file upload."""
+    rate_limit_http(request, "wallet-deposit-manual", 10, 60.0)
     return await wallet_service.create_manual_deposit(
         user_id=current_user["user_id"],
         account_id=account_id,
@@ -90,6 +97,7 @@ async def create_manual_deposit(
 
 @router.post("/withdraw/manual", status_code=201)
 async def create_manual_withdrawal(
+    request: Request,
     amount: Decimal = Form(...),
     upi_id: str = Form(""),
     payout_notes: str = Form(""),
@@ -99,6 +107,7 @@ async def create_manual_withdrawal(
 ):
     """Manual UPI / QR-payout withdrawal: user submits UPI ID and/or a QR
     image; goes to admin queue for manual payout. Multipart body."""
+    rate_limit_http(request, "wallet-withdraw-manual", 10, 60.0)
     return await wallet_service.create_manual_withdrawal(
         user_id=current_user["user_id"],
         amount=amount,
@@ -114,6 +123,7 @@ async def create_manual_withdrawal(
 
 @router.post("/deposit/local-banking", status_code=201)
 async def create_local_banking_request(
+    request: Request,
     amount: Decimal = Form(...),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -122,6 +132,7 @@ async def create_local_banking_request(
     reviews KYC and shares a payment link out of band (or attaches it via
     the admin panel). KYC must be approved or the call 403s with
     KYC_REQUIRED so the trader UI can route to /kyc."""
+    rate_limit_http(request, "wallet-deposit-lb", 20, 60.0)
     return await wallet_service.create_local_banking_request(
         amount=amount,
         user_id=current_user["user_id"],
@@ -294,6 +305,7 @@ async def verify_razorpay_deposit(
 @router.post("/deposit/onchain", status_code=201)
 async def create_onchain_deposit(
     req: OnchainDepositRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -301,6 +313,7 @@ async def create_onchain_deposit(
     for the picked chain plus everything the trader UI needs to invoke
     MetaMask / TronLink: token contract, chain id, base-units amount,
     expiry. The user's wallet does the actual transfer."""
+    rate_limit_http(request, "wallet-deposit-onchain", 20, 60.0)
     return await onchain_deposit_service.create_onchain_deposit(
         user_id=current_user["user_id"],
         network=req.network,
@@ -342,9 +355,14 @@ async def get_onchain_deposit_status(
 @router.post("/withdraw", status_code=201)
 async def create_withdrawal(
     req: WithdrawalRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # 10/min cap on withdrawals — even legitimate users don't withdraw
+    # more than a couple of times an hour; tight cap blocks credential-
+    # stuffing-then-drain attacks.
+    rate_limit_http(request, "wallet-withdraw", 10, 60.0)
     return await wallet_service.create_withdrawal(
         req=req, user_id=current_user["user_id"], db=db,
     )
@@ -356,6 +374,7 @@ async def create_withdrawal(
 @router.post("/withdraw/onchain", status_code=201)
 async def create_onchain_withdrawal(
     req: OnchainWithdrawRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -364,6 +383,7 @@ async def create_onchain_withdrawal(
     queue the row for admin review. Admin signs the on-chain payout and
     pastes the tx hash; the chain_verifier_engine confirms and flips the
     row to 'paid'."""
+    rate_limit_http(request, "wallet-withdraw-onchain", 10, 60.0)
     return await onchain_withdraw_service.create_onchain_withdrawal(
         user_id=current_user["user_id"],
         network=req.network,

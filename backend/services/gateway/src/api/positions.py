@@ -1,12 +1,13 @@
 """Positions API — View, modify SL/TP, close & partial close (MT5-like)."""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
 from packages.common.src.models import Position, TradingAccount, Instrument
+from packages.common.src.rate_limit import rate_limit_http
 from packages.common.src.schemas import ClosePositionRequest, ModifyPositionRequest
 from packages.common.src.auth import get_current_user
 from ..services import trading_service
@@ -107,9 +108,11 @@ async def list_positions(
 async def modify_position(
     position_id: UUID,
     req: ModifyPositionRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    rate_limit_http(request, "positions-modify", 120, 60.0)
     return await trading_service.modify_position(
         position_id=position_id, req=req,
         user_id=current_user["user_id"], db=db,
@@ -119,10 +122,12 @@ async def modify_position(
 @router.post("/{position_id}/close")
 async def close_position(
     position_id: UUID,
+    request: Request,
     req: ClosePositionRequest = ClosePositionRequest(),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    rate_limit_http(request, "positions-close", 120, 60.0)
     return await trading_service.close_position(
         position_id=position_id, req=req,
         user_id=current_user["user_id"], db=db,

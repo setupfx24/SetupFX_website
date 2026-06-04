@@ -17,6 +17,7 @@ from packages.common.src.models import (
     User,
     UserAuditLog,
 )
+from packages.common.src.rate_limit import rate_limit_http
 from packages.common.src.schemas import (
     WalletNonceRequest, WalletNonceResponse, WalletVerifyRequest,
     UpdateProfileRequest, ChangePasswordRequest,
@@ -93,6 +94,7 @@ async def terminate_session(
 
 @router.post("/kyc/submit")
 async def submit_kyc(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     document_type: str = Form(...),
@@ -109,6 +111,10 @@ async def submit_kyc(
     Allowed when kyc_status is pending/rejected. Blocked when submitted, under_review, or approved.
     Sets kyc_status to 'submitted' so admin KYC queue can pick it up.
     """
+    # 5/min is plenty — a real submission takes minutes to gather docs
+    # and any retry is human-paced. Tight cap blocks doc-spam that
+    # could exhaust admin queue / storage.
+    rate_limit_http(request, "kyc-submit", 5, 60.0)
     return await profile_service.submit_kyc(
         user_id=current_user["user_id"],
         document_type=document_type,

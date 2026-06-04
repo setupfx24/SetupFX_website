@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.database import get_db
+from packages.common.src.rate_limit import rate_limit_http
 from packages.common.src.schemas import PlaceOrderRequest, ModifyOrderRequest
 from packages.common.src.auth import get_current_user
 from ..services.auth_service import client_ip_for_inet
@@ -20,6 +21,9 @@ async def place_order(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # 120/min per IP — a manual trader can comfortably click multiple
+    # times a second; an algo retry loop will hit the cap. Audit H2.
+    rate_limit_http(request, "orders-place", 120, 60.0)
     return await trading_service.place_order(
         req=req, request=request,
         user_id=current_user["user_id"],
@@ -45,9 +49,11 @@ async def list_orders(
 async def modify_order(
     order_id: UUID,
     req: ModifyOrderRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    rate_limit_http(request, "orders-modify", 120, 60.0)
     return await trading_service.modify_order(
         order_id=order_id, req=req, user_id=current_user["user_id"], db=db,
     )
@@ -56,9 +62,11 @@ async def modify_order(
 @router.delete("/{order_id}")
 async def cancel_order(
     order_id: UUID,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    rate_limit_http(request, "orders-cancel", 120, 60.0)
     return await trading_service.cancel_order(
         order_id=order_id, user_id=current_user["user_id"], db=db,
     )
