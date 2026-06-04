@@ -319,6 +319,21 @@ def _verify_admin_ws_token(token: str | None) -> dict | None:
         return None
 
 
+def _normalize_origin(raw: str) -> str:
+    """Lower-case + strip trailing slash + drop the port if it's the
+    default for the scheme. Lets `https://trade.swisscresta.com:443/`
+    compare equal to `https://trade.swisscresta.com`."""
+    o = raw.strip().rstrip("/").lower()
+    if o.startswith("https://") and o.endswith(":443"):
+        o = o[:-4]
+    elif o.startswith("http://") and o.endswith(":80"):
+        o = o[:-3]
+    return o
+
+
+_NORMALIZED_ALLOWED_ORIGINS = {_normalize_origin(o) for o in _cors_origins}
+
+
 def _check_ws_origin(websocket: WebSocket) -> bool:
     """Reject WebSocket handshakes whose Origin header isn't on our
     allow-list. Browsers send cookies on cross-origin WS handshakes
@@ -328,13 +343,26 @@ def _check_ws_origin(websocket: WebSocket) -> bool:
     Non-browser callers (no Origin header) are allowed through — they
     still have to present a valid token in the next step. CORS allow-list
     is empty in dev → also allowed through so localhost flows still work.
+
+    Matching is case-insensitive, ignores trailing slash, and treats
+    default ports (443 for https, 80 for http) as equivalent to no port.
+    Rejections are logged at WARNING so we can spot a misconfigured
+    nginx / front-door that strips or mangles the Origin header.
     """
-    origin = (websocket.headers.get("origin") or "").strip().rstrip("/")
-    if not origin:
+    raw_origin = websocket.headers.get("origin") or ""
+    if not raw_origin.strip():
         return True
-    if not _cors_origins:
+    if not _NORMALIZED_ALLOWED_ORIGINS:
         return True
-    return origin in _cors_origins
+    normalized = _normalize_origin(raw_origin)
+    if normalized in _NORMALIZED_ALLOWED_ORIGINS:
+        return True
+    logger.warning(
+        "WS handshake rejected — Origin %r not in allow-list %s",
+        raw_origin,
+        sorted(_NORMALIZED_ALLOWED_ORIGINS),
+    )
+    return False
 
 
 @app.websocket("/ws/prices")
