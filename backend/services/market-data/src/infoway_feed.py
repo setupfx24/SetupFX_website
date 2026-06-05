@@ -165,12 +165,15 @@ class InfowayFeed:
 
         info = self._instruments[symbol]
         decimals = int(info["decimals"])
-        # Collapse provider bid/ask to mid so Infoway's own spread is not shown or
-        # double-counted. Platform spread is applied when publishing (see market-data main).
-        mid = (bid + ask) / 2.0
-        mid_r = round(mid, decimals)
-        bid_r = mid_r
-        ask_r = mid_r
+        # Keep the provider's native best bid/ask. The market-data publisher
+        # derives the mid from these and rebuilds the quote with the admin
+        # spread when one is configured; when none is, it ships a 0 spread by
+        # default. Preserving the real bid/ask keeps the mid accurate for the
+        # admin-spread path.
+        bid_r = round(bid, decimals)
+        ask_r = round(ask, decimals)
+        if ask_r < bid_r:
+            ask_r = bid_r
 
         ts_ms = data.get("t")
         if isinstance(ts_ms, (int, float)) and ts_ms > 0:

@@ -73,6 +73,10 @@ class MarketDataService:
         self.spread_cache = StreamSpreadCache()
         self.running = True
         self._last_mid: dict[str, float] = {}
+        # Native (pre-widen) bid/ask of the last tick per symbol. Used by the
+        # stale-quote refresher so it can re-apply the current admin spread —
+        # or fall back to the feed's native spread — without a fresh tick.
+        self._last_quote: dict[str, tuple[float, float]] = {}
         self._last_live_mono: dict[str, float] = {}
 
     async def start(self):
@@ -150,6 +154,7 @@ class MarketDataService:
                 except (KeyError, TypeError, ValueError, json.JSONDecodeError):
                     continue
                 self._last_mid[sym] = (b + a) / 2.0
+                self._last_quote[sym] = (b, a)
                 self._last_live_mono[sym] = mono - STALE_TICK_AFTER_SEC - 1.0
                 n += 1
             if n:
@@ -166,11 +171,12 @@ class MarketDataService:
             now = time.monotonic()
             ts_dt = datetime.now(timezone.utc)
             ts = ts_dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ts_dt.microsecond // 1000:03d}Z"
-            for symbol, mid in list(self._last_mid.items()):
+            for symbol, quote in list(self._last_quote.items()):
                 if now - self._last_live_mono.get(symbol, 0) < STALE_TICK_AFTER_SEC:
                     continue
                 try:
-                    bid, ask = self.spread_cache.widen(symbol, mid)
+                    b0, a0 = quote
+                    bid, ask = self.spread_cache.widen(symbol, b0, a0)
                     await publish_price(symbol, bid, ask, ts)
                 except Exception as exc:
                     logger.debug("Stale quote refresh failed for %s: %s", symbol, exc)
@@ -190,10 +196,10 @@ class MarketDataService:
             ask = float(tick["ask"])
             ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
 
-            mid = (bid + ask) / 2.0
-            self._last_mid[symbol] = mid
+            self._last_mid[symbol] = (bid + ask) / 2.0
+            self._last_quote[symbol] = (bid, ask)
             self._last_live_mono[symbol] = time.monotonic()
-            bid, ask = self.spread_cache.widen(symbol, mid)
+            bid, ask = self.spread_cache.widen(symbol, bid, ask)
 
             await publish_price(symbol, bid, ask, ts)
 
