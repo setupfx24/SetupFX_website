@@ -1450,6 +1450,26 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const charges = trade.commission || 0;
                         const net = pnl - charges;
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
+                        // Re-use the same Position shape that ShareTradeModal
+                        // expects so a closed trade can be shared from this
+                        // card too. Open positions had a share button on
+                        // mobile but history rows didn't — feature parity.
+                        const sharePos: Position = {
+                          id: trade.id,
+                          account_id: '',
+                          symbol: trade.symbol,
+                          side: trade.side as 'buy' | 'sell',
+                          lots: trade.lots,
+                          open_price: trade.open_price,
+                          current_price: trade.close_price,
+                          stop_loss: trade.stop_loss ?? undefined,
+                          take_profit: trade.take_profit ?? undefined,
+                          swap: 0,
+                          commission: trade.commission || 0,
+                          profit: trade.pnl || 0,
+                          trade_type: trade.trade_type,
+                          created_at: trade.close_time,
+                        };
                         return (
                           <div key={trade.id} className="rounded-xl border border-border-glass bg-bg-secondary/40 p-3 space-y-2">
                             <div className="flex items-center justify-between">
@@ -1460,9 +1480,19 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                                 </span>
                               </div>
-                              <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
-                                {net >= 0 ? '+' : ''}${net.toFixed(2)}
-                              </span>
+                              <div className="inline-flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSharePosition(sharePos)}
+                                  className="p-1 -m-1 rounded-md text-text-tertiary active:text-text-primary"
+                                  aria-label="Share trade"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                                <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
+                                  {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                             <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
                               <div><span className="text-text-tertiary">Qty</span> <span className="text-text-primary font-mono">{trade.lots}</span></div>
