@@ -20,23 +20,11 @@ logger = logging.getLogger("market-data.spread-cache")
 # How often to reload spread params from Postgres (admin edits).
 RELOAD_INTERVAL_SEC = 30.0
 
-# Category-aware fallback spreads (in pips) applied ONLY when:
-#   1. There's no spread_configs row for the specific instrument, AND
-#   2. There's no admin "default" row enabled.
-# As soon as admin saves anything in the spread UI, that wins (the
-# per-instrument row hits `self._params`; the default row hits
-# `self._default_spread`). The hardcoded values exist purely so that
-# a fresh DB (or a missed configuration step) doesn't ship the platform
-# with bid == ask — which previously made the order ticket look broken
-# next to the chart.
-_CATEGORY_FALLBACK_PIPS: Dict[str, Decimal] = {
-    "forex_major": Decimal("1.5"),
-    "forex_minor": Decimal("2.0"),
-    "commodity":   Decimal("30"),
-    "index":       Decimal("10"),
-    "crypto":      Decimal("50"),
-}
-_DEFAULT_FALLBACK_PIPS = Decimal("2.0")
+# No hardcoded fallback spread. The rule is deliberate:
+#   • admin configured a spread (per-instrument / segment / default) → apply it
+#   • admin configured nothing                                       → 0 spread
+#     (Buy == Sell). Every currency ships with a 0 default until an admin sets
+#     one. The platform never invents a spread the admin didn't set.
 
 
 class StreamSpreadCache:
@@ -107,48 +95,53 @@ class StreamSpreadCache:
             except Exception as exc:
                 logger.warning("Spread cache reload failed: %s", exc)
 
-    def widen(self, symbol: str, mid: float) -> Tuple[float, float]:
-        """Return bid/ask around mid using admin spread; pass-through if unknown symbol."""
+    def widen(self, symbol: str, bid: float, ask: float) -> Tuple[float, float]:
+        """Apply the admin spread when configured; otherwise return a 0 spread.
+
+        Priority:
+          1. Per-instrument / per-segment admin spread (``self._params[sym]`` > 0)
+          2. Global admin "Default (All Instruments)" spread (``self._default_spread`` > 0)
+          3. Neither set → 0 spread (bid == ask == mid).
+
+        When an admin spread applies, the quote is rebuilt symmetrically around
+        the feed mid so the provider's own spread is replaced (not stacked on
+        top). When none applies, every instrument ships with a 0 default spread
+        (Buy == Sell) until an admin configures one — there is no invented width.
+        """
         from .feed_handler import INSTRUMENTS
 
         key = (symbol or "").strip().upper()
+        mid = (bid + ask) / 2.0
+
         p: Optional[Tuple[Decimal, str, Decimal, int]] = self._params.get(key)
         if p:
             sv, st, pip, digits = p
         elif key in INSTRUMENTS:
-            # Feed streams symbols that may be missing or inactive in Postgres — still apply
-            # global default so bid/ask are not frozen at mid (Spr 0).
+            # Symbol streamed by the feed but missing/inactive in Postgres — it
+            # has no per-instrument row, but a global admin default may still apply.
             info = INSTRUMENTS[key]
-            sv, st = self._default_spread
+            sv, st = Decimal("0"), "pips"
             pip = Decimal(str(info["pip"]))
             digits = int(info["decimals"])
         else:
-            return mid, mid
+            # Unknown to both Postgres and the feed map — no digits to quantise
+            # a clean mid, so pass the native feed through.
+            return bid, ask
 
-        # When the per-instrument resolved spread is 0 (no per-instrument /
-        # per-segment row in spread_configs), fall back in this order:
-        #   1. Admin's Default (All Instruments) row — if it's set and > 0.
-        #   2. The hardcoded _CATEGORY_FALLBACK_PIPS table (last-resort,
-        #      only kicks in when the platform has *no* spread config at
-        #      all so the order ticket never shows bid == ask).
-        # The previous version skipped step 1 in the `_params` branch,
-        # which made the admin's Default visibly ineffective for symbols
-        # that already had a row in spread_configs with value=0 — XAUUSD
-        # and oil dropped to the commodity-30 fallback while indexes
-        # dropped to the index-10 fallback, looking like a "spread
-        # fluctuating between 10 and 30" bug in the watchlist.
-        if sv <= 0:
-            default_sv, default_st = self._default_spread
-            if default_sv > 0:
-                sv, st = default_sv, default_st
-            elif key in INSTRUMENTS:
-                info = INSTRUMENTS[key]
-                sv = _CATEGORY_FALLBACK_PIPS.get(
-                    str(info.get("category") or ""),
-                    _DEFAULT_FALLBACK_PIPS,
-                )
-                st = "pips"
-        b, a = symmetric_quote_from_mid(
-            Decimal(str(mid)), sv, st, pip, digits, Decimal("0"),
-        )
-        return float(b), float(a)
+        # Resolve the effective admin spread: per-instrument first, then the
+        # global default. A value of 0 at every scope means "admin set nothing".
+        eff_sv, eff_st = sv, st
+        if eff_sv <= 0 and self._default_spread[0] > 0:
+            eff_sv, eff_st = self._default_spread
+
+        if eff_sv > 0:
+            b, a = symmetric_quote_from_mid(
+                Decimal(str(mid)), eff_sv, eff_st, pip, digits, Decimal("0"),
+            )
+            return float(b), float(a)
+
+        # No admin spread anywhere → 0 spread by default: collapse to the mid so
+        # Buy == Sell until an admin sets a spread for this instrument (or the
+        # global default). This is the platform's out-of-the-box state.
+        m = round(mid, digits)
+        return m, m

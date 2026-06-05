@@ -590,6 +590,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         'Side',
         'Qty',
         'Open Price',
+        'Charges',
         'Current',
         'P&L',
         'SL',
@@ -606,6 +607,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         pos.side,
         pos.lots,
         pos.open_price.toFixed(d),
+        comm.toFixed(2),
         (pos.current_price ?? '').toString() ? Number(pos.current_price).toFixed(d) : '',
         gross - comm,
         pos.stop_loss != null ? pos.stop_loss : '',
@@ -1090,7 +1092,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 </div>
                 {/* Desktop table layout — block + full width so table aligns left, not centered in flex */}
                 <div className="hidden md:block w-full min-w-0 flex-1 overflow-x-auto">
-                  <table className="w-full min-w-[860px] border-collapse">
+                  <table className="w-full min-w-[940px] border-collapse">
                     <thead>
                       <tr className={theadRowClass}>
                         <th className={th}>Account</th>
@@ -1099,6 +1101,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Side</th>
                         <th className={thNum}>Qty</th>
                         <th className={thNum}>Open</th>
+                        <th className={thNum}>Charges</th>
                         <th className={thNum}>Current</th>
                         <th className={thNum}>P&amp;L</th>
                         <th className={th}>SL / TP</th>
@@ -1136,6 +1139,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td className={tdNum}>{pos.lots}</td>
                             <td className={clsx(tdNum, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
+                            <td className={clsx(tdNum, 'font-mono text-text-secondary')} title="Commission charged by the broker on this position">
+                              {charges > 0 ? `-$${charges.toFixed(2)}` : '—'}
+                            </td>
                             <td className={clsx(tdNum, 'font-mono')}>
                               {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
                             </td>
