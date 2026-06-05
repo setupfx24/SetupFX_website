@@ -1,6 +1,6 @@
 """Resolve spread / commission / price impact for order execution (gateway, engines)."""
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional, Tuple
 from uuid import UUID
 
@@ -240,16 +240,29 @@ def symmetric_quote_from_mid(
     else:
         adj = spread_value * pip_size
     imp = price_impact or Decimal("0")
-    half = (adj + imp) / Decimal("2")
-    bid = mid - half
-    ask = mid + half
-    q = Decimal("1") / (Decimal(10) ** max(decimals, 0))
-    bid = bid.quantize(q)
-    ask = ask.quantize(q)
-    if ask < bid:
-        ask = bid + q
-    elif ask == bid and half > 0:
-        ask = bid + q
+    total = adj + imp  # full bid→ask width in price units
+
+    q = Decimal("1") / (Decimal(10) ** max(decimals, 0))  # tick size
+    mid_q = mid.quantize(q)
+
+    if total <= 0:
+        return mid_q, mid_q
+
+    # Quantise the spread to a whole number of ticks ONCE, then split it so
+    # that ``ask - bid`` is EXACTLY that width on every tick. The previous
+    # version quantised bid and ask independently around the mid; when half
+    # the spread was not a whole number of ticks (e.g. 1.5 pips on a 5-digit
+    # symbol → a 7.5-tick half-spread) the two roundings did not cancel, so
+    # the realised spread wobbled by ±1 tick as the mid moved — surfacing as
+    # a "fluctuating spread" in the terminal even though the admin value was
+    # fixed. Splitting a single tick-quantised width keeps it rock steady.
+    ticks = (total / q).to_integral_value(rounding=ROUND_HALF_UP)
+    if ticks < 1:
+        ticks = Decimal(1)
+    bid_ticks = ticks // Decimal(2)        # floor; odd remainder goes to ask
+    ask_ticks = ticks - bid_ticks
+    bid = mid_q - bid_ticks * q
+    ask = mid_q + ask_ticks * q
     return bid, ask
 
 
