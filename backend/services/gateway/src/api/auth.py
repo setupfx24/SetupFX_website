@@ -24,6 +24,7 @@ from ..services.auth_service import (
     client_ip_for_inet,
 )
 from ..services import wallet_auth_service, email_otp_service, sensitive_action_service
+from ..services import pending_registration_service
 
 logger = logging.getLogger("auth_api")
 
@@ -50,6 +51,10 @@ async def platform_status():
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    """Legacy one-shot registration. Kept for back-compat (older mobile
+    builds, scripts) but the trader web frontend now uses the
+    register/start + register/verify pair so the `users` row isn't
+    created until the email is OTP-verified."""
     try:
         return await register_user(
             email=req.email, password=req.password,
@@ -60,6 +65,74 @@ async def register(req: RegisterRequest, request: Request, db: AsyncSession = De
         )
     except AuthServiceError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+class _RegisterStartRequest(RegisterRequest):
+    """Identical fields to RegisterRequest — kept distinct for clarity
+    and so we can evolve the start-payload shape without touching the
+    legacy endpoint."""
+
+
+class _RegisterVerifyRequest(BaseModel):
+    email: str
+    otp: str
+
+
+class _RegisterResendRequest(BaseModel):
+    email: str
+
+
+@router.post("/register/start")
+async def register_start(
+    req: _RegisterStartRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Step 1 of the new registration flow. Stages the registration in
+    Redis with a 10-min TTL and emails an OTP. Does NOT create a
+    `users` row — that happens in `/register/verify` once the OTP is
+    confirmed. If the user typo'd the email they can navigate away or
+    call `/register/cancel` and no DB row is left behind."""
+    return await pending_registration_service.start_pending_registration(
+        email=str(req.email), password=req.password,
+        first_name=req.first_name, last_name=req.last_name,
+        phone=req.phone, country=req.country,
+        referral_code=req.referral_code,
+        request=request, db=db,
+    )
+
+
+@router.post("/register/verify", status_code=status.HTTP_201_CREATED)
+async def register_verify(
+    req: _RegisterVerifyRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Step 2 of the new registration flow. Verifies the OTP, creates
+    the `users` row with `email_verified=true`, and issues auth
+    cookies — same shape as the legacy /auth/register response."""
+    return await pending_registration_service.complete_pending_registration(
+        email=req.email, otp=req.otp, request=request, db=db,
+    )
+
+
+@router.post("/register/resend")
+async def register_resend(
+    req: _RegisterResendRequest,
+    request: Request,
+):
+    """Rotate the OTP for an in-progress pending registration without
+    re-collecting the form fields. Tighter rate limit than start."""
+    return await pending_registration_service.resend_pending_otp(
+        email=req.email, request=request,
+    )
+
+
+@router.post("/register/cancel")
+async def register_cancel(req: _RegisterResendRequest):
+    """Best-effort cleanup when the user backs out of the OTP step.
+    Idempotent — the Redis key TTLs out on its own anyway."""
+    return await pending_registration_service.cancel_pending_registration(email=req.email)
 
 
 @router.post("/login")
