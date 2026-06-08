@@ -107,19 +107,19 @@ export default function ShareTradeCard({
         {/* Header logo — use the real brand mark from /public/marketing,
             not an inline placeholder. Plain <img> (not next/image) so
             html-to-image / canvas capture of the share card picks the
-            asset up without next's runtime hydration shim. */}
-        <div className="flex justify-center pt-2 pb-3">
-          <div className="inline-flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/marketing/swisscresta_fevicon.png"
-              alt=""
-              width={26}
-              height={26}
-              style={{ height: 26, width: 'auto', objectFit: 'contain' }}
-            />
-            <span className="text-white text-[11px] font-bold tracking-[0.25em]">SWISSCRESTA</span>
-          </div>
+            asset up without next's runtime hydration shim. Stacked
+            layout (icon over wordmark) gives the brand more visual
+            weight on the share card than the previous inline pill. */}
+        <div className="flex flex-col items-center justify-center pt-1 pb-3 gap-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/marketing/swisscresta_fevicon.png"
+            alt="SwissCresta"
+            width={40}
+            height={40}
+            style={{ height: 40, width: 40, objectFit: 'contain', borderRadius: 8 }}
+          />
+          <span className="text-white text-[11px] font-bold tracking-[0.32em]">SWISSCRESTA</span>
         </div>
 
         {/* Status + value */}
