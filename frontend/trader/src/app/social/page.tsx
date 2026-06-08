@@ -1660,56 +1660,6 @@ function BecomeProviderTab() {
           <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Describe your trading strategy..." className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs resize-none" />
         </div>
 
-        {/* Strategy Info Section */}
-        <div className="border-t border-border-glass pt-4 space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-            <h4 className="text-xs font-semibold text-text-primary">Strategy Details</h4>
-            <span className="text-[10px] text-text-tertiary">(shown to investors)</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-xxs text-text-secondary block mb-1">Strategy Name</label>
-              <input type="text" value={strategyName} onChange={e => setStrategyName(e.target.value)} placeholder="e.g. BTCUSD Momentum Strategy" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Market / Instrument</label>
-              <input type="text" value={market} onChange={e => setMarket(e.target.value)} placeholder="e.g. BTCUSD, XAUUSD" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Risk Profile</label>
-              <select value={riskProfile} onChange={e => setRiskProfile(e.target.value)} className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs">
-                <option value="Conservative">Conservative</option>
-                <option value="Low">Low</option>
-                <option value="Moderate">Moderate</option>
-                <option value="Aggressive">Aggressive</option>
-                <option value="High Risk">High Risk</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Max Drawdown</label>
-              <input type="text" value={maxDrawdown} onChange={e => setMaxDrawdown(e.target.value)} placeholder="e.g. 10-15%" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Recommended Capital</label>
-              <input type="text" value={recommendedCapital} onChange={e => setRecommendedCapital(e.target.value)} placeholder="e.g. $500" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs font-mono" />
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Avg Trades / Month</label>
-              <input type="text" value={avgTrades} onChange={e => setAvgTrades(e.target.value)} placeholder="e.g. 10-40" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
-            </div>
-            <div>
-              <label className="text-xxs text-text-secondary block mb-1">Expected Returns</label>
-              <input type="text" value={expectedReturns} onChange={e => setExpectedReturns(e.target.value)} placeholder="e.g. ~3-5% monthly" className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs" />
-            </div>
-            <div className="col-span-2">
-              <label className="text-xxs text-text-secondary block mb-1">Strategy Description</label>
-              <textarea value={strategyDescription} onChange={e => setStrategyDescription(e.target.value)} rows={3} placeholder="Describe your strategy in detail — approach, indicators, market conditions, etc." className="skeu-input w-full text-text-primary rounded-xl py-2.5 px-4 text-xs resize-none" />
-            </div>
-          </div>
-        </div>
-
         <button
           onClick={handleSubmit}
           disabled={submitting || accounts.length === 0}
