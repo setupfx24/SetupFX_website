@@ -16,19 +16,22 @@
  * wallet. If the wallet flow ever returns, restore the step here AND
  * flip the backend flag at the same time.
  *
- * The modal is non-dismissible: there is no close button, the backdrop
- * doesn't dismiss, Escape doesn't dismiss. The user must finish the
- * step or sign out (a "Sign out" link is exposed at the bottom as the
- * only escape hatch).
+ * The modal can be dismissed: a close (X) button in the header hides it
+ * for the rest of the browser session (remembered in sessionStorage). The
+ * backdrop and Escape still don't dismiss, and the "Sign out" link remains
+ * at the bottom. Dismissing does NOT verify the email — the user simply
+ * defers the step; the gate reappears on the next session/login until the
+ * email is verified, and the backend still treats them as not onboarded.
  *
  * Demo accounts and staff (admin / super_admin / employee) are exempt.
  */
-import { useMemo } from 'react';
-import { ShieldCheck, Mail, LogOut } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ShieldCheck, Mail, LogOut, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import EmailOtpStep from './EmailOtpStep';
 
 const STAFF_ROLES = new Set(['admin', 'super_admin', 'employee']);
+const DISMISS_KEY = 'onboarding_email_gate_dismissed';
 
 export default function OnboardingGate() {
   const user = useAuthStore((s) => s.user);
@@ -36,6 +39,22 @@ export default function OnboardingGate() {
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const logout = useAuthStore((s) => s.logout);
+
+  // Session-scoped dismissal. Closing the modal hides it until the next
+  // full page load / login; it does not mark the email as verified.
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(DISMISS_KEY) === '1';
+  });
+
+  const handleClose = () => {
+    try {
+      window.sessionStorage.setItem(DISMISS_KEY, '1');
+    } catch {
+      /* sessionStorage unavailable (private mode) — dismiss for this mount only */
+    }
+    setDismissed(true);
+  };
 
   // Decide whether the gate runs at all. We deliberately mirror the
   // server-side require_onboarded check so a UI bug can't accidentally
@@ -59,6 +78,7 @@ export default function OnboardingGate() {
   }, [isInitialized, isAuthenticated, user]);
 
   if (decision === 'hidden') return null;
+  if (dismissed) return null;
 
   return (
     <div
@@ -74,6 +94,14 @@ export default function OnboardingGate() {
         onClick={(e) => e.stopPropagation()}
       >
         <header className="px-6 pt-6 pb-3 border-b border-border-primary">
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label="Close"
+            className="absolute right-4 top-4 inline-flex items-center justify-center w-7 h-7 rounded-full text-text-tertiary hover:text-text-primary hover:bg-bg-base transition-colors"
+          >
+            <X size={16} />
+          </button>
           <div className="flex items-center gap-2 text-[#E94E1B] mb-2">
             <ShieldCheck size={16} />
             <span className="text-[10px] uppercase tracking-wider font-semibold">
