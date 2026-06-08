@@ -14,7 +14,7 @@
  * (the gate then unmounts itself because email_verified flips to true).
  */
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, Mail, ArrowRight, RotateCcw, Check } from 'lucide-react';
+import { Loader2, Mail, ArrowRight, RotateCcw, Check, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import { getErrorMessage } from '@/lib/errors';
@@ -87,6 +87,15 @@ export default function EmailOtpStep({
     }
   };
 
+  // Jump back to the address step so the user can correct / change the
+  // email the code was sent to. The field stays pre-filled with the
+  // current address so they can edit it rather than retype from scratch.
+  const editEmail = () => {
+    setPhase('enter-email');
+    setOtp('');
+    setError(null);
+  };
+
   const verifyCode = async () => {
     const code = otp.trim();
     if (code.length !== 6 || !/^\d{6}$/.test(code)) {
@@ -145,8 +154,17 @@ export default function EmailOtpStep({
         <>
           <p className="text-xs text-text-secondary leading-relaxed">
             We sent a 6-digit code to{' '}
-            <span className="font-semibold text-text-primary tabular-nums">{email.trim().toLowerCase()}</span>.
-            It expires in 10 minutes.
+            <span className="font-semibold text-text-primary tabular-nums">{email.trim().toLowerCase()}</span>
+            <button
+              type="button"
+              onClick={editEmail}
+              className="ml-1 inline-flex items-center gap-0.5 align-middle text-[#E94E1B] hover:underline"
+              aria-label="Edit email address"
+            >
+              <Pencil size={11} />
+              Edit
+            </button>
+            . It expires in 10 minutes.
           </p>
           <div>
             <label className="block text-xs font-medium text-text-secondary mb-1.5">Verification code</label>
@@ -178,7 +196,7 @@ export default function EmailOtpStep({
           <div className="flex items-center justify-between text-[11px] text-text-tertiary">
             <button
               type="button"
-              onClick={() => { setPhase('enter-email'); setOtp(''); setError(null); }}
+              onClick={editEmail}
               className="hover:text-text-primary"
             >
               Use a different email

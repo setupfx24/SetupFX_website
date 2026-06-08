@@ -163,10 +163,27 @@ class CopyTradeEngine:
                         # withdrew while master still had open positions).
                         await self._global_orphan_sweep(db)
 
+                        # Select masters that ACTUALLY have an active follower,
+                        # computed live via EXISTS — never the denormalised
+                        # master.followers_count counter. That counter drifts
+                        # out of sync (double-decrements on stop/withdraw, admin
+                        # resets to 0, legacy backfills — see fix_pending_copies.py
+                        # and the "actual count from allocations, not stale
+                        # counter" notes in every read path). When it drifts to 0
+                        # while a follower is still active, the old query skipped
+                        # the master entirely and NO trades were ever mirrored —
+                        # the reported "master trade not copying" bug. EXISTS is
+                        # also still efficient: masters with no active allocation
+                        # are filtered in SQL, not loaded and early-returned.
                         masters = await db.execute(
                             select(MasterAccount).where(
                                 MasterAccount.status.in_(["approved", "active"]),
-                                MasterAccount.followers_count > 0,
+                                select(InvestorAllocation.id)
+                                .where(
+                                    InvestorAllocation.master_id == MasterAccount.id,
+                                    InvestorAllocation.status == "active",
+                                )
+                                .exists(),
                             )
                         )
                         for master in masters.scalars().all():
