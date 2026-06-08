@@ -104,14 +104,21 @@ export default function ShareTradeCard({
       <div className="absolute bottom-5 right-5 w-6 h-6 border-r-2 border-b-2 border-white/40" />
 
       <div className="relative h-full flex flex-col p-6 md:p-8">
-        {/* Header logo */}
+        {/* Header logo — use the real brand mark from /public/marketing,
+            not an inline placeholder. Plain <img> (not next/image) so
+            html-to-image / canvas capture of the share card picks the
+            asset up without next's runtime hydration shim. */}
         <div className="flex justify-center pt-2 pb-3">
-          <div className="inline-flex items-center gap-1.5">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L3 6V12C3 17.5 6.8 22.3 12 23C17.2 22.3 21 17.5 21 12V6L12 2Z" stroke="white" strokeWidth="1.6" fill="none" />
-              <path d="M9 12L11 14L15 10" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-white text-[10px] font-bold tracking-[0.25em]">SWISSCRESTA</span>
+          <div className="inline-flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/marketing/swisscresta_fevicon.png"
+              alt=""
+              width={26}
+              height={26}
+              style={{ height: 26, width: 'auto', objectFit: 'contain' }}
+            />
+            <span className="text-white text-[11px] font-bold tracking-[0.25em]">SWISSCRESTA</span>
           </div>
         </div>
 

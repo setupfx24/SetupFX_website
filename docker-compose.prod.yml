@@ -34,13 +34,19 @@ services:
       - "127.0.0.1:8002:8000"
     restart: always
     environment:
-      # Marketing site (swisscresta.com) is intentionally NOT in this
-      # allow-list: it has no business calling the API, and its inclusion
-      # combined with COOKIE_DOMAIN=.swisscresta.com made an XSS on the
-      # marketing site trivially credentialed-request the gateway as any
-      # logged-in user. Browsers hit the API same-origin via the
-      # trader-frontend proxy, so only the two app subdomains need it.
-      CORS_ORIGINS: https://trade.swisscresta.com,https://admin.swisscresta.com
+      # swisscresta.com is the apex marketing host and ALSO serves the
+      # auth pages (see frontend/trader/src/middleware.ts file header) —
+      # so a login POST from /auth/login on the apex carries
+      # Origin: https://swisscresta.com and gateway must accept it.
+      # Removing the apex broke login entirely (403 "Origin not allowed").
+      #
+      # The C1 audit risk this re-enables — XSS on the marketing site
+      # pivoting to credentialed API calls — is mitigated properly by
+      # moving the auth flow off the apex (TODO: redirect /auth/* on
+      # swisscresta.com to trade.swisscresta.com so the apex no longer
+      # needs gateway access). Until that's done we keep parity with
+      # the pre-audit allow-list.
+      CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
       COOKIE_DOMAIN: .swisscresta.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

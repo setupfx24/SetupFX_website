@@ -590,6 +590,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         'Side',
         'Qty',
         'Open Price',
+        'Charges',
         'Current',
         'P&L',
         'SL',
@@ -606,6 +607,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
         pos.side,
         pos.lots,
         pos.open_price.toFixed(d),
+        comm.toFixed(2),
         (pos.current_price ?? '').toString() ? Number(pos.current_price).toFixed(d) : '',
         gross - comm,
         pos.stop_loss != null ? pos.stop_loss : '',
@@ -1090,7 +1092,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                 </div>
                 {/* Desktop table layout — block + full width so table aligns left, not centered in flex */}
                 <div className="hidden md:block w-full min-w-0 flex-1 overflow-x-auto">
-                  <table className="w-full min-w-[860px] border-collapse">
+                  <table className="w-full min-w-[940px] border-collapse">
                     <thead>
                       <tr className={theadRowClass}>
                         <th className={th}>Account</th>
@@ -1099,6 +1101,7 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         <th className={th}>Side</th>
                         <th className={thNum}>Qty</th>
                         <th className={thNum}>Open</th>
+                        <th className={thNum}>Charges</th>
                         <th className={thNum}>Current</th>
                         <th className={thNum}>P&amp;L</th>
                         <th className={th}>SL / TP</th>
@@ -1136,6 +1139,9 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                             </td>
                             <td className={tdNum}>{pos.lots}</td>
                             <td className={clsx(tdNum, 'font-mono')}>{pos.open_price.toFixed(d)}</td>
+                            <td className={clsx(tdNum, 'font-mono text-text-secondary')} title="Commission charged by the broker on this position">
+                              {charges > 0 ? `-$${charges.toFixed(2)}` : '—'}
+                            </td>
                             <td className={clsx(tdNum, 'font-mono')}>
                               {pos.current_price != null ? pos.current_price.toFixed(d) : '—'}
                             </td>
@@ -1444,6 +1450,26 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                         const charges = trade.commission || 0;
                         const net = pnl - charges;
                         const exitBadge = closeReasonBadge(trade.close_reason, trade.close_price, d);
+                        // Re-use the same Position shape that ShareTradeModal
+                        // expects so a closed trade can be shared from this
+                        // card too. Open positions had a share button on
+                        // mobile but history rows didn't — feature parity.
+                        const sharePos: Position = {
+                          id: trade.id,
+                          account_id: '',
+                          symbol: trade.symbol,
+                          side: trade.side as 'buy' | 'sell',
+                          lots: trade.lots,
+                          open_price: trade.open_price,
+                          current_price: trade.close_price,
+                          stop_loss: trade.stop_loss ?? undefined,
+                          take_profit: trade.take_profit ?? undefined,
+                          swap: 0,
+                          commission: trade.commission || 0,
+                          profit: trade.pnl || 0,
+                          trade_type: trade.trade_type,
+                          created_at: trade.close_time,
+                        };
                         return (
                           <div key={trade.id} className="rounded-xl border border-border-glass bg-bg-secondary/40 p-3 space-y-2">
                             <div className="flex items-center justify-between">
@@ -1454,9 +1480,19 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
                                   {trade.trade_type === 'copy_trade' ? 'Copy' : 'Real'}
                                 </span>
                               </div>
-                              <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
-                                {net >= 0 ? '+' : ''}${net.toFixed(2)}
-                              </span>
+                              <div className="inline-flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSharePosition(sharePos)}
+                                  className="p-1 -m-1 rounded-md text-text-tertiary active:text-text-primary"
+                                  aria-label="Share trade"
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                                <span className="font-mono text-sm font-bold tabular-nums" style={{ color: net >= 0 ? '#2962FF' : '#FF2440' }}>
+                                  {net >= 0 ? '+' : ''}${net.toFixed(2)}
+                                </span>
+                              </div>
                             </div>
                             <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
                               <div><span className="text-text-tertiary">Qty</span> <span className="text-text-primary font-mono">{trade.lots}</span></div>
