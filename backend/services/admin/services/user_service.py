@@ -88,7 +88,15 @@ async def list_users(
     status_filter: str | None, kyc_filter: str | None,
     group_id: str | None, db: AsyncSession,
 ) -> dict:
-    query = select(User).where(User.role.notin_(["admin", "super_admin"]))
+    # Hide users who have not verified their email yet. An email/password
+    # signup sits at email_verified=False until they complete the post-signup
+    # OTP, so half-finished registrations never clutter the admin list.
+    # Google/OAuth signups are stamped email_verified=True at sign-in, so
+    # legitimate users are unaffected.
+    query = select(User).where(
+        User.role.notin_(["admin", "super_admin"]),
+        User.email_verified.is_(True),
+    )
 
     if search:
         term = f"%{search}%"

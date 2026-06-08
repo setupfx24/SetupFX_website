@@ -377,23 +377,46 @@ async def register_user(
     if not await get_bool_setting("allow_new_registrations", True):
         raise AuthServiceError("New registrations are currently disabled", 403)
 
-    existing = await db.execute(select(User).where(User.email == email))
-    if existing.scalar_one_or_none():
+    existing = await db.execute(
+        select(User).where(func.lower(User.email) == email.lower())
+    )
+    existing_user = existing.scalar_one_or_none()
+    if existing_user is not None and existing_user.email_verified:
         raise AuthServiceError("Email already registered")
 
-    user = User(
-        email=email,
-        password_hash=hash_password(password),
-        first_name=first_name,
-        last_name=last_name,
-        phone=phone,
-        country=country,
-        role="user",
-        status="active",
-        kyc_status="pending",
-    )
-    db.add(user)
-    await db.flush()
+    if existing_user is not None:
+        # The address belongs to an account that never completed email
+        # verification. Those stubs can't log in and are hidden from the
+        # admin user list, so we let a fresh signup reclaim the email:
+        # overwrite the old credentials/profile in place (same row, so any
+        # FK children stay valid) and re-issue the OTP via the normal auth
+        # response below. This is safe because nobody ever proved ownership
+        # of an unverified address.
+        user = existing_user
+        user.email = email
+        user.password_hash = hash_password(password)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.phone = phone
+        user.country = country
+        user.role = "user"
+        user.status = "active"
+        user.kyc_status = "pending"
+        await db.flush()
+    else:
+        user = User(
+            email=email,
+            password_hash=hash_password(password),
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            country=country,
+            role="user",
+            status="active",
+            kyc_status="pending",
+        )
+        db.add(user)
+        await db.flush()
 
     if referral_code:
         await _consume_referral(db, user.id, referral_code)
@@ -450,6 +473,20 @@ async def login_user(
     if user.role in STAFF_ROLES:
         raise AuthServiceError(
             "Staff accounts must sign in via the admin portal.", 403
+        )
+
+    # Email-verification gate. A user who never verified the email they
+    # signed up with cannot hold a trader session — this keeps login in
+    # step with the admin list (which hides unverified accounts) and with
+    # the register flow (which lets the same email be reclaimed). To get
+    # back to the OTP screen they simply re-run signup with the same email;
+    # register_user reclaims the unverified stub and issues a fresh code.
+    # Demo accounts are exempt (they verify nothing and use a separate flow).
+    if not getattr(user, "email_verified", False) and not getattr(user, "is_demo", False):
+        raise AuthServiceError(
+            "Please verify your email before logging in. Re-register with the "
+            "same email to receive a fresh verification code.",
+            403,
         )
 
     # Maintenance mode: only admin / super_admin / employee roles may log in.

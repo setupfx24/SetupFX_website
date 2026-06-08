@@ -1578,10 +1578,16 @@ async def get_my_followers(user_id: UUID, db: AsyncSession) -> dict:
     if not master:
         raise HTTPException(status_code=404, detail="You are not a signal provider")
 
+    # LEFT join the investor account: an INNER join silently dropped any
+    # active follower whose investor_account_id was NULL or pointed at a
+    # missing account row — leaving the master staring at "No followers yet"
+    # even though the allocation is active (the reported "master can't see
+    # follower account details" bug). The account_number is shown when
+    # available and falls back to a placeholder otherwise.
     allocations_result = await db.execute(
         select(InvestorAllocation, User, TradingAccount)
         .join(User, InvestorAllocation.investor_user_id == User.id)
-        .join(TradingAccount, InvestorAllocation.investor_account_id == TradingAccount.id)
+        .outerjoin(TradingAccount, InvestorAllocation.investor_account_id == TradingAccount.id)
         .where(
             InvestorAllocation.master_id == master.id,
             InvestorAllocation.status == "active",
@@ -1606,7 +1612,7 @@ async def get_my_followers(user_id: UUID, db: AsyncSession) -> dict:
             "user_id": str(user.id),
             "user_name": f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email,
             "user_email": user.email,
-            "account_number": account.account_number,
+            "account_number": account.account_number if account else "—",
             "allocation_amount": float(allocation.allocation_amount or 0),
             "total_profit": float(allocation.total_profit or 0),
             "profit_pct": round(profit_pct, 2),
@@ -1950,10 +1956,13 @@ async def master_investors(user_id: UUID, db: AsyncSession) -> dict:
     if not master:
         raise HTTPException(status_code=404, detail="You are not an approved PAMM/MAM manager")
 
+    # LEFT join so an active investor is never dropped just because their
+    # investor_account_id is NULL / the account row is missing (same class of
+    # bug as get_my_followers above).
     allocations_result = await db.execute(
         select(InvestorAllocation, User, TradingAccount)
         .join(User, InvestorAllocation.investor_user_id == User.id)
-        .join(TradingAccount, InvestorAllocation.investor_account_id == TradingAccount.id)
+        .outerjoin(TradingAccount, InvestorAllocation.investor_account_id == TradingAccount.id)
         .where(
             InvestorAllocation.master_id == master.id,
             InvestorAllocation.status == "active",
@@ -1976,7 +1985,7 @@ async def master_investors(user_id: UUID, db: AsyncSession) -> dict:
             "user_id": str(user.id),
             "user_name": f"{user.first_name or ''} {user.last_name or ''}".strip() or user.email,
             "user_email": user.email,
-            "account_number": account.account_number,
+            "account_number": account.account_number if account else "—",
             "allocated": round(invested, 2),
             "pnl": round(pnl, 2),
             "pnl_pct": round(pnl_pct, 2),
