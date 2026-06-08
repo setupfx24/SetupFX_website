@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useAuthStore } from '@/stores/authStore';
@@ -58,7 +58,6 @@ function isValidEmail(value: string) {
 export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
-  const register = useAuthStore((s) => s.register);
   const demoLogin = useAuthStore((s) => s.demoLogin);
   const refreshUser = useAuthStore((s) => s.refreshUser);
 
@@ -96,14 +95,17 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
         return;
       }
 
-      // signup: create account → request OTP → move to OTP step
-      await register({
+      // signup: stage the registration in Redis and send an OTP. The
+      // `users` row + auth cookies are NOT created here — that happens
+      // only after the OTP is verified in submitOtp(). If the user
+      // typo'd their email, they can hit the X / "Use a different
+      // email" button and the pending entry expires harmlessly.
+      await api.post('/auth/register/start', {
         email: normalizedEmail,
         password,
         first_name: 'New',
         last_name: 'Trader',
       });
-      await api.post('/auth/email/start-verification', { email: normalizedEmail });
       toast.success('Verification code sent. Check your email.');
       setStep('otp');
     } catch (err) {
@@ -124,7 +126,13 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     setErrors({});
     try {
       setSubmitting(true);
-      await api.post('/auth/email/verify-otp', { otp: code });
+      // This is now the ONLY step that actually creates the user row
+      // and issues auth cookies. The response sets the cookies via
+      // Set-Cookie; refreshUser() then hydrates the trader store.
+      await api.post('/auth/register/verify', {
+        email: email.trim().toLowerCase(),
+        otp: code,
+      });
       await refreshUser();
       toast.success('Email verified. Welcome to SwissCresta.');
       router.push('/dashboard');
@@ -134,6 +142,25 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /** Back out of the OTP step. Tells the server to drop the pending
+   *  registration so the address is freed immediately (otherwise it
+   *  Redis-TTLs out in 10 minutes), then returns to the credentials
+   *  form so the user can fix a typo. Errors are swallowed — the
+   *  Redis key will expire even if the cancel call fails. */
+  const cancelPendingRegistration = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail) {
+      try {
+        await api.post('/auth/register/cancel', { email: normalizedEmail });
+      } catch {
+        /* ignore — TTL will handle it */
+      }
+    }
+    setOtp('');
+    setErrors({});
+    setStep('credentials');
   };
 
   const handleDemo = async () => {
@@ -152,7 +179,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
   const resendOtp = async () => {
     try {
-      await api.post('/auth/email/start-verification', { email: email.trim().toLowerCase() });
+      await api.post('/auth/register/resend', { email: email.trim().toLowerCase() });
       toast.success('Code resent.');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Could not send code.';
@@ -289,6 +316,21 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
 
           {step === 'otp' && (
             <>
+              {/* Prominent close — lets the user back out of the OTP
+                  step if they typo'd their email. Wired to cancel the
+                  pending registration server-side so the address is
+                  freed immediately, then drops them back on the
+                  credentials form with their previous email pre-filled
+                  for quick editing. */}
+              <button
+                type="button"
+                onClick={cancelPendingRegistration}
+                aria-label="Close verification — use a different email"
+                className="absolute top-4 right-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full text-[#5B5B5B] hover:text-[#0A0A0A] hover:bg-[#F0F0F0] transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
               <div className="mb-8">
                 <p className="text-sm uppercase tracking-wider text-[#E94E1B] font-semibold mb-3">
                   Verify your email
@@ -325,7 +367,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
                 <div className="flex items-center justify-between text-sm">
                   <button
                     type="button"
-                    onClick={() => setStep('credentials')}
+                    onClick={cancelPendingRegistration}
                     className="text-[#5B5B5B] hover:text-[#0A0A0A] transition-colors"
                   >
                     ← Use a different email
