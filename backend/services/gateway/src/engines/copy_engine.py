@@ -122,7 +122,16 @@ class CopyTradeEngine:
 
         rounded = round(raw, 2)
         if rounded < MIN_COPY_LOT:
-            return None, "below_min_lot_0_01"
+            # The proportional size rounds below the platform's minimum lot —
+            # e.g. a master trading 0.01 lots with a follower whose equity is
+            # smaller than the master's. Skipping here left followers with NO
+            # mirrored trade at all (the reported "master trade not copying"
+            # bug). Clamp up to the minimum tradeable lot so the position is
+            # still copied; the follower accepts slightly higher proportional
+            # exposure as the cost of participating at small sizes. The
+            # downstream free-margin check in _open_copy still rejects the open
+            # if the account genuinely can't afford even 0.01 lots.
+            return MIN_COPY_LOT, None
         return rounded, None
 
     async def start(self):
@@ -793,12 +802,15 @@ class _ComputeLotSizeTests(unittest.TestCase):
         self.assertIsNone(lots)
         self.assertEqual(err, "mam_zero_allocation_pct")
 
-    def test_below_min_lot(self):
+    def test_below_min_lot_clamps_to_minimum(self):
+        # Proportional size rounds below 0.01 (1.0 * 10/10000 = 0.001) — the
+        # engine must clamp up to the minimum lot instead of skipping the copy,
+        # otherwise a master trading small sizes never mirrors to followers.
         ma, ia = self._accounts(10000, 10)
         alloc = SimpleNamespace(allocation_amount=100, allocation_pct=None, copy_type="signal")
         lots, err = CopyTradeEngine.compute_lot_size(1.0, ma, alloc, ia, total_pool=0, copy_type="signal")
-        self.assertIsNone(lots)
-        self.assertEqual(err, "below_min_lot_0_01")
+        self.assertIsNone(err)
+        self.assertEqual(lots, MIN_COPY_LOT)
 
 
 if __name__ == "__main__":
