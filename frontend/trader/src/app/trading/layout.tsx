@@ -269,6 +269,14 @@ function TradingSession({ children }: { children: React.ReactNode }) {
     if (!accountQueryId) return;
     tradeSocket.connect(accountQueryId);
     const unsub = tradeSocket.subscribe((evt) => {
+      // Copy-trade open on a follower account: the copy engine opens the
+      // position server-side, so pull it into the open-positions list live
+      // instead of waiting for a manual refresh.
+      if (evt.type === 'position_opened') {
+        void refreshPositions();
+        void refreshAccount();
+        return;
+      }
       if (evt.type !== 'position_closed') return;
 
       const reason = String(evt.reason ?? '');

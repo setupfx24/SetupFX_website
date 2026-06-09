@@ -70,6 +70,13 @@ class CopyTradeEngine:
         # only; a process restart re-seeds, but the _open_copy dedup guard
         # makes that a no-op for copies that already exist.
         self._seeded_allocations: dict[str, set[str]] = defaultdict(set)
+        # Real-time WS events queued during a cycle and published to the
+        # follower's `account:{id}` channel AFTER db.commit() — so the
+        # follower's terminal refreshes open positions + history the instant
+        # a copy opens/closes, instead of only on a manual page refresh.
+        # Published post-commit to avoid a read-before-commit race in the
+        # follower's refreshPositions() call.
+        self._pending_events: list[tuple[str, str]] = []
 
     @staticmethod
     def compute_lot_size(
@@ -156,6 +163,7 @@ class CopyTradeEngine:
                         await asyncio.sleep(1)
                         continue
 
+                    self._pending_events = []  # fresh per cycle
                     async with AsyncSessionLocal() as db:
                         # Global orphan sweep — close any follower mirror whose
                         # master position is already closed, even if the master
@@ -189,10 +197,23 @@ class CopyTradeEngine:
                         for master in masters.scalars().all():
                             await self.process_master(master, db)
                         await db.commit()
+                    # Durably committed — now fan out the real-time events so
+                    # followers' terminals update without a manual refresh.
+                    await self._flush_events()
             except Exception as e:
                 logger.error("Copy engine error: %s", e, exc_info=True)
+                self._pending_events = []  # don't publish a half-rolled-back cycle
 
             await asyncio.sleep(1)
+
+    async def _flush_events(self) -> None:
+        """Publish queued follower-facing WS events (post-commit, best-effort)."""
+        events, self._pending_events = self._pending_events, []
+        for channel, payload in events:
+            try:
+                await redis_client.publish(channel, payload)
+            except Exception as e:
+                logger.warning("copy-engine publish failed on %s: %s", channel, e)
 
     async def _global_orphan_sweep(self, db: AsyncSession) -> None:
         """Close any open CopyTrade whose master Position is already closed,
@@ -571,6 +592,20 @@ class CopyTradeEngine:
             master_lots,
         )
 
+        # Notify the follower's terminal so the new copy position appears live
+        # (flushed after commit in _run).
+        self._pending_events.append((
+            f"account:{investor_account.id}",
+            json.dumps({
+                "type": "position_opened",
+                "position_id": str(position.id),
+                "symbol": instrument.symbol,
+                "side": side_val,
+                "lots": str(copy_lots),
+                "open_price": str(master_pos.open_price),
+            }),
+        ))
+
     async def _close_copy(self, copy: CopyTrade, master: MasterAccount, db: AsyncSession):
         investor_pos = await db.get(Position, copy.investor_position_id)
         if not investor_pos:
@@ -746,6 +781,20 @@ class CopyTradeEngine:
                 master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + master_share
 
         copy.status = "closed"
+
+        # Notify the follower's terminal so the closed copy leaves the open
+        # list and lands in Closed Positions live — same payload shape the
+        # SL/TP + manual-close paths use (flushed after commit in _run).
+        self._pending_events.append((
+            f"account:{investor_pos.account_id}",
+            json.dumps({
+                "type": "position_closed",
+                "position_id": str(investor_pos.id),
+                "reason": "copy_close",
+                "profit": str(net_profit),
+                "close_price": str(close_price),
+            }),
+        ))
 
         logger.info(
             "Copy closed: %s %s %s lots | gross=%s perf_fee=%s net=%s master_pos=%s",

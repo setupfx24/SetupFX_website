@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTradingStore, type Position, type InstrumentInfo } from '@/stores/tradingStore';
 import { clsx } from 'clsx';
@@ -401,6 +401,24 @@ export default function PositionsPanel({ variant = 'default' }: PositionsPanelPr
     window.addEventListener('trade:closed', onClosed);
     return () => window.removeEventListener('trade:closed', onClosed);
   }, [loadHistory]);
+
+  // Load closed-trade history once on mount so the "Closed Positions" count
+  // badge is accurate immediately — not 0 until the user first opens the tab.
+  useEffect(() => {
+    void loadHistory({ silent: true });
+  }, [loadHistory]);
+
+  // Reload history whenever an open position disappears (count drops) — a
+  // close happened. This covers copy-trade closes on a follower account,
+  // which close the position server-side via the copy engine but don't emit
+  // a `trade:closed` event, so the History tab would otherwise stay stale.
+  const prevOpenCountRef = useRef(positions.length);
+  useEffect(() => {
+    if (positions.length < prevOpenCountRef.current) {
+      void loadHistory({ silent: true });
+    }
+    prevOpenCountRef.current = positions.length;
+  }, [positions.length, loadHistory]);
 
   const closePosition = (id: string, lots?: number) => {
     unlockAudio();
