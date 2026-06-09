@@ -8,6 +8,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Trader app URL is baked into the client bundle at build time (NEXT_PUBLIC_*).
+# Left empty in prod so the admin UI auto-derives it from the admin.* hostname;
+# the dev override passes http://localhost:3010 (the published trader port).
+ARG NEXT_PUBLIC_TRADER_URL
+ENV NEXT_PUBLIC_TRADER_URL=$NEXT_PUBLIC_TRADER_URL
 RUN npm run build
 
 FROM node:20-alpine AS runner

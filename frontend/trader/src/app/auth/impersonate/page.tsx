@@ -51,7 +51,9 @@ function ImpersonateInner() {
         }
 
         // 3) Hard redirect so the auth store rehydrates from scratch.
-        window.location.replace('/accounts');
+        //    Land on the user's dashboard directly (not the account picker)
+        //    so admin "login as user" drops straight into their home view.
+        window.location.replace('/dashboard');
       } catch {
         setError('Could not start impersonation session. The link may be expired or invalid.');
       }
