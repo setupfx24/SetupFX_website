@@ -366,6 +366,28 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
     )
     accounts = result.scalars().unique().all()
 
+    # Flag copy-trading accounts so the UI can tag them regardless of the
+    # account-number prefix. An account is "copy trading" when it's either a
+    # provider's master/pool account (existing account picked at apply time OR
+    # a dedicated CT/PM pool created on approval) or a follower's copy account.
+    acct_ids = [a.id for a in accounts]
+    copy_acct_ids: set = set()
+    if acct_ids:
+        master_ids = await db.execute(
+            select(MasterAccount.account_id).where(
+                MasterAccount.account_id.in_(acct_ids),
+                MasterAccount.status.in_(["pending", "approved", "active"]),
+            )
+        )
+        copy_acct_ids.update(mid for mid in master_ids.scalars().all() if mid)
+        follower_ids = await db.execute(
+            select(InvestorAllocation.investor_account_id).where(
+                InvestorAllocation.investor_account_id.in_(acct_ids),
+                InvestorAllocation.status == "active",
+            )
+        )
+        copy_acct_ids.update(fid for fid in follower_ids.scalars().all() if fid)
+
     items = []
     for a in accounts:
         unrealized_pnl = Decimal("0")
@@ -427,6 +449,7 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
             "is_demo": a.is_demo,
             "is_active": a.is_active,
             "is_wallet_account": bool(getattr(a, "is_wallet_account", False)),
+            "is_copy_trading": a.id in copy_acct_ids,
             "account_group": group_payload,
         })
 
