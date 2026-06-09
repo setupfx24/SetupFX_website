@@ -188,6 +188,16 @@ async def my_provider_stats(
     )
 
 
+@router.get("/follower-earnings")
+async def follower_earnings(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await social_service.follower_earnings(
+        user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.get("/mamm-pamm")
 async def list_managed_accounts(
     page: int = Query(1, ge=1),

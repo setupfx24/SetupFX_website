@@ -832,6 +832,7 @@ function MyCopiesTab() {
   const [refillAmount, setRefillAmount] = useState('');
   const [refilling, setRefilling] = useState(false);
   const [walletBal, setWalletBal] = useState(0);
+  const [earnings, setEarnings] = useState<{ total_profit: number; commission_to_master: number; total_invested: number } | null>(null);
 
   const fetchCopies = useCallback(async () => {
     setLoading(true);
@@ -853,7 +854,14 @@ function MyCopiesTab() {
     } catch { setWalletBal(0); }
   }, []);
 
-  useEffect(() => { fetchCopies(); fetchWalletBal(); }, [fetchCopies, fetchWalletBal]);
+  const fetchEarnings = useCallback(async () => {
+    try {
+      const e = await api.get<{ total_profit: number; commission_to_master: number; total_invested: number }>('/social/follower-earnings');
+      setEarnings(e);
+    } catch { setEarnings(null); }
+  }, []);
+
+  useEffect(() => { fetchCopies(); fetchWalletBal(); fetchEarnings(); }, [fetchCopies, fetchWalletBal, fetchEarnings]);
 
   const stopCopy = async (id: string, name: string) => {
     setStoppingId(id);
@@ -940,6 +948,38 @@ function MyCopiesTab() {
 
   return (
     <div className="space-y-3">
+      {/* Follower earnings summary — profit kept vs commission paid to masters */}
+      {earnings && (
+        <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+          <div className="px-4 py-3 border-b border-border-primary">
+            <h3 className="text-sm font-semibold text-text-primary">Your Copy-Trading Earnings</h3>
+            <p className="text-xxs text-text-tertiary mt-0.5">What you kept from copying, and the performance-fee commission paid to your masters</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4">
+            <div>
+              <p className="text-xxs text-text-tertiary">Profit from Copy Trading</p>
+              <p className={clsx('text-lg font-bold font-mono tabular-nums', earnings.total_profit >= 0 ? 'text-buy' : 'text-sell')}>
+                {earnings.total_profit >= 0 ? '+' : ''}${earnings.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-text-tertiary mt-0.5">Net, after fees</p>
+            </div>
+            <div>
+              <p className="text-xxs text-text-tertiary">Commission Paid to Master</p>
+              <p className="text-lg font-bold font-mono tabular-nums text-warning">
+                ${earnings.commission_to_master.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-text-tertiary mt-0.5">Performance fees</p>
+            </div>
+            <div>
+              <p className="text-xxs text-text-tertiary">Total Invested</p>
+              <p className="text-lg font-bold font-mono tabular-nums text-text-primary">
+                ${earnings.total_invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] text-text-tertiary mt-0.5">Active allocations</p>
+            </div>
+          </div>
+        </div>
+      )}
       {copies.map((c) => (
         <div
           key={c.id}
@@ -1792,10 +1832,16 @@ function MyDashboardTab() {
           <h3 className="text-sm font-semibold text-text-primary">Earnings & Profit Sharing</h3>
           <p className="text-xxs text-text-tertiary mt-0.5">Commission earned from your followers&apos; performance fees</p>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-4">
           <div>
             <p className="text-xxs text-text-tertiary">Commission Earned</p>
             <p className="text-lg font-bold font-mono tabular-nums text-warning">${fmt(data.commission_earned || 0)}</p>
+            <p className="text-[10px] text-text-tertiary mt-0.5">From followers</p>
+          </div>
+          <div>
+            <p className="text-xxs text-text-tertiary">Commission Paid to Admin</p>
+            <p className="text-lg font-bold font-mono tabular-nums text-sell">${fmt(data.admin_commission_paid || 0)}</p>
+            <p className="text-[10px] text-text-tertiary mt-0.5">{data.admin_commission_pct || 0}% of your fee</p>
           </div>
           <div>
             <p className="text-xxs text-text-tertiary">Performance Fee Rate</p>

@@ -1293,6 +1293,23 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
     )
     commission_earned = float(fee_q.scalar() or 0)
 
+    # Platform (admin) commission carved out of this user's performance fees.
+    # Scoped to ALL of the user's master accounts (matching commission_earned,
+    # which keys on the master's user_id) — sum the admin_commission ledger
+    # rows whose source trade is one of their followers' copies.
+    admin_fee_q = await db.execute(
+        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.type == "admin_commission",
+            Transaction.reference_id.in_(
+                select(CopyTrade.investor_position_id)
+                .join(InvestorAllocation, CopyTrade.investor_allocation_id == InvestorAllocation.id)
+                .join(MasterAccount, InvestorAllocation.master_id == MasterAccount.id)
+                .where(MasterAccount.user_id == user_id)
+            ),
+        )
+    )
+    admin_commission_paid = float(admin_fee_q.scalar() or 0)
+
     return {
         "id": str(master.id), "status": master.status, "master_type": master.master_type,
         "total_return_pct": float(master.total_return_pct),
@@ -1312,6 +1329,8 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "copy_closed_count": copy_closed_count,
         "copy_total_count": copy_open_count + copy_closed_count,
         "commission_earned": commission_earned,
+        "admin_commission_paid": round(admin_commission_paid, 2),
+        "admin_commission_pct": float(master.admin_commission_pct or 0),
         "performance_fee_pct": float(master.performance_fee_pct),
         "management_fee_pct": float(master.management_fee_pct),
         "min_investment": float(master.min_investment),
@@ -1319,6 +1338,42 @@ async def my_provider_stats(user_id: UUID, db: AsyncSession, master_type: str | 
         "description": master.description,
         "strategy_info": getattr(master, "strategy_info", None),
         "created_at": master.created_at.isoformat() if master.created_at else None,
+    }
+
+
+async def follower_earnings(user_id: UUID, db: AsyncSession) -> dict:
+    """Copy-trading earnings summary for a follower: net profit kept and the
+    performance-fee commission that went to the master(s) they copy."""
+    from packages.common.src.models import Transaction
+    allocs = (await db.execute(
+        select(InvestorAllocation).where(InvestorAllocation.investor_user_id == user_id)
+    )).scalars().all()
+
+    total_profit = sum(float(a.total_profit or 0) for a in allocs)
+    active_subs = sum(1 for a in allocs if a.status == "active")
+    total_invested = sum(
+        float(a.allocation_amount or 0) for a in allocs if a.status == "active"
+    )
+
+    # Performance fees paid to masters = the 'commission' ledger rows on the
+    # follower's copy accounts (those accounts are never traded manually, so
+    # every commission row there is a copy-trade performance fee).
+    copy_acct_ids = list({a.investor_account_id for a in allocs if a.investor_account_id})
+    commission_to_master = 0.0
+    if copy_acct_ids:
+        fee_q = await db.execute(
+            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.account_id.in_(copy_acct_ids),
+                Transaction.type == "commission",
+            )
+        )
+        commission_to_master = abs(float(fee_q.scalar() or 0))
+
+    return {
+        "total_profit": round(total_profit, 2),
+        "commission_to_master": round(commission_to_master, 2),
+        "total_invested": round(total_invested, 2),
+        "active_subscriptions": active_subs,
     }
 
 
