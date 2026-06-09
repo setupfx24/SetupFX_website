@@ -1500,6 +1500,29 @@ function BecomeProviderTab() {
     } catch (e: unknown) { toast.error(getErrorMessage(e, 'Failed')); } finally { setSubmitting(false); }
   };
 
+  // Re-apply after a rejection. The backend allows a fresh submission once
+  // the prior application is 'rejected' (it only blocks pending/approved/
+  // active), so we pre-fill the form from the rejected row and drop back to
+  // the application form by clearing `existing`.
+  const handleReapply = () => {
+    if (existing) {
+      if (existing.performance_fee_pct != null) setPerfFee(String(existing.performance_fee_pct));
+      if (existing.min_investment != null) setMinInvest(String(existing.min_investment));
+      if (existing.max_investors != null) setMaxInvestors(String(existing.max_investors));
+      if (existing.description) setDescription(existing.description);
+      const si = existing.strategy_info || {};
+      if (si.strategy_name) setStrategyName(si.strategy_name);
+      if (si.market) setMarket(si.market);
+      if (si.risk_profile) setRiskProfile(si.risk_profile);
+      if (si.max_drawdown) setMaxDrawdown(si.max_drawdown);
+      if (si.recommended_capital) setRecommendedCapital(si.recommended_capital);
+      if (si.avg_trades) setAvgTrades(si.avg_trades);
+      if (si.expected_returns) setExpectedReturns(si.expected_returns);
+      if (si.description) setStrategyDescription(si.description);
+    }
+    setExisting(null);
+  };
+
   if (loading) return <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-buy border-t-transparent rounded-full animate-spin" /></div>;
 
   if (existing) {
@@ -1521,7 +1544,18 @@ function BecomeProviderTab() {
           </div>
           {existing.strategy_info && <div className="mt-4"><StrategyInfoCard info={existing.strategy_info} /></div>}
           {existing.status === 'pending' && <p className="text-xxs text-warning mt-3">Your application is under review by the admin team.</p>}
-          {existing.status === 'rejected' && <p className="text-xxs text-danger mt-3">Your application was rejected. Contact support for details.</p>}
+          {existing.status === 'rejected' && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xxs text-danger">Your application was rejected. You can update your details and re-apply.</p>
+              <button
+                type="button"
+                onClick={handleReapply}
+                className="w-full py-2.5 rounded-xl text-xs font-semibold text-white bg-accent hover:bg-accent/90 active:scale-[0.98] transition-all shadow-lg shadow-accent/25"
+              >
+                Re-apply
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
