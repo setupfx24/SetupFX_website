@@ -46,6 +46,7 @@ interface AccountRow {
   currency: string;
   is_demo: boolean;
   is_wallet_account?: boolean;
+  is_copy_trading?: boolean;
   is_active?: boolean;
   account_group?: AccountGroupInfo | null;
   created_at?: string;
@@ -653,7 +654,11 @@ function AccountCard({
   }, [row.id]);
 
   const isActive = row.is_active !== false;
-  const isManagedAccount = row.account_number.startsWith('IF') || row.account_number.startsWith('CF');
+  // Copy-trading accounts get the "Copy Trading" tag. True when the backend
+  // flags it (any master account — including an existing account picked at
+  // apply time — or an active follower account) OR the account-number prefix
+  // is a known copy/pool prefix (CF/IF followers, CT/PM/MM pools).
+  const isManagedAccount = !!row.is_copy_trading || /^(CF|IF|CT|PM|MM)/.test(row.account_number);
   const groupName = row.account_group?.name?.trim() || 'Standard';
   /* SwissCresta has a single server — Live for real, Demo for demo accounts. */
   const serverLabel = row.is_demo ? 'SwissCresta-Demo' : 'SwissCresta-Live';
@@ -768,9 +773,16 @@ function AccountCard({
         </div>
       </div>
 
-      {/* Sub-header � group + server line */}
+      {/* Sub-header � copy-trading accounts show just "Copy Trading"; regular
+          accounts show their group + server line. */}
       <p className="mt-2 text-xs text-[#6B7280]">
-        {groupName} STP <span className="mx-2 text-[#D1D5DB]">|</span> {serverLabel}
+        {isManagedAccount ? (
+          <span className="font-medium text-[#E94E1B]">Copy Trading</span>
+        ) : (
+          <>
+            {groupName} STP <span className="mx-2 text-[#D1D5DB]">|</span> {serverLabel}
+          </>
+        )}
       </p>
 
       {/* Inner summary tile */}
