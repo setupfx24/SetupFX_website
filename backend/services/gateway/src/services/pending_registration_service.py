@@ -159,13 +159,19 @@ async def start_pending_registration(
         code=otp,
         ttl_minutes=PENDING_TTL_SECONDS // 60,
     )
+    # send_email's first positional arg is `to_email`, NOT `to`. Calling
+    # it as `to=...` raised TypeError on every request and surfaced as a
+    # 502 to the user — the v1 of this service got that wrong.
     try:
-        await send_email(to=email_lower, subject=subject, html=html, text=text)
+        ok = await send_email(email_lower, subject, html, text=text)
     except Exception as e:
-        # The Redis row is harmless on its own; we'll let it expire.
-        # But the user must see a clear failure so they can retry.
         logger.exception("Failed to send pending-registration OTP to %s", email_lower)
         raise HTTPException(status_code=502, detail="Could not send verification email.") from e
+    if not ok:
+        # smtp_configured() check fell through OR transport failure —
+        # send_email returns False rather than raising on these.
+        logger.warning("send_email returned False for pending-registration to %s", email_lower)
+        raise HTTPException(status_code=502, detail="Could not send verification email.")
 
     logger.info("Pending registration started for %s", email_lower)
     return {"message": "Verification code sent. Check your email."}
@@ -308,10 +314,13 @@ async def resend_pending_otp(
         ttl_minutes=PENDING_TTL_SECONDS // 60,
     )
     try:
-        await send_email(to=email_lower, subject=subject, html=html, text=text)
+        ok = await send_email(email_lower, subject, html, text=text)
     except Exception as e:
         logger.exception("Failed to resend pending-registration OTP to %s", email_lower)
         raise HTTPException(status_code=502, detail="Could not send verification email.") from e
+    if not ok:
+        logger.warning("send_email returned False on resend for %s", email_lower)
+        raise HTTPException(status_code=502, detail="Could not send verification email.")
 
     return {"message": "New verification code sent."}
 
