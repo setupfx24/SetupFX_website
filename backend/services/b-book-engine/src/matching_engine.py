@@ -26,6 +26,7 @@ from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src import corecen_trade_client
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.ib_commission import distribute_ib_commission
 
 logger = logging.getLogger("b-book-engine")
 
@@ -185,6 +186,18 @@ class MatchingEngine:
         account.balance = (account.balance or Decimal("0")) - commission
         account.equity = (account.balance or Decimal("0")) + (account.credit or Decimal("0"))
         account.free_margin = account.equity - account.margin_used
+
+        # A filled pending order is a real trade — pay the IB chain just like a
+        # market order does (gateway). Previously pending fills skipped this
+        # entirely, so referred users who traded via limit/stop generated no IB
+        # commission. Best-effort: never let a distribution error block the fill;
+        # the outer monitor loop owns the commit.
+        try:
+            await distribute_ib_commission(
+                db, account.user_id, order.id, order.lots, instrument.symbol,
+            )
+        except Exception as e:
+            logger.error(f"IB commission distribution failed for order {order.id}: {e}")
 
         logger.info(f"Pending order {order.id} executed: {instrument.symbol} {order.side.value} @ {fill_price}")
 
