@@ -21,6 +21,10 @@ services:
       - "8002:8000"
     environment:
       <<: *dev-cookie-env
+      # The trader app is published on host port 3010 locally (not 3000), so
+      # IB referral links must point there. The root .env carries the prod
+      # value (https://trade.swisscresta.com); override it for local dev.
+      TRADER_APP_URL: "http://localhost:3010"
 
   admin-api:
     environment:

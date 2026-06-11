@@ -15,14 +15,20 @@ from packages.common.src.models import (
 def _get_frontend_url() -> str:
     from packages.common.src.config import get_settings
     s = get_settings()
+    # The trader app's canonical public URL (TRADER_APP_URL — the same setting
+    # used for trade / password-reset emails) is the authoritative base for
+    # referral links. Deriving it from CORS_ORIGINS was fragile: the dev CORS
+    # list carries both :3010 (the real trader app) and a leftover :3000, and
+    # the old heuristic preferred :3000, producing a wrong local link.
+    trader_url = (getattr(s, "TRADER_APP_URL", "") or "").strip()
+    if trader_url:
+        return trader_url.rstrip("/")
+    # Fallback: derive from CORS origins (prod domain first, else first origin).
     origins = [o.strip() for o in s.CORS_ORIGINS.split(",") if o.strip()]
     for o in origins:
         if "swisscresta.com" in o:
             return o
-    for o in origins:
-        if ":3000" in o:
-            return o
-    return origins[0] if origins else "http://localhost:3000"
+    return origins[0] if origins else "http://localhost:3010"
 
 
 async def ib_status(user_id: UUID, db: AsyncSession) -> dict:
