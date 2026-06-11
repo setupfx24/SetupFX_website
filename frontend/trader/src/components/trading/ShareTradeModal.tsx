@@ -49,7 +49,18 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
 
   if (!open || !position) return null;
 
+  // A freshly-opened position carries an optimistic "optim-" id until the
+  // 1.5s poll reconciles it to the real server UUID (same reason bulk-close
+  // filters these out). Sharing one would POST "optim-…" to
+  // /positions/{uuid}/share and fail backend UUID validation, so block it
+  // with a clear message until the trade is confirmed.
+  const isPending = position.id.startsWith('optim-');
+
   const handleCopyLink = async () => {
+    if (isPending) {
+      toast.error('Trade is still being confirmed — try again in a moment.');
+      return;
+    }
     setCreating(true);
     try {
       const res = await api.post<{ short_code: string; expires_at: string }>(
@@ -178,8 +189,9 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
               <button
                 type="button"
                 onClick={handleCopyLink}
-                disabled={creating}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold bg-buy text-white hover:bg-buy-light disabled:opacity-60 transition-fast"
+                disabled={creating || isPending}
+                title={isPending ? 'Trade is still being confirmed' : undefined}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold bg-buy text-white hover:bg-buy-light disabled:opacity-60 disabled:cursor-not-allowed transition-fast"
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : shareUrl ? <Copy className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
                 {shareUrl ? 'Copy Link' : 'Create Link'}
@@ -192,6 +204,12 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
                 <Download className="w-4 h-4" /> Download
               </button>
             </div>
+
+            {isPending && !shareUrl && (
+              <p className="text-[11px] text-text-tertiary">
+                Confirming your trade… the share link will be available in a moment.
+              </p>
+            )}
 
             {shareUrl && (
               <div className="p-3 rounded-lg bg-buy/10 border border-buy/25 space-y-1.5">
