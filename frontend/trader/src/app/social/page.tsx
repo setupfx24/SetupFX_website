@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense, Fragment } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -24,7 +24,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard';
+type TabId = 'leaderboard' | 'my-copies' | 'become-provider' | 'my-dashboard' | 'trade-history';
 type SortBy = 'total_return_pct' | 'sharpe_ratio' | 'followers_count';
 
 interface Provider {
@@ -106,6 +106,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'my-copies', label: 'My Subscriptions' },
   { id: 'become-provider', label: 'Become Trade Master' },
   { id: 'my-dashboard', label: 'My Dashboard' },
+  { id: 'trade-history', label: 'Trade History' },
 ];
 
 const VALID_TAB_IDS = new Set<TabId>(TABS.map((t) => t.id));
@@ -1339,6 +1340,7 @@ function SocialPageInner() {
               {activeTab === 'my-copies' && <MyCopiesTab />}
               {activeTab === 'become-provider' && <BecomeProviderTab />}
               {activeTab === 'my-dashboard' && <MyDashboardTab />}
+              {activeTab === 'trade-history' && <CopyTradeHistoryTab />}
             </div>
           </div>
 
@@ -2067,6 +2069,240 @@ function MyDashboardTab() {
         </div>,
         document.body,
       )}
+    </div>
+  );
+}
+
+/* ─── Trade History Tab — all copy trades across every subscription ─── */
+interface CopyHistoryRow {
+  id: string;
+  allocation_id: string;
+  account_key: string;
+  account_number: string;
+  provider_name: string;
+  copy_type: string;
+  symbol: string;
+  side: string;
+  lots: number;
+  open_price: number;
+  close_price?: number | null;
+  opened_at?: string | null;
+  closed_at?: string | null;
+  pnl: number;
+  close_reason?: string | null;
+  status: string;
+}
+interface CopyHistoryAccount {
+  account_key: string;
+  account_number: string;
+  master_name: string;
+  copy_type: string;
+}
+interface CopyHistoryResponse {
+  items: CopyHistoryRow[];
+  accounts: CopyHistoryAccount[];
+  symbols: string[];
+  open_count: number;
+  closed_count: number;
+  total: number;
+  total_pnl: number;
+}
+
+function CopyTradeHistoryTab() {
+  const [data, setData] = useState<CopyHistoryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [accountKey, setAccountKey] = useState('all');
+  const [symbol, setSymbol] = useState('all');
+  const [status, setStatus] = useState<'all' | 'open' | 'closed'>('all');
+
+  const fetchHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<CopyHistoryResponse>('/social/copy-trade-history');
+      setData(res);
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Failed to load trade history'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+  // Client-side filtering keeps the dropdowns snappy; the response already
+  // carries the full account + symbol lists so the filters stay populated
+  // even when a narrower view is selected.
+  const rows = useMemo(() => {
+    const all = data?.items ?? [];
+    return all.filter((r) =>
+      (accountKey === 'all' || r.account_key === accountKey) &&
+      (symbol === 'all' || r.symbol === symbol) &&
+      (status === 'all' || r.status === status),
+    );
+  }, [data, accountKey, symbol, status]);
+
+  const filteredPnl = useMemo(
+    () => rows.reduce((s, r) => s + (r.pnl || 0), 0),
+    [rows],
+  );
+
+  const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorBanner message={error} onRetry={fetchHistory} />;
+  if (!data || data.items.length === 0) {
+    return <EmptyState message="No copy trades yet. Once you follow a master and trades mirror in, they'll show up here." />;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Total Trades</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-text-primary mt-0.5">{data.total}</p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Open</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-buy mt-0.5">{data.open_count}</p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Closed</p>
+          <p className="text-lg font-bold font-mono tabular-nums text-text-primary mt-0.5">{data.closed_count}</p>
+        </div>
+        <div className="rounded-xl border border-border-primary bg-bg-secondary p-3">
+          <p className="text-xxs text-text-tertiary">Net P&amp;L</p>
+          <p className={clsx('text-lg font-bold font-mono tabular-nums mt-0.5', data.total_pnl >= 0 ? 'text-buy' : 'text-sell')}>
+            {data.total_pnl >= 0 ? '+' : ''}${fmt(data.total_pnl)}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters: account-wise + trade-wise (symbol) + status */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-[180px]">
+          <label className="text-xxs text-text-tertiary block mb-1">Account</label>
+          <select
+            value={accountKey}
+            onChange={(e) => setAccountKey(e.target.value)}
+            className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-xs text-text-primary focus:border-accent/50 focus:outline-none"
+          >
+            <option value="all">All accounts</option>
+            {data.accounts.map((a) => (
+              <option key={a.account_key} value={a.account_key}>
+                {a.account_number} · {a.master_name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="min-w-[150px]">
+          <label className="text-xxs text-text-tertiary block mb-1">Instrument</label>
+          <select
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            className="w-full rounded-lg border border-border-primary bg-bg-primary px-3 py-2 text-xs text-text-primary font-mono focus:border-accent/50 focus:outline-none"
+          >
+            <option value="all">All instruments</option>
+            {data.symbols.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex gap-1.5">
+          {(['all', 'open', 'closed'] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatus(s)}
+              className={clsx(
+                'px-3 py-2 rounded-lg text-xs font-semibold border capitalize transition-colors',
+                status === s
+                  ? 'border-accent bg-accent/15 text-accent'
+                  : 'border-border-primary text-text-secondary hover:text-text-primary',
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        {(accountKey !== 'all' || symbol !== 'all' || status !== 'all') && (
+          <button
+            type="button"
+            onClick={() => { setAccountKey('all'); setSymbol('all'); setStatus('all'); }}
+            className="px-3 py-2 rounded-lg text-xs font-medium text-text-tertiary hover:text-text-primary"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-border-primary bg-bg-secondary overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-border-primary flex items-center justify-between">
+          <p className="text-xs font-semibold text-text-primary">
+            {rows.length} trade{rows.length === 1 ? '' : 's'}
+          </p>
+          <p className={clsx('text-xs font-mono font-bold tabular-nums', filteredPnl >= 0 ? 'text-buy' : 'text-sell')}>
+            {filteredPnl >= 0 ? '+' : ''}${fmt(filteredPnl)}
+          </p>
+        </div>
+        {rows.length === 0 ? (
+          <EmptyState message="No trades match the selected filters" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border-glass text-text-tertiary text-left">
+                  <th className="px-3 py-2 font-medium whitespace-nowrap">Date</th>
+                  <th className="px-3 py-2 font-medium">Master</th>
+                  <th className="px-3 py-2 font-medium">Account</th>
+                  <th className="px-3 py-2 font-medium">Symbol</th>
+                  <th className="px-3 py-2 font-medium">Side</th>
+                  <th className="px-3 py-2 font-medium text-right">Lots</th>
+                  <th className="px-3 py-2 font-medium text-right">Open</th>
+                  <th className="px-3 py-2 font-medium text-right">Close</th>
+                  <th className="px-3 py-2 font-medium text-right">P&amp;L</th>
+                  <th className="px-3 py-2 font-medium text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((t) => {
+                  const ts = t.closed_at || t.opened_at;
+                  return (
+                    <tr key={`${t.status}-${t.id}`} className="border-b border-border-glass/50 hover:bg-bg-hover/30 transition-colors">
+                      <td className="px-3 py-2.5 text-xxs text-text-secondary whitespace-nowrap">
+                        {ts ? new Date(ts).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-3 py-2.5 text-text-primary">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate max-w-[120px]">{t.provider_name}</span>
+                          <span className="px-1 py-0.5 rounded bg-accent/15 text-accent text-[9px] font-bold uppercase shrink-0">{t.copy_type}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-text-secondary font-mono whitespace-nowrap">{t.account_number}</td>
+                      <td className="px-3 py-2.5 text-text-primary font-medium">{t.symbol}</td>
+                      <td className={clsx('px-3 py-2.5 font-medium uppercase', t.side === 'buy' ? 'text-buy' : 'text-sell')}>{t.side}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-secondary">{t.lots}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-secondary">{t.open_price}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-text-secondary">{t.close_price ?? '—'}</td>
+                      <td className={clsx('px-3 py-2.5 text-right tabular-nums font-medium', t.pnl >= 0 ? 'text-buy' : 'text-sell')}>
+                        {t.pnl >= 0 ? '+' : ''}{fmt(t.pnl)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <span className={clsx('px-1.5 py-0.5 rounded text-[10px] font-medium', t.status === 'open' ? 'bg-buy/20 text-buy' : 'bg-text-tertiary/20 text-text-tertiary')}>
+                          {t.status === 'closed' && t.close_reason ? t.close_reason : t.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

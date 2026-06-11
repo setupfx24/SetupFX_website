@@ -20,11 +20,12 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig, ChargeConfig, Transaction, User,
+    SpreadConfig, Transaction, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src import corecen_trade_client
+from packages.common.src.instrument_pricing import resolve_commission
 
 logger = logging.getLogger("b-book-engine")
 
@@ -75,44 +76,6 @@ class MatchingEngine:
             config = result.scalar_one_or_none()
             if config:
                 return config.value
-
-        return Decimal("0")
-
-    async def _get_commission(self, instrument_id, user_id, segment_id, lots: Decimal, db: AsyncSession) -> Decimal:
-        """Resolve commission using config hierarchy: User > Instrument > Segment > Default."""
-        candidates = [
-            {"scope": "user",       "user_id": user_id,   "instrument_id": instrument_id, "segment_id": None},
-            {"scope": "user",       "user_id": user_id,   "instrument_id": None,          "segment_id": None},
-            {"scope": "instrument", "user_id": None,      "instrument_id": instrument_id, "segment_id": None},
-            {"scope": "segment",    "user_id": None,      "instrument_id": None,          "segment_id": segment_id},
-            {"scope": "default",    "user_id": None,      "instrument_id": None,          "segment_id": None},
-        ]
-        for c in candidates:
-            if c["scope"] == "user" and not c["user_id"]:
-                continue
-            if c["scope"] == "instrument" and not c["instrument_id"]:
-                continue
-            if c["scope"] == "segment" and not c["segment_id"]:
-                continue
-            query = select(ChargeConfig).where(
-                ChargeConfig.scope == c["scope"],
-                ChargeConfig.is_enabled == True,
-                ChargeConfig.user_id == c["user_id"] if c["user_id"] else ChargeConfig.user_id.is_(None),
-                ChargeConfig.instrument_id == c["instrument_id"] if c["instrument_id"] else ChargeConfig.instrument_id.is_(None),
-                ChargeConfig.segment_id == c["segment_id"] if c["segment_id"] else ChargeConfig.segment_id.is_(None),
-            ).limit(1)
-            result = await db.execute(query)
-            config = result.scalar_one_or_none()
-            if config:
-                ct = (config.charge_type or "").lower()
-                v = Decimal(str(config.value or 0))
-                if ct in ("commission_per_lot", "per_lot"):
-                    return v * lots
-                if ct in ("commission_per_trade", "per_trade"):
-                    return v
-                if ct == "spread_percentage":
-                    return Decimal("0")
-                return v * lots
 
         return Decimal("0")
 
@@ -185,12 +148,18 @@ class MatchingEngine:
             order.status = OrderStatus.REJECTED
             return
 
-        commission = await self._get_commission(
-            instrument_id=instrument.id,
+        # Use the SAME resolver as the gateway's market-order path so a pending
+        # fill is charged identically to a market order. The previous local
+        # _get_commission() only checked user > instrument > segment > default
+        # and silently charged $0 whenever commission was configured at the
+        # account-group level (tier default) — i.e. for most accounts.
+        commission = await resolve_commission(
+            db,
+            instrument,
+            order.lots,
+            fill_price,
             user_id=account.user_id,
-            segment_id=instrument.segment_id,
-            lots=order.lots,
-            db=db,
+            account_group_id=account.account_group_id,
         )
 
         order.status = OrderStatus.FILLED
