@@ -97,12 +97,10 @@ export default function IBPage() {
     name: '',
     is_default: false,
     commission_per_lot: '',
-    commission_per_trade: '',
     mlm_distribution: [40, 25, 15, 10, 10] as number[],
   });
   const [commissionPlan, setCommissionPlan] = useState('default');
   const [customPerLot, setCustomPerLot] = useState('');
-  const [customPerTrade, setCustomPerTrade] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -220,14 +218,12 @@ export default function IBPage() {
       const body: any = { commission_plan: commissionPlan };
       if (commissionPlan === 'custom') {
         if (customPerLot) body.custom_per_lot = parseFloat(customPerLot);
-        if (customPerTrade) body.custom_per_trade = parseFloat(customPerTrade);
       }
       await adminApi.post(`/business/ib/applications/${approveModal.id}/approve`, body);
       toast.success('Application approved');
       setApproveModal(null);
       setCommissionPlan('default');
       setCustomPerLot('');
-      setCustomPerTrade('');
       fetchData();
     } catch (e: any) {
       toast.error(e.message || 'Failed to approve');
@@ -261,7 +257,6 @@ export default function IBPage() {
         // Custom rates — clear plan, send custom values
         body.commission_plan_id = null;
         if (customPerLot) body.custom_commission_per_lot = parseFloat(customPerLot);
-        if (customPerTrade) body.custom_commission_per_trade = parseFloat(customPerTrade);
       } else if (commissionPlan && commissionPlan !== 'default') {
         // Specific plan UUID selected
         body.commission_plan_id = commissionPlan;
@@ -274,7 +269,6 @@ export default function IBPage() {
       setEditCommissionModal(null);
       setCommissionPlan('default');
       setCustomPerLot('');
-      setCustomPerTrade('');
       fetchData();
     } catch (e: any) {
       toast.error(e.message || 'Failed to update commission');
@@ -289,7 +283,6 @@ export default function IBPage() {
         name: '',
         is_default: commissionPlans.length === 0,
         commission_per_lot: '',
-        commission_per_trade: '',
         mlm_distribution: [40, 25, 15, 10, 10],
       });
     } else {
@@ -297,7 +290,6 @@ export default function IBPage() {
         name: plan.name,
         is_default: plan.is_default,
         commission_per_lot: plan.commission_per_lot ? String(plan.commission_per_lot) : '',
-        commission_per_trade: plan.commission_per_trade ? String(plan.commission_per_trade) : '',
         mlm_distribution: (plan.mlm_distribution && plan.mlm_distribution.length > 0)
           ? [...plan.mlm_distribution]
           : [40, 25, 15, 10, 10],
@@ -339,7 +331,8 @@ export default function IBPage() {
         name: planForm.name.trim(),
         is_default: planForm.is_default,
         commission_per_lot: parseFloat(planForm.commission_per_lot) || 0,
-        commission_per_trade: parseFloat(planForm.commission_per_trade) || 0,
+        // IB commission is per-lot only; per-trade is intentionally always 0.
+        commission_per_trade: 0,
         spread_share_pct: 0,
         cpa_per_deposit: 0,
         mlm_levels: planForm.mlm_distribution.length,
@@ -513,7 +506,7 @@ export default function IBPage() {
                             <td className="px-4 py-2.5 text-right">
                               <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                 <button
-                                  onClick={() => { setEditCommissionModal(agent); setCommissionPlan(agent.commission_plan_id || 'default'); setCustomPerLot(agent.custom_commission_per_lot?.toString() || ''); setCustomPerTrade(agent.custom_commission_per_trade?.toString() || ''); }}
+                                  onClick={() => { setEditCommissionModal(agent); setCommissionPlan(agent.commission_plan_id || 'default'); setCustomPerLot(agent.custom_commission_per_lot?.toString() || ''); }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xxs font-medium bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25 transition-fast"
                                 >
                                   <Edit size={12} /> Edit
@@ -692,10 +685,6 @@ export default function IBPage() {
                     <label className="block text-xxs text-text-tertiary mb-1">Custom Rate Per Lot ($)</label>
                     <input type="number" step="0.01" value={customPerLot} onChange={(e) => setCustomPerLot(e.target.value)} placeholder="e.g. 5.00" className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
                   </div>
-                  <div>
-                    <label className="block text-xxs text-text-tertiary mb-1">Custom Rate Per Trade ($)</label>
-                    <input type="number" step="0.01" value={customPerTrade} onChange={(e) => setCustomPerTrade(e.target.value)} placeholder="e.g. 2.00" className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
-                  </div>
                 </>
               )}
             </div>
@@ -757,10 +746,6 @@ export default function IBPage() {
                   <div>
                     <label className="block text-xxs text-text-tertiary mb-1">Custom Rate Per Lot ($)</label>
                     <input type="number" step="0.01" value={customPerLot} onChange={(e) => setCustomPerLot(e.target.value)} placeholder="e.g. 5.00" className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
-                  </div>
-                  <div>
-                    <label className="block text-xxs text-text-tertiary mb-1">Custom Rate Per Trade ($)</label>
-                    <input type="number" step="0.01" value={customPerTrade} onChange={(e) => setCustomPerTrade(e.target.value)} placeholder="e.g. 2.00" className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md" />
                   </div>
                 </>
               )}
@@ -839,7 +824,6 @@ export default function IBPage() {
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xxs text-text-tertiary">
                             <span>${plan.commission_per_lot}/lot</span>
-                            <span>${plan.commission_per_trade}/trade</span>
                             <span className="font-mono">[{(plan.mlm_distribution || []).join(', ')}]</span>
                           </div>
                         </div>
@@ -880,27 +864,15 @@ export default function IBPage() {
                     />
                     Set as default plan (applied to all new IBs)
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xxs text-text-tertiary mb-1">Commission per Lot ($)</label>
-                      <input
-                        type="number" step="0.01" min="0"
-                        value={planForm.commission_per_lot}
-                        onChange={(e) => setPlanForm({ ...planForm, commission_per_lot: e.target.value })}
-                        placeholder="6.00"
-                        className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xxs text-text-tertiary mb-1">Commission per Trade ($)</label>
-                      <input
-                        type="number" step="0.01" min="0"
-                        value={planForm.commission_per_trade}
-                        onChange={(e) => setPlanForm({ ...planForm, commission_per_trade: e.target.value })}
-                        placeholder="0.00"
-                        className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md font-mono"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xxs text-text-tertiary mb-1">Commission per Lot ($)</label>
+                    <input
+                      type="number" step="0.01" min="0"
+                      value={planForm.commission_per_lot}
+                      onChange={(e) => setPlanForm({ ...planForm, commission_per_lot: e.target.value })}
+                      placeholder="6.00"
+                      className="w-full text-xs py-1.5 px-2 bg-bg-input border border-border-primary rounded-md font-mono"
+                    />
                   </div>
 
                   <div className="pt-2">
