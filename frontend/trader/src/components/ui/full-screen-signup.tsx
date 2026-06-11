@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -68,7 +68,21 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState<SignupStep>('credentials');
+  // IB referral code from the signup link (?ref=CODE). Captured on mount so
+  // it survives the credentials → OTP step transition, then sent to
+  // /auth/register/start where the backend stages it and attributes the
+  // referral on verify. Without this the IB never gets credited.
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const copy = COPY[mode];
+
+  useEffect(() => {
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref && ref.trim()) setReferralCode(ref.trim());
+    } catch {
+      /* no query string / SSR guard — ignore */
+    }
+  }, []);
 
   const submitCredentials = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -105,6 +119,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
         password,
         first_name: 'New',
         last_name: 'Trader',
+        ...(referralCode ? { referral_code: referralCode } : {}),
       });
       toast.success('Verification code sent. Check your email.');
       setStep('otp');
