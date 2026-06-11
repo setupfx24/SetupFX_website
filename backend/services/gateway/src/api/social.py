@@ -279,6 +279,22 @@ async def copy_allocation_trades(
     )
 
 
+@router.get("/copy-trade-history")
+async def copy_trade_history(
+    account_id: str | None = Query(None),
+    symbol: str | None = Query(None),
+    status: str | None = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Aggregated copy-trade history across all of the follower's
+    subscriptions, with account-wise and symbol (trade-wise) filters."""
+    return await social_service.copy_trade_history(
+        user_id=current_user["user_id"], db=db,
+        account_id=account_id, symbol=symbol, status_filter=status,
+    )
+
+
 @router.get("/master-investors")
 async def master_investors(
     current_user: dict = Depends(get_current_user),

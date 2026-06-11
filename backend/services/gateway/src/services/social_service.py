@@ -1999,6 +1999,168 @@ async def copy_allocation_trades(
     }
 
 
+async def copy_trade_history(
+    user_id: UUID,
+    db: AsyncSession,
+    account_id: str | None = None,
+    symbol: str | None = None,
+    status_filter: str | None = None,
+) -> dict:
+    """Aggregated copy-trade history across ALL of the follower's subscriptions.
+
+    Returns every mirrored trade (open + closed) the user has, tagged with the
+    master/provider it came from and the destination account, plus the list of
+    accounts and symbols present so the UI can offer account-wise and
+    trade-wise (symbol) filters. Covers signal/mam (the follower's own copy
+    sub-accounts) and pamm (the shared master pool, with the investor's share).
+    """
+    from packages.common.src.models import Position, TradeHistory, Instrument
+
+    rows = (await db.execute(
+        select(InvestorAllocation, MasterAccount, User.first_name, User.last_name)
+        .join(MasterAccount, InvestorAllocation.master_id == MasterAccount.id)
+        .join(User, MasterAccount.user_id == User.id)
+        .where(InvestorAllocation.investor_user_id == user_id)
+        .order_by(InvestorAllocation.created_at.desc())
+    )).all()
+
+    # account_number lookup for signal/mam copy sub-accounts
+    acct_ids = {a.investor_account_id for a, *_ in rows if a.investor_account_id}
+    acct_map: dict = {}
+    if acct_ids:
+        ar = await db.execute(
+            select(TradingAccount.id, TradingAccount.account_number)
+            .where(TradingAccount.id.in_(acct_ids))
+        )
+        acct_map = {aid: num for aid, num in ar.all()}
+
+    items: list[dict] = []
+    accounts: dict[str, dict] = {}   # account_key -> filter descriptor
+    symbols: set[str] = set()
+    pamm_total_cache: dict = {}       # master_id -> total active pamm allocation
+    seen_pamm_masters: set = set()    # avoid duplicating a shared pool's trades
+
+    for alloc, master, fn, ln in rows:
+        ctype = (alloc.copy_type or "signal").lower()
+        provider_name = f"{fn or ''} {ln or ''}".strip() or "Master"
+
+        if ctype == "pamm":
+            if not master.account_id or master.id in seen_pamm_masters:
+                continue
+            seen_pamm_masters.add(master.id)
+            if master.id not in pamm_total_cache:
+                tot_q = await db.execute(
+                    select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+                        InvestorAllocation.master_id == master.id,
+                        InvestorAllocation.status == "active",
+                        InvestorAllocation.copy_type == "pamm",
+                    )
+                )
+                pamm_total_cache[master.id] = Decimal(str(tot_q.scalar() or 0))
+            total_alloc = pamm_total_cache[master.id]
+            alloc_amt = alloc.allocation_amount or Decimal("0")
+            ratio = float(alloc_amt / total_alloc) if total_alloc > 0 else 0.0
+            src_account_id = master.account_id
+            acct_key = f"pamm:{master.id}"
+            account_number = f"PAMM · {provider_name}"
+            is_pamm = True
+        else:
+            src_account_id = alloc.investor_account_id
+            if not src_account_id:
+                continue
+            account_number = acct_map.get(src_account_id) or "—"
+            acct_key = str(src_account_id)
+            ratio = 1.0
+            is_pamm = False
+
+        accounts.setdefault(acct_key, {
+            "account_key": acct_key,
+            "account_number": account_number,
+            "master_name": provider_name,
+            "copy_type": ctype,
+        })
+
+        open_q = await db.execute(
+            select(Position, Instrument)
+            .join(Instrument, Position.instrument_id == Instrument.id)
+            .where(Position.account_id == src_account_id, Position.status == "open")
+            .order_by(Position.created_at.desc())
+        )
+        for pos, inst in open_q.all():
+            profit = float(pos.profit or 0)
+            symbols.add(inst.symbol)
+            items.append({
+                "id": str(pos.id),
+                "allocation_id": str(alloc.id),
+                "account_key": acct_key,
+                "account_number": account_number,
+                "provider_name": provider_name,
+                "copy_type": ctype,
+                "symbol": inst.symbol,
+                "side": pos.side.value if hasattr(pos.side, "value") else str(pos.side),
+                "lots": float(pos.lots),
+                "open_price": float(pos.open_price),
+                "close_price": None,
+                "opened_at": pos.created_at.isoformat() if pos.created_at else None,
+                "closed_at": None,
+                "pnl": round(profit * ratio, 2) if is_pamm else profit,
+                "close_reason": None,
+                "status": "open",
+            })
+
+        closed_q = await db.execute(
+            select(TradeHistory, Instrument)
+            .join(Instrument, TradeHistory.instrument_id == Instrument.id)
+            .where(TradeHistory.account_id == src_account_id)
+            .order_by(TradeHistory.closed_at.desc())
+            .limit(200)
+        )
+        for th, inst in closed_q.all():
+            profit = float(th.profit or 0)
+            symbols.add(inst.symbol)
+            items.append({
+                "id": str(th.id),
+                "allocation_id": str(alloc.id),
+                "account_key": acct_key,
+                "account_number": account_number,
+                "provider_name": provider_name,
+                "copy_type": ctype,
+                "symbol": inst.symbol,
+                "side": th.side.value if hasattr(th.side, "value") else str(th.side),
+                "lots": float(th.lots),
+                "open_price": float(th.open_price),
+                "close_price": float(th.close_price),
+                "opened_at": th.opened_at.isoformat() if th.opened_at else None,
+                "closed_at": th.closed_at.isoformat() if th.closed_at else None,
+                "pnl": round(profit * ratio, 2) if is_pamm else profit,
+                # Hide internal 'admin' close-reason from the investor view.
+                "close_reason": ("manual" if (th.close_reason or "").lower() == "admin"
+                                 else (th.close_reason or "manual")),
+                "status": "closed",
+            })
+
+    # newest first — closed_at for closed trades, opened_at otherwise
+    items.sort(key=lambda it: (it.get("closed_at") or it.get("opened_at") or ""), reverse=True)
+
+    # optional server-side filters (the UI also filters client-side)
+    if account_id and account_id != "all":
+        items = [it for it in items if it["account_key"] == account_id]
+    if symbol and symbol != "all":
+        items = [it for it in items if it["symbol"] == symbol]
+    if status_filter in ("open", "closed"):
+        items = [it for it in items if it["status"] == status_filter]
+
+    return {
+        "items": items,
+        "accounts": list(accounts.values()),
+        "symbols": sorted(symbols),
+        "open_count": sum(1 for it in items if it["status"] == "open"),
+        "closed_count": sum(1 for it in items if it["status"] == "closed"),
+        "total": len(items),
+        "total_pnl": round(sum(it["pnl"] for it in items), 2),
+    }
+
+
 async def master_investors(user_id: UUID, db: AsyncSession) -> dict:
     master_result = await db.execute(
         select(MasterAccount).where(
