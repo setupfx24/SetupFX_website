@@ -326,7 +326,13 @@ export default function PammPage() {
     fetchProvider();
     fetchLiveAccounts();
     fetchWallet();
-  }, [fetchBrowse, fetchProvider, fetchLiveAccounts, fetchWallet]);
+    // The top summary cards ("My PAMM Investments" / "Total Profit") are
+    // always visible — above the tabs — so their data must load on mount,
+    // not only when the "My Investments" tab is opened. Without this they
+    // read a null summary and show $0.00 / In 0 Accounts even when the user
+    // has active allocations.
+    fetchAllocations();
+  }, [fetchBrowse, fetchProvider, fetchLiveAccounts, fetchWallet, fetchAllocations]);
 
   useEffect(() => {
     if (activeTab === 'investments') fetchAllocations();
