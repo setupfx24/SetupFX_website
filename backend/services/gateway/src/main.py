@@ -149,9 +149,35 @@ async def _trade_history_healer_loop():
         await asyncio.sleep(60)
 
 
+async def _ensure_pamm_units_column():
+    """PAMM share accounting uses NAV-based 'units'. Ensure the column exists
+    and seed it for any pre-existing active PAMM allocation as
+    units = allocation_amount — that makes NAV start at exactly 1.0, so the
+    switch from the old raw-capital model causes ZERO change to current
+    shares (then future entries price in at the live NAV). Idempotent: the
+    UPDATE only touches rows still at 0, so it's a no-op after the first boot
+    and never clobbers units set by new investments. Safe on every start."""
+    from sqlalchemy import text
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text(
+                "ALTER TABLE investor_allocations "
+                "ADD COLUMN IF NOT EXISTS units NUMERIC(28,12) DEFAULT 0"
+            ))
+            await session.execute(text(
+                "UPDATE investor_allocations SET units = allocation_amount "
+                "WHERE copy_type = 'pamm' AND status = 'active' "
+                "AND COALESCE(units, 0) = 0"
+            ))
+            await session.commit()
+    except Exception as e:
+        logger.warning("pamm units column ensure skipped: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
+    await _ensure_pamm_units_column()
     # Run the self-heal once at startup (catches drift accumulated while
     # gateway was down), then kick off the periodic loop.
     await _heal_missing_trade_history()

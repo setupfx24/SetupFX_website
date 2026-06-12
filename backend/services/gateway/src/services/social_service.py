@@ -730,23 +730,28 @@ async def withdraw_managed_account(
         if not pool_account:
             raise HTTPException(status_code=500, detail="Master pool account missing")
 
-        total_alloc_q = await db.execute(
-            select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+        total_units_q = await db.execute(
+            select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
                 InvestorAllocation.master_id == allocation.master_id,
                 InvestorAllocation.status == "active",
                 InvestorAllocation.copy_type == "pamm",
             )
         )
-        total_alloc = Decimal(str(total_alloc_q.scalar() or 0))
-        alloc_amt = allocation.allocation_amount or Decimal("0")
+        total_units = Decimal(str(total_units_q.scalar() or 0))
+        my_units = allocation.units or Decimal("0")
+        alloc_amt = allocation.allocation_amount or Decimal("0")  # cost basis
         pool_balance = pool_account.balance or Decimal("0")
 
-        if total_alloc <= 0 or alloc_amt <= 0:
+        # Investor share = their units valued at the current NAV
+        # (NAV = pool_balance / total_units). Redeeming the full share removes
+        # exactly units × NAV from the pool, so the remaining holders' NAV is
+        # unchanged — no value leaks to or from them.
+        if total_units <= 0 or my_units <= 0:
             share_value = Decimal("0")
         else:
-            share_value = (pool_balance * alloc_amt) / total_alloc
+            share_value = (pool_balance * my_units) / total_units
 
-        gross_profit = share_value - alloc_amt  # paper P&L so far
+        gross_profit = share_value - alloc_amt  # realised P&L vs cost basis
         perf_fee = Decimal("0")
         if gross_profit > 0 and master and master.performance_fee_pct:
             perf_fee = gross_profit * (master.performance_fee_pct or Decimal("0")) / Decimal("100")
@@ -755,16 +760,12 @@ async def withdraw_managed_account(
         if return_amount < 0:
             return_amount = Decimal("0")
 
-        # Deduct investor's share from pool, performance fee stays with master.
-        pool_account.balance = max(Decimal("0"), pool_balance - return_amount - perf_fee)
+        # The FULL share leaves the pool. The performance fee does NOT linger in
+        # the pool (that would inflate the remaining investors' NAV) — it is
+        # paid out to the master's own wallet below.
+        pool_account.balance = max(Decimal("0"), pool_balance - share_value)
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
         pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
-        # Performance fee returns to master's balance (already there as part of the pool);
-        # the net deduction above only removes investor's net share, so fee naturally stays.
-        if perf_fee > 0:
-            pool_account.balance = pool_account.balance + perf_fee
-            pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
-            pool_account.free_margin = pool_account.equity - (pool_account.margin_used or Decimal("0"))
 
         if user:
             user.main_wallet_balance = (user.main_wallet_balance or Decimal("0")) + return_amount
@@ -774,7 +775,20 @@ async def withdraw_managed_account(
                 description=f"Withdrawal from PAMM pool (share: ${float(share_value):.2f}, fee: ${float(perf_fee):.2f})",
             ))
 
+        # Pay the performance fee to the master (their own wallet, not the pool).
+        if perf_fee > 0 and master:
+            master_user = await db.get(User, master.user_id)
+            if master_user:
+                master_user.main_wallet_balance = (master_user.main_wallet_balance or Decimal("0")) + perf_fee
+                db.add(Transaction(
+                    user_id=master.user_id, account_id=None, type="performance_fee",
+                    amount=perf_fee,
+                    description=f"PAMM performance fee from investor withdrawal (${float(perf_fee):.2f})",
+                ))
+            master.total_fee_earned = (master.total_fee_earned or Decimal("0")) + perf_fee
+
         allocation.status = "withdrawn"
+        allocation.units = Decimal("0")
         allocation.total_profit = gross_profit - perf_fee
         if master and master.followers_count and master.followers_count > 0:
             master.followers_count -= 1
@@ -1503,6 +1517,31 @@ async def invest_managed_account(
 
     # Add funds to master's pool trading account
     pool_account = await db.get(TradingAccount, master.account_id) if master.account_id else None
+
+    # ── PAMM units (NAV) ─────────────────────────────────────────────────
+    # Snapshot the pool value + units BEFORE this deposit lands so the
+    # investor buys units at the CURRENT NAV (= pool_value / total_units).
+    # This is what makes staggered entries fair: a late joiner can't claim a
+    # slice of profit the pool earned before they arrived. NAV = 1.0 for the
+    # first investor (or an empty pool). MAM is unaffected (units stays 0).
+    pamm_new_units = Decimal("0")
+    if master.master_type == "pamm" and pool_account is not None:
+        pool_value_before = pool_account.balance or Decimal("0")
+        tot_units_q = await db.execute(
+            select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
+                InvestorAllocation.master_id == master_id,
+                InvestorAllocation.status == "active",
+                InvestorAllocation.copy_type == "pamm",
+            )
+        )
+        total_units_before = Decimal(str(tot_units_q.scalar() or 0))
+        nav = (
+            pool_value_before / total_units_before
+            if total_units_before > 0 and pool_value_before > 0
+            else Decimal("1")
+        )
+        pamm_new_units = amount / nav
+
     if pool_account:
         pool_account.balance = (pool_account.balance or Decimal("0")) + amount
         pool_account.equity = pool_account.balance + (pool_account.credit or Decimal("0"))
@@ -1519,6 +1558,9 @@ async def invest_managed_account(
     if existing_alloc:
         # ── Top-up: add funds to existing allocation ──
         existing_alloc.allocation_amount = (existing_alloc.allocation_amount or Decimal("0")) + amount
+        if is_pamm:
+            # Buy more units at the current NAV and grow the cost basis above.
+            existing_alloc.units = (existing_alloc.units or Decimal("0")) + pamm_new_units
         if volume_scaling_pct and master.master_type == "mamm":
             existing_alloc.allocation_pct = volume_scaling_pct
         if max_drawdown_pct is not None:
@@ -1601,6 +1643,7 @@ async def invest_managed_account(
             investor_account_id=(investor_account.id if investor_account else None),
             copy_type=copy_type_val,
             allocation_amount=amount, allocation_pct=alloc_pct,
+            units=(pamm_new_units if is_pamm else Decimal("0")),
             max_drawdown_pct=max_drawdown_pct, status="active",
         )
         db.add(allocation)
@@ -1755,18 +1798,20 @@ async def my_allocations(user_id: UUID, db: AsyncSession) -> dict:
         invested = float(alloc.allocation_amount or 0)
 
         if alloc.copy_type == "pamm":
-            # PAMM: no sub-account, live value = proportional share of master pool.
+            # PAMM: no sub-account. Live value = the allocation's units valued
+            # at the current NAV (= pool_balance / total_units).
             pool_account = await db.get(TradingAccount, master.account_id) if master.account_id else None
             pool_balance = float(pool_account.balance or 0) if pool_account else 0.0
-            total_alloc_q = await db.execute(
-                select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+            total_units_q = await db.execute(
+                select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
                     InvestorAllocation.master_id == master.id,
                     InvestorAllocation.status == "active",
                     InvestorAllocation.copy_type == "pamm",
                 )
             )
-            total_alloc = float(total_alloc_q.scalar() or 0)
-            current_value = (pool_balance * invested / total_alloc) if total_alloc > 0 else invested
+            total_units = float(total_units_q.scalar() or 0)
+            my_units = float(alloc.units or 0)
+            current_value = (pool_balance * my_units / total_units) if total_units > 0 else invested
             total_pnl = current_value - invested
             realized_pnl = total_pnl  # PAMM has no separate realized/unrealized split
             unrealized_pnl = 0.0
@@ -1841,16 +1886,17 @@ async def pamm_master_trades(
     if not master or not master.account_id:
         raise HTTPException(status_code=404, detail="Master account not found")
 
-    total_alloc_q = await db.execute(
-        select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+    total_units_q = await db.execute(
+        select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
             InvestorAllocation.master_id == master.id,
             InvestorAllocation.status == "active",
             InvestorAllocation.copy_type == "pamm",
         )
     )
-    total_alloc = Decimal(str(total_alloc_q.scalar() or 0))
-    alloc_amt = allocation.allocation_amount or Decimal("0")
-    ratio = float(alloc_amt / total_alloc) if total_alloc > 0 else 0.0
+    total_units = Decimal(str(total_units_q.scalar() or 0))
+    my_units = allocation.units or Decimal("0")
+    # Investor's pool ownership = their units / total units (NAV-based).
+    ratio = float(my_units / total_units) if total_units > 0 else 0.0
 
     # Open positions on master's pool
     open_q = await db.execute(
@@ -2050,16 +2096,17 @@ async def copy_trade_history(
             seen_pamm_masters.add(master.id)
             if master.id not in pamm_total_cache:
                 tot_q = await db.execute(
-                    select(func.coalesce(func.sum(InvestorAllocation.allocation_amount), 0)).where(
+                    select(func.coalesce(func.sum(InvestorAllocation.units), 0)).where(
                         InvestorAllocation.master_id == master.id,
                         InvestorAllocation.status == "active",
                         InvestorAllocation.copy_type == "pamm",
                     )
                 )
                 pamm_total_cache[master.id] = Decimal(str(tot_q.scalar() or 0))
-            total_alloc = pamm_total_cache[master.id]
-            alloc_amt = alloc.allocation_amount or Decimal("0")
-            ratio = float(alloc_amt / total_alloc) if total_alloc > 0 else 0.0
+            total_units = pamm_total_cache[master.id]
+            my_units = alloc.units or Decimal("0")
+            # NAV-based ownership share of the pool.
+            ratio = float(my_units / total_units) if total_units > 0 else 0.0
             src_account_id = master.account_id
             acct_key = f"pamm:{master.id}"
             account_number = f"PAMM · {provider_name}"
