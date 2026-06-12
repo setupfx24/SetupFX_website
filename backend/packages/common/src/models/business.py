@@ -124,6 +124,11 @@ class InvestorAllocation(Base):
     investor_account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id"))
     copy_type = Column(String(20), default="signal")
     allocation_amount = Column(Numeric(18, 8), nullable=False)
+    # PAMM pool ownership in NAV-based units. At entry units = amount / NAV
+    # (NAV = pool_value / total_units), so an investor buys in at the current
+    # pool value and can't dilute profit earned before they joined. Investor
+    # share = units / sum(active pamm units). 0 for signal/MAM allocations.
+    units = Column(Numeric(28, 12), default=0)
     allocation_pct = Column(Numeric(5, 2))
     max_drawdown_pct = Column(Numeric(5, 2))
     max_lot_override = Column(Numeric(10, 4))
