@@ -42,6 +42,60 @@ async def get_profile(
     )
 
 
+class PushTokenBody(BaseModel):
+    token: str
+    platform: str | None = None
+
+
+@router.post("/push-token")
+async def register_push_token(
+    body: PushTokenBody,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Register/refresh this device's Expo push token. Upsert by token so a
+    device only ever maps to its current user (re-login moves it)."""
+    from sqlalchemy import text
+
+    tok = (body.token or "").strip()
+    if not tok:
+        raise HTTPException(status_code=400, detail="token is required")
+    await db.execute(
+        text(
+            """
+            INSERT INTO user_push_tokens (token, user_id, platform, updated_at)
+            VALUES (:token, :uid, :platform, NOW())
+            ON CONFLICT (token) DO UPDATE
+              SET user_id = EXCLUDED.user_id,
+                  platform = EXCLUDED.platform,
+                  updated_at = NOW()
+            """
+        ),
+        {"token": tok, "uid": str(current_user["user_id"]), "platform": (body.platform or "")[:20]},
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/push-token")
+async def delete_push_token(
+    body: PushTokenBody,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a device token (e.g. on logout)."""
+    from sqlalchemy import text
+
+    tok = (body.token or "").strip()
+    if tok:
+        await db.execute(
+            text("DELETE FROM user_push_tokens WHERE token = :token AND user_id = :uid"),
+            {"token": tok, "uid": str(current_user["user_id"])},
+        )
+        await db.commit()
+    return {"ok": True}
+
+
 @router.put("")
 async def update_profile(
     req: UpdateProfileRequest,

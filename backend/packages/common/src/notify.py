@@ -106,4 +106,17 @@ async def create_notification(
         # reconcile on the next /notifications fetch.
         pass
 
+    # OS-level push so the user is alerted even when the app is closed.
+    # Fire-and-forget on its own DB session — never blocks or rolls back the
+    # caller. Reads tokens independently of this (possibly uncommitted) row.
+    try:
+        import asyncio
+        from .push import send_push_to_user
+        asyncio.create_task(send_push_to_user(
+            user_id, title, message,
+            {"action_url": action_url, "type": notif_type},
+        ))
+    except Exception:
+        pass
+
     return n

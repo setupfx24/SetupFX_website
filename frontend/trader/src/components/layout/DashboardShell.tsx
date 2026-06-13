@@ -30,7 +30,9 @@ export default function DashboardShell({
   return (
     <div
       className={cn(
-        'min-h-[100dvh] flex flex-col bg-bg-base text-text-primary',
+        // Transparent so the themed body gradient (orange→black in dark,
+        // white+orange in light) shows through the app shell.
+        'min-h-[100dvh] flex flex-col bg-transparent text-text-primary',
         className,
       )}
     >

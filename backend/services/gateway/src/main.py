@@ -174,10 +174,35 @@ async def _ensure_pamm_units_column():
         logger.warning("pamm units column ensure skipped: %s", e)
 
 
+async def _ensure_push_tokens_table():
+    """Device push-token registry for OS-level push notifications (Expo).
+    Created at startup so no separate migration is needed — idempotent."""
+    from sqlalchemy import text
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text(
+                """
+                CREATE TABLE IF NOT EXISTS user_push_tokens (
+                    token      TEXT PRIMARY KEY,
+                    user_id    UUID NOT NULL,
+                    platform   TEXT,
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+                """
+            ))
+            await session.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_user_push_tokens_user ON user_push_tokens(user_id)"
+            ))
+            await session.commit()
+    except Exception as e:
+        logger.warning("push_tokens table ensure skipped: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _backfill_close_reasons()
     await _ensure_pamm_units_column()
+    await _ensure_push_tokens_table()
     # Run the self-heal once at startup (catches drift accumulated while
     # gateway was down), then kick off the periodic loop.
     await _heal_missing_trade_history()
