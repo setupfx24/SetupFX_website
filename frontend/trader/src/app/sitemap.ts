@@ -13,7 +13,7 @@ const MARKETING_ROUTES = [
   '/',
   // Static marketing
   '/about', '/contact', '/platforms', '/white-label',
-  '/privacy', '/terms', '/risk',
+  '/privacy', '/terms', '/risk', '/account-deletion',
   // Asset-class landings
   '/trading/overview', '/trading/forex', '/trading/crypto',
   '/trading/indices', '/trading/commodities',

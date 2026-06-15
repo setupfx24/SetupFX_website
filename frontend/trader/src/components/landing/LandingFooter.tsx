@@ -68,6 +68,7 @@ export default function LandingFooter() {
             <Link href="/privacy" className="hover:text-[#E94E1B] transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-[#E94E1B] transition-colors">Terms of Service</Link>
             <Link href="/risk" className="hover:text-[#E94E1B] transition-colors">Risk Disclosure</Link>
+            <Link href="/account-deletion" className="hover:text-[#E94E1B] transition-colors">Account Deletion</Link>
           </div>
         </div>
       </div>
