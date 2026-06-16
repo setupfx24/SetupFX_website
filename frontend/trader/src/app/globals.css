@@ -711,25 +711,27 @@ html {
   gap: 10px;
 }
 
-/* The internal status icon (✓ / ✕) — give it a soft circular halo so it
- * reads as a status badge rather than a punched-out hole. */
+/* The message container — react-hot-toast puts the text in the child that
+ * carries role="status" (it spreads ariaProps={role:'status'} onto the
+ * message div; the icon wrapper has NO role). Flex children default to
+ * min-width:auto, so they refuse to shrink below their content's intrinsic
+ * width — that's exactly what let long backend error strings stretch the
+ * toast past its max-width and spill outside the box. flex:1 1 auto +
+ * min-width:0 + overflow-wrap force the text to wrap inside the bounds. */
 .swisscresta-hot-toast > div[role="status"] {
-  flex-shrink: 0;
-  margin-right: 2px;
-}
-
-/* The text container — react-hot-toast wraps content in a child div. Flex
- * children default to min-width:auto which means they refuse to shrink
- * below the intrinsic width of their content — that's exactly what was
- * letting long backend error strings stretch the whole toast past its
- * max-width. min-width:0 + overflow-wrap fixes it for good. */
-.swisscresta-hot-toast > div:not([role="status"]) {
   flex: 1 1 auto;
   min-width: 0 !important;
   margin: 0 !important;
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+/* The status icon (✓ / ✕ / spinner) — the non-role child. Keep it at its
+ * natural size so it never shrinks or wraps. */
+.swisscresta-hot-toast > div:not([role="status"]) {
+  flex-shrink: 0;
+  margin-right: 2px;
 }
 
 /* Tighten the close-button (×) for toasts that ship with one. */

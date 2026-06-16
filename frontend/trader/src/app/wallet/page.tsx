@@ -1394,7 +1394,7 @@ function WalletPageContent() {
           <div className="flex gap-2">
             {(
               [
-                { id: 'crypto' as const, label: 'Crypto', sub: 'Pay via admin QR / wallet' },
+                { id: 'crypto' as const, label: 'Crypto', sub: '' },
                 { id: 'local_banking' as const, label: 'Local Banking', sub: 'Request payment link' },
               ]
             ).map((c) => {
@@ -1412,7 +1412,7 @@ function WalletPageContent() {
                   )}
                 >
                   <div className="text-sm font-semibold text-[#0A0A0A]">{c.label}</div>
-                  <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>
+                  {c.sub && <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>}
                 </button>
               );
             })}
@@ -1851,7 +1851,7 @@ function WalletPageContent() {
                   )}
                 >
                   <div className="text-sm font-semibold text-[#0A0A0A]">{c.label}</div>
-                  <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>
+                  {c.sub && <div className="text-xs text-[#6B7280] mt-0.5">{c.sub}</div>}
                 </button>
               );
             })}
