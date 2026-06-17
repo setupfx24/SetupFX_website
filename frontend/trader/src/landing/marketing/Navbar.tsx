@@ -362,7 +362,7 @@ export default function MarketingNavbar({
               fetches the file straight away; on Android the OS then shows the
               install prompt (user may need "install from unknown sources"). */}
           <a
-            href="/downloads/swisscresta.apk"
+            href="/downloads/swisscresta1.apk"
             download="SwissCresta.apk"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
           >
