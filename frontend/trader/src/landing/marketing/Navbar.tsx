@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ChevronRight, Globe, Menu, X } from 'lucide-react'
+import { ChevronRight, Globe, Menu, X, Download } from 'lucide-react'
 import Button from './ui/Button'
 import { slugify } from './ui/slugify'
 import { useLang } from '@/landing/i18n/LangProvider'
@@ -358,6 +358,17 @@ export default function MarketingNavbar({
         </ul>
 
         <div className="hidden md:flex items-center gap-3 ml-auto shrink-0">
+          {/* Direct Android APK download. Plain <a download> so the browser
+              fetches the file straight away; on Android the OS then shows the
+              install prompt (user may need "install from unknown sources"). */}
+          <a
+            href="/downloads/swisscresta.apk"
+            download="SwissCresta.apk"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+          >
+            <Download className="w-4 h-4" strokeWidth={2} />
+            Download APK
+          </a>
           {showCta && (showAppLink ? (
             <Button
               variant="primary"
@@ -486,6 +497,17 @@ export default function MarketingNavbar({
                 </ul>
               </li>
             )}
+            <li className="pt-3 border-t border-gray-200">
+              <a
+                href="/downloads/swisscresta.apk"
+                download="SwissCresta.apk"
+                onClick={() => setOpen(false)}
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+              >
+                <Download className="w-4 h-4" strokeWidth={2} />
+                Download APK
+              </a>
+            </li>
             {showCta && (
               <li className="flex items-center gap-3 pt-3 border-t border-gray-200">
                 {showAppLink ? (
