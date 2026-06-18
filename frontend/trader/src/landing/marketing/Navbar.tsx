@@ -499,7 +499,7 @@ export default function MarketingNavbar({
             )}
             <li className="pt-3 border-t border-gray-200">
               <a
-                href="/downloads/swisscresta.apk"
+                href="/downloads/swisscresta1.apk"
                 download="SwissCresta.apk"
                 onClick={() => setOpen(false)}
                 className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
