@@ -80,7 +80,6 @@ const MORE_ITEMS: readonly [NavItem, ...NavItem[]] = [
   { label: 'Economic News', href: '/news', icon: Newspaper },
   { label: 'Risk Management', href: '/risk-calculator', icon: LineChart },
   { label: 'KYC', href: '/kyc', icon: ShieldCheck },
-  { label: 'Settings', href: '/profile', icon: Settings },
   { label: 'Terms', href: '/terms', icon: FileText },
 ];
 

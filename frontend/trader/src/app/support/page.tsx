@@ -41,6 +41,96 @@ interface TicketDetail {
   messages: Message[];
 }
 
+/**
+ * Module-level (NOT defined inside SupportPage) so its component identity is
+ * stable across renders. When this lived inside SupportPage, every keystroke
+ * re-created the function, so React saw a "new" component type and remounted
+ * the whole modal — dropping input focus after a single character. Lifting it
+ * out + passing state via props keeps the inputs mounted.
+ */
+function NewTicketModal({
+  show,
+  onClose,
+  subject,
+  onSubjectChange,
+  category,
+  onCategoryChange,
+  description,
+  onDescriptionChange,
+  creating,
+  onSubmit,
+}: {
+  show: boolean;
+  onClose: () => void;
+  subject: string;
+  onSubjectChange: (v: string) => void;
+  category: string;
+  onCategoryChange: (v: string) => void;
+  description: string;
+  onDescriptionChange: (v: string) => void;
+  creating: boolean;
+  onSubmit: () => void;
+}) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[min(90vh,640px)] overflow-y-auto bg-bg-secondary rounded-2xl border border-border-glass shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
+          <h3 className="text-base font-semibold text-text-primary">New Support Ticket</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-text-tertiary hover:text-text-primary transition-all rounded-md hover:bg-bg-hover"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-xs text-text-secondary block mb-1.5 font-medium">Subject</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => onSubjectChange(e.target.value)}
+              placeholder="Brief description of your issue"
+              className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-text-secondary block mb-1.5 font-medium">Category</label>
+            <select
+              value={category}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm bg-bg-secondary"
+            >
+              <option>Trading</option>
+              <option>Deposit</option>
+              <option>Withdrawal</option>
+              <option>Account</option>
+              <option>Technical</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-text-secondary block mb-1.5 font-medium">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              placeholder="Describe your issue in detail — what happened, what you expected, any error messages."
+              className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm h-32 resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button variant="primary" onClick={onSubmit} loading={creating}>Submit ticket</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SupportPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -162,64 +252,19 @@ export default function SupportPage() {
     );
   }
 
-  const NewTicketModal = () => (
-    showNewTicket ? (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowNewTicket(false)} />
-        <div className="relative w-full max-w-lg max-h-[min(90vh,640px)] overflow-y-auto bg-bg-secondary rounded-2xl border border-border-glass shadow-2xl">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border-glass">
-            <h3 className="text-base font-semibold text-text-primary">New Support Ticket</h3>
-            <button
-              type="button"
-              onClick={() => setShowNewTicket(false)}
-              className="p-1.5 text-text-tertiary hover:text-text-primary transition-all rounded-md hover:bg-bg-hover"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <label className="text-xs text-text-secondary block mb-1.5 font-medium">Subject</label>
-              <input
-                type="text"
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Brief description of your issue"
-                className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-text-secondary block mb-1.5 font-medium">Category</label>
-              <select
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm bg-bg-secondary"
-              >
-                <option>Trading</option>
-                <option>Deposit</option>
-                <option>Withdrawal</option>
-                <option>Account</option>
-                <option>Technical</option>
-                <option>Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-text-secondary block mb-1.5 font-medium">Description</label>
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Describe your issue in detail — what happened, what you expected, any error messages."
-                className="skeu-input w-full text-text-primary rounded-xl py-3 px-4 text-sm h-32 resize-none"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" onClick={() => setShowNewTicket(false)}>Cancel</Button>
-              <Button variant="primary" onClick={handleCreateTicket} loading={creating}>Submit ticket</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    ) : null
+  const ticketModal = (
+    <NewTicketModal
+      show={showNewTicket}
+      onClose={() => setShowNewTicket(false)}
+      subject={newSubject}
+      onSubjectChange={setNewSubject}
+      category={newCategory}
+      onCategoryChange={setNewCategory}
+      description={newDescription}
+      onDescriptionChange={setNewDescription}
+      creating={creating}
+      onSubmit={handleCreateTicket}
+    />
   );
 
   // ── Error state ───────────────────────────────────────────────────────
@@ -233,7 +278,7 @@ export default function SupportPage() {
           <p className="text-sm text-text-secondary mb-4">{error}</p>
           <Button variant="primary" size="sm" onClick={fetchTickets}>Retry</Button>
         </div>
-        <NewTicketModal />
+        {ticketModal}
       </DashboardShell>
     );
   }
@@ -280,7 +325,7 @@ export default function SupportPage() {
             </div>
           </div>
         </div>
-        <NewTicketModal />
+        {ticketModal}
       </DashboardShell>
     );
   }
@@ -288,7 +333,7 @@ export default function SupportPage() {
   // ── Has tickets — list + conversation layout ─────────────────────────
   return (
     <DashboardShell mainClassName="flex flex-col min-h-0 overflow-hidden p-0">
-      <NewTicketModal />
+      {ticketModal}
 
       <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
         {/* Ticket list — hidden on mobile when viewing a conversation */}
