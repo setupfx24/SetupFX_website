@@ -356,6 +356,11 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
     is_demo_user = bool(user_q.scalar() or False)
 
     where = [TradingAccount.user_id == user_id]
+    # Hide deleted/closed accounts — delete_trading_account soft-deletes by
+    # setting is_active=False (balance already swept to the main wallet). Without
+    # this filter the closed account kept showing with a 0 balance, looking like
+    # it had been "re-created".
+    where.append(TradingAccount.is_active == True)  # noqa: E712
     if is_demo_user:
         where.append(TradingAccount.is_demo == True)  # noqa: E712
 

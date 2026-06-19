@@ -13,7 +13,7 @@ from packages.common.src.models import (
     MasterAccount, InvestorAllocation, CopyTrade,
     TradingAccount, User, Position, PositionStatus,
     TradeHistory, AllocationCopyType, Transaction,
-    Referral, AccountGroup,
+    Referral, AccountGroup, Instrument,
 )
 from packages.common.src.redis_client import redis_client
 from packages.common.src.price_cache import price_cache
@@ -178,6 +178,8 @@ async def get_provider_detail(
 
     return {
         "id": str(master.id),
+        "user_id": str(master.user_id),
+        "is_self": master.user_id == user_id,  # your own master → UI hides Copy
         "provider_name": f"{first_name or ''} {last_name or ''}".strip(),
         "total_return_pct": float(master.total_return_pct),
         "max_drawdown_pct": float(master.max_drawdown_pct),
@@ -196,6 +198,89 @@ async def get_provider_detail(
         "monthly_breakdown": monthly_breakdown,
         "is_copying": is_copying,
         "created_at": master.created_at.isoformat() if master.created_at else None,
+    }
+
+
+async def provider_activity(provider_id: UUID, user_id: UUID, db: AsyncSession) -> dict:
+    """The master's OPEN positions + closed trade history on their account,
+    limited to what happened AFTER the requesting user started copying (so a
+    follower sees exactly the trades they're mirroring). Requires an active
+    allocation — only copiers can see a provider's live activity."""
+    master = (await db.execute(
+        select(MasterAccount).where(MasterAccount.id == provider_id)
+    )).scalar_one_or_none()
+    if not master:
+        raise HTTPException(status_code=404, detail="Provider not found")
+
+    alloc = (await db.execute(
+        select(InvestorAllocation)
+        .where(
+            InvestorAllocation.master_id == master.id,
+            InvestorAllocation.investor_user_id == user_id,
+            InvestorAllocation.status == "active",
+        )
+        .order_by(InvestorAllocation.created_at.asc())
+    )).scalars().first()
+    if not alloc:
+        return {"is_copying": False, "open_positions": [], "history": [], "since": None}
+
+    since = alloc.created_at
+    acct_id = master.account_id
+    if not acct_id:
+        return {"is_copying": True, "open_positions": [], "history": [], "since": since.isoformat() if since else None}
+
+    side_v = lambda s: s.value if hasattr(s, "value") else str(s)  # noqa: E731
+
+    pos_q = (
+        select(Position, Instrument.symbol)
+        .join(Instrument, Instrument.id == Position.instrument_id)
+        .where(Position.account_id == acct_id, Position.status == PositionStatus.OPEN)
+    )
+    if since:
+        pos_q = pos_q.where(Position.created_at >= since)
+    pos_rows = (await db.execute(pos_q.order_by(Position.created_at.desc()))).all()
+    open_positions = [
+        {
+            "id": str(p.id),
+            "symbol": sym,
+            "side": side_v(p.side),
+            "lots": float(p.lots),
+            "open_price": float(p.open_price),
+            "profit": float(p.profit or 0),
+            "opened_at": p.created_at.isoformat() if p.created_at else None,
+        }
+        for p, sym in pos_rows
+    ]
+
+    th_q = (
+        select(TradeHistory, Instrument.symbol)
+        .join(Instrument, Instrument.id == TradeHistory.instrument_id)
+        .where(TradeHistory.account_id == acct_id)
+    )
+    if since:
+        th_q = th_q.where(TradeHistory.closed_at >= since)
+    th_rows = (await db.execute(th_q.order_by(TradeHistory.closed_at.desc()).limit(100))).all()
+    history = [
+        {
+            "id": str(t.id),
+            "symbol": sym,
+            "side": side_v(t.side),
+            "lots": float(t.lots),
+            "open_price": float(t.open_price),
+            "close_price": float(t.close_price) if t.close_price is not None else None,
+            "profit": float(t.profit or 0),
+            "commission": float(getattr(t, "commission", 0) or 0),
+            "swap": float(getattr(t, "swap", 0) or 0),
+            "closed_at": t.closed_at.isoformat() if t.closed_at else None,
+        }
+        for t, sym in th_rows
+    ]
+
+    return {
+        "is_copying": True,
+        "since": since.isoformat() if since else None,
+        "open_positions": open_positions,
+        "history": history,
     }
 
 
@@ -1467,9 +1552,9 @@ async def list_managed_accounts(page: int, per_page: int, db: AsyncSession) -> d
 
 
 async def invest_managed_account(
-    master_id: UUID, account_id: UUID, amount: Decimal,
+    master_id: UUID, amount: Decimal,
     max_drawdown_pct: Decimal | None, volume_scaling_pct: Decimal,
-    user_id: UUID, db: AsyncSession,
+    user_id: UUID, db: AsyncSession, account_id: UUID | None = None,
 ) -> dict:
     master_result = await db.execute(
         select(MasterAccount).where(

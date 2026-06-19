@@ -36,6 +36,19 @@ async def get_provider_detail(
     )
 
 
+@router.get("/providers/{provider_id}/activity")
+async def get_provider_activity(
+    provider_id: UUID,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """A copier's view of the master's open positions + trade history (since the
+    user started copying)."""
+    return await social_service.provider_activity(
+        provider_id=provider_id, user_id=current_user["user_id"], db=db,
+    )
+
+
 @router.post("/copy", status_code=201)
 async def start_copy(
     master_id: UUID = Query(...),
@@ -213,8 +226,8 @@ async def list_managed_accounts(
 @router.post("/mamm-pamm/{master_id}/invest", status_code=201)
 async def invest_managed_account(
     master_id: UUID,
-    account_id: UUID = Query(...),
     amount: Decimal = Query(..., gt=0),
+    account_id: UUID | None = Query(None),  # ignored — funds come from main wallet; MAM auto-creates a sub-account
     max_drawdown_pct: Decimal = Query(None),
     volume_scaling_pct: Decimal = Query(
         Decimal("100"),
