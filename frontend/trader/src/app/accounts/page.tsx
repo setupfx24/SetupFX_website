@@ -442,7 +442,7 @@ export default function AccountsPage() {
                     <AccountCard
                       key={row.id}
                       row={row}
-                      onDeposit={() => router.push('/wallet')}
+                      onDeposit={() => router.push(`/wallet?tab=transfer&account=${row.id}`)}
                       onTransfer={() => router.push('/wallet?tab=transfer')}
                       onTrade={() => {
                         prepareTradeSession(row);

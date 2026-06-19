@@ -510,10 +510,16 @@ function WalletPageContent() {
     });
     setTransferDestinationId((cur) => {
       if (cur) return cur;
+      // Deep-link from a trading account's Deposit/Transfer button
+      // (?tab=transfer&account=X): preselect that account as the destination
+      // so the user lands on main wallet → X and only has to type an amount.
+      if (accountFromUrl && liveAccounts.some((a) => a.id === accountFromUrl)) {
+        return accountFromUrl;
+      }
       const first = liveAccounts.find((a) => a.id !== wallet?.wallet_account?.id);
       return first?.id ?? '';
     });
-  }, [liveAccounts, wallet?.wallet_account?.id]);
+  }, [liveAccounts, wallet?.wallet_account?.id, accountFromUrl]);
 
   // Sync fundTargetPreference from the picked deposit/withdraw account so
   // the legacy submit handlers continue to tag the request correctly.
