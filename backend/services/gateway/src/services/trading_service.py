@@ -763,16 +763,9 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
-    # MAM follower lock: mirrored positions inherit SL/TP from master; followers
-    # cannot modify them independently.
-    copy_q = await db.execute(
-        select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
-    )
-    if copy_q.scalar_one_or_none():
-        raise HTTPException(
-            status_code=403,
-            detail="This is a MAM mirrored trade. SL/TP is controlled by the master.",
-        )
+    # MAM followers may set their own SL/TP on a mirrored position — they have
+    # independent control of their allocated account. (Previously this raised
+    # 403 and only the master's SL/TP applied.)
 
     sv = side_val(pos.side)
     updated = False
@@ -846,16 +839,11 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
-    # MAM follower lock: mirrored positions can only be closed by the master
-    # (via the copy engine when the master closes their original position).
-    copy_q = await db.execute(
-        select(CopyTrade).where(CopyTrade.investor_position_id == pos.id)
-    )
-    if copy_q.scalar_one_or_none():
-        raise HTTPException(
-            status_code=403,
-            detail="This is a MAM mirrored trade. Only the master can close it.",
-        )
+    # MAM gives followers independent control of their own allocated account:
+    # a follower CAN close their mirrored position (it lives on the follower's
+    # account). If the master later closes the original, the copy engine looks
+    # this position up, finds it already closed, and skips it — no divergence
+    # error. (Previously this raised 403 and only the master could close.)
 
     tick_data = await price_cache.get(pos.instrument.symbol)
     if not tick_data:
