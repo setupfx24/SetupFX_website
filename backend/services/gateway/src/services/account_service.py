@@ -372,21 +372,31 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
     # a dedicated CT/PM pool created on approval) or a follower's copy account.
     acct_ids = [a.id for a in accounts]
     copy_acct_ids: set = set()
+    # account_id → 'pamm' | 'mam' | 'signal_provider' so the UI can label the
+    # account precisely (PAMM / MAM) instead of a generic "Copy" tag.
+    copy_type_by_acct: dict = {}
     if acct_ids:
-        master_ids = await db.execute(
-            select(MasterAccount.account_id).where(
+        master_rows = await db.execute(
+            select(MasterAccount.account_id, MasterAccount.master_type).where(
                 MasterAccount.account_id.in_(acct_ids),
                 MasterAccount.status.in_(["pending", "approved", "active"]),
             )
         )
-        copy_acct_ids.update(mid for mid in master_ids.scalars().all() if mid)
-        follower_ids = await db.execute(
-            select(InvestorAllocation.investor_account_id).where(
+        for mid, mtype in master_rows.all():
+            if mid:
+                copy_acct_ids.add(mid)
+                copy_type_by_acct[mid] = mtype
+        follower_rows = await db.execute(
+            select(InvestorAllocation.investor_account_id, InvestorAllocation.copy_type).where(
                 InvestorAllocation.investor_account_id.in_(acct_ids),
                 InvestorAllocation.status == "active",
             )
         )
-        copy_acct_ids.update(fid for fid in follower_ids.scalars().all() if fid)
+        for fid, ctype in follower_rows.all():
+            if fid:
+                copy_acct_ids.add(fid)
+                # Follower's allocation type (pamm/mam) is the most precise label.
+                copy_type_by_acct[fid] = ctype or copy_type_by_acct.get(fid)
 
     items = []
     for a in accounts:
@@ -450,6 +460,7 @@ async def list_accounts(user_id: UUID, db: AsyncSession) -> dict:
             "is_active": a.is_active,
             "is_wallet_account": bool(getattr(a, "is_wallet_account", False)),
             "is_copy_trading": a.id in copy_acct_ids,
+            "copy_type": copy_type_by_acct.get(a.id),  # 'pamm' | 'mam' | 'signal_provider' | None
             "account_group": group_payload,
         })
 
