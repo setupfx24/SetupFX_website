@@ -37,6 +37,9 @@ class User(Base):
     city = Column(String(100))
     state = Column(String(100))
     postal_code = Column(String(20))
+    # Profile avatar — JSON string for a preset avatar, or a data-URI / URL for
+    # a user photo. Null = use the default app avatar.
+    avatar = Column(Text, nullable=True)
     role = Column(String(20), default="user")
     status = Column(String(20), default="active")
     kyc_status = Column(String(20), default="pending")

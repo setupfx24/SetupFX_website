@@ -12,6 +12,7 @@ class UpdateProfileRequest(BaseModel):
     city: str | None = Field(None, max_length=100)
     state: str | None = Field(None, max_length=100)
     postal_code: str | None = Field(None, max_length=20)
+    avatar: str | None = None  # preset-avatar JSON or photo data-URI/URL
     language: str | None = Field(None, max_length=10)
     theme: str | None = Field(None, pattern="^(light|dark)$")
     date_of_birth: str | None = None
