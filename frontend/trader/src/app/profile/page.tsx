@@ -283,8 +283,11 @@ export default function ProfilePage() {
             <div className="relative flex min-h-[52px] border-b border-border-primary bg-card">
               <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                 <div
-                  className="absolute top-0 h-full w-1/4 transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
-                  style={{ transform: `translate3d(${slideIndex * 100}%,0,0)` }}
+                  className="absolute top-0 h-full transition-[transform] duration-500 ease-[cubic-bezier(0.34,1.45,0.64,1)] will-change-transform"
+                  /* width is derived from the tab count (not a hardcoded
+                     w-1/4) so the sliding highlight always matches the
+                     flex-1 tabs — adding/removing a tab can't desync it. */
+                  style={{ width: `${100 / TABS.length}%`, transform: `translate3d(${slideIndex * 100}%,0,0)` }}
                 >
                   <div
                     className={clsx(

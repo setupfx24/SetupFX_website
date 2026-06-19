@@ -241,8 +241,8 @@ export default function SupportPage() {
   // ── Empty state — no tickets at all ───────────────────────────────────
   if (tickets.length === 0) {
     return (
-      <DashboardShell mainClassName="flex items-center justify-center px-4 py-12">
-        <div className="text-center max-w-md mx-auto">
+      <DashboardShell mainClassName="px-4 py-12">
+        <div className="text-center max-w-2xl mx-auto">
           <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-accent/10 flex items-center justify-center">
             <Sparkles size={28} className="text-accent" />
           </div>

@@ -45,7 +45,11 @@ export default function DashboardShell({
           mainClassName,
         )}
       >
-        <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        {/* w-full is load-bearing: pages that set main to `flex flex-col`
+            (e.g. /news) would otherwise let mx-auto shrink-wrap this box to
+            its content's intrinsic width instead of stretching full-width.
+            For default (block) pages w-full is a no-op. */}
+        <div className="mx-auto max-w-[1600px] w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           {children}
         </div>
         <DashboardFooter />
