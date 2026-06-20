@@ -11,15 +11,17 @@ import toast from 'react-hot-toast';
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token') || '';
+  // Email now sends a 6-digit code (no magic link). Pre-fill from a legacy
+  // ?token= link if present, otherwise the user types the code.
+  const [code, setCode] = useState(searchParams.get('token') || '');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token.trim()) {
-      toast.error('Invalid reset link');
+    if (code.trim().length < 6) {
+      toast.error('Enter the 6-digit code from your email');
       return;
     }
     if (password.length < 8) {
@@ -33,7 +35,7 @@ function ResetPasswordForm() {
     setLoading(true);
     try {
       const res = await api.post<{ message: string }>('/auth/reset-password', {
-        token: token.trim(),
+        token: code.trim(),
         new_password: password,
       });
       toast.success(res.message || 'Password reset');
@@ -64,8 +66,18 @@ function ResetPasswordForm() {
         </div>
         <div className="glass-panel rounded-3xl p-8 noise-texture overflow-hidden">
           <h1 className="text-xl font-bold text-text-primary mb-2">Reset password</h1>
-          <p className="text-xs text-text-tertiary mb-6">Choose a new password for your account.</p>
+          <p className="text-xs text-text-tertiary mb-6">Enter the 6-digit code we emailed you, then choose a new password.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Reset code"
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              autoComplete="one-time-code"
+              placeholder="6-digit code"
+            />
             <Input
               label="New password"
               type="password"

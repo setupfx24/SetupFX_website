@@ -832,25 +832,26 @@ async def forgot_password(email: str, request: Request, db: AsyncSession) -> dic
     if not user or user.status in ("banned", "blocked"):
         return msg
 
-    raw = secrets.token_urlsafe(32)
+    # 6-digit numeric code — the user types it into the app's reset-password
+    # screen. reset_password() verifies hash_token(code), so the same backend
+    # path handles it; no magic link needed.
+    raw = f"{secrets.randbelow(10**6):06d}"
     token_hash = hash_token(raw)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
     db.add(PasswordResetToken(user_id=user.id, token_hash=token_hash, expires_at=expires_at, used=False))
     await db.commit()
 
     settings = get_settings()
-    base = _reset_link_base(request)
-    link = f"{base}/auth/reset-password?token={raw}"
 
     from packages.common.src.smtp_mail import send_password_reset_email, smtp_configured
     if smtp_configured():
-        sent = await send_password_reset_email(user.email, link)
+        sent = await send_password_reset_email(user.email, raw)
         if sent:
-            logger.info("Password reset email sent to %s", user.email)
+            logger.info("Password reset code sent to %s", user.email)
         else:
             logger.error("Password reset email failed for %s", user.email)
     elif settings.ENVIRONMENT == "development":
-        logger.warning("Password reset link (dev, SMTP not configured): %s", link)
+        logger.warning("Password reset code (dev, SMTP not configured): %s", raw)
     else:
         logger.warning("SMTP not configured — no email sent for %s", user.email)
 

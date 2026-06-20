@@ -5,35 +5,35 @@ from .base import render_layout
 
 def render_password_reset(
     *,
-    reset_link: str,
+    code: str,
     app_name: str = "SwissCresta",
     expires_in_minutes: int = 15,
 ) -> tuple[str, str, str]:
-    subject = f"Reset your {app_name} password"
+    subject = f"Your {app_name} password reset code"
     body = f"""
-    <p style="margin:0 0 12px;color:#f5f5f5;font-size:14px;line-height:1.6;">
-      You requested a password reset for your {app_name} account.
+    <p style="margin:0 0 16px;color:#f5f5f5;font-size:14px;line-height:1.6;">
+      You requested a password reset for your {app_name} account. Enter this
+      code in the app to choose a new password.
     </p>
+    <div style="margin:0 0 16px;text-align:center;">
+      <span style="display:inline-block;font-size:32px;font-weight:800;letter-spacing:8px;
+        color:#ffffff;background:#1f1f1f;border:1px solid #333;border-radius:10px;
+        padding:14px 22px;font-family:monospace;">{code}</span>
+    </div>
     <p style="margin:0;color:#9a9a9a;font-size:13px;line-height:1.6;">
-      The link below expires in {expires_in_minutes} minutes. If you didn't
-      request this, you can ignore this email — your password stays unchanged.
+      This code expires in {expires_in_minutes} minutes. If you didn't request
+      this, you can ignore this email — your password stays unchanged.
     </p>
     """
     html = render_layout(
-        title="Reset your password",
-        intro="Click the button below to choose a new password.",
+        title="Password reset code",
+        intro="Use the code below to reset your password.",
         body_html=body,
-        cta_label="Reset Password",
-        cta_url=reset_link,
-        footer_note=(
-            "For security, this link only works once. Copy it directly into "
-            "your browser — never share it."
-        ),
+        footer_note="For security, never share this code with anyone.",
     )
     text = (
-        f"You requested a password reset for your {app_name} account.\n\n"
-        f"Open this link to choose a new password (expires in {expires_in_minutes} minutes):\n\n"
-        f"{reset_link}\n\n"
+        f"Your {app_name} password reset code is: {code}\n\n"
+        f"Enter it in the app to choose a new password (expires in {expires_in_minutes} minutes).\n\n"
         "If you didn't request this, ignore this email.\n"
     )
     return subject, html, text
