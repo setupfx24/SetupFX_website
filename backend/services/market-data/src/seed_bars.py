@@ -12,8 +12,6 @@ Other symbols: generates simulated bars anchored to the current live price.
 import asyncio
 import json
 import logging
-import math
-import random
 import time
 
 import httpx
@@ -103,47 +101,6 @@ async def _fetch_binance_klines(symbol: str, tf_name: str, count: int = 500) -> 
     return bars
 
 
-def _generate_bars(base_price: float, segment: str, tf_seconds: int, count: int) -> list[dict]:
-    """Walk backwards from now, generating simulated OHLCV bars anchored to current price."""
-    vol = VOLATILITY.get(segment, 0.001)
-    bar_vol = vol * math.sqrt(tf_seconds / 60)
-
-    now = int(time.time())
-    bar_start = (now // tf_seconds) * tf_seconds
-
-    bars = []
-    price = base_price
-
-    # Generate bars going backwards from current price
-    for i in range(count, 0, -1):
-        t = bar_start - i * tf_seconds
-        change = random.gauss(0, bar_vol) * price
-        open_p = price
-        moves = [open_p]
-        for _ in range(4):
-            moves.append(moves[-1] + random.gauss(0, bar_vol * 0.5) * price)
-        close_p = moves[-1]
-        high_p = max(moves) + abs(random.gauss(0, bar_vol * 0.2) * price)
-        low_p = min(moves) - abs(random.gauss(0, bar_vol * 0.2) * price)
-
-        high_p = max(high_p, open_p, close_p)
-        low_p = min(low_p, open_p, close_p)
-
-        bars.append({
-            "time": t,
-            "open": round(open_p, 6),
-            "high": round(high_p, 6),
-            "low": round(low_p, 6),
-            "close": round(close_p, 6),
-            "volume": round(random.uniform(10, 1000), 2),
-            "tick_count": random.randint(5, 200),
-        })
-
-        price = close_p + change * 0.3
-
-    return bars
-
-
 async def seed(force: bool = False):
     """Read current prices from Redis and seed historical bars.
 
@@ -209,7 +166,13 @@ async def seed(force: bool = False):
                 logger.info("Skipping %s — no current price available", sym)
                 continue
 
-        logger.info("Seeding %s (segment=%s, source=%s)", sym, segment, "binance" if is_crypto else "simulated")
+        # No simulated/mock history — only real Binance klines for crypto. Other
+        # segments' chart history builds up from live feed ticks (BarAggregator).
+        if not is_crypto:
+            logger.info("Skipping %s — no simulated bars (history builds from live ticks)", sym)
+            continue
+
+        logger.info("Seeding %s (segment=%s, source=binance)", sym, segment)
 
         for tf_name, tf_seconds in TIMEFRAMES.items():
             list_key = f"bars:{sym}:{tf_name}"
@@ -220,13 +183,10 @@ async def seed(force: bool = False):
                     logger.info("  %s:%s already has %d bars, skipping", sym, tf_name, existing)
                     continue
 
-            if is_crypto:
-                bars = await _fetch_binance_klines(sym, tf_name, BARS_COUNT)
-                if not bars:
-                    logger.warning("  %s:%s Binance fetch returned 0 bars", sym, tf_name)
-                    continue
-            else:
-                bars = _generate_bars(mid, segment, tf_seconds, BARS_COUNT)
+            bars = await _fetch_binance_klines(sym, tf_name, BARS_COUNT)
+            if not bars:
+                logger.warning("  %s:%s Binance fetch returned 0 bars", sym, tf_name)
+                continue
 
             # Clear old data and write new bars
             pipe = redis_client.pipeline()

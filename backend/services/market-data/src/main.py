@@ -15,7 +15,7 @@ from packages.common.src.redis_client import (
 )
 from packages.common.src.kafka_client import close_producer
 
-from .feed_handler import FeedSimulator, INSTRUMENTS
+from .feed_handler import INSTRUMENTS
 from .infoway_config import usable_infoway_api_key
 from .infoway_feed import InfowayFeed
 from .corecen_lp_feed import CorecenLPFeed
@@ -59,15 +59,14 @@ class MarketDataService:
             self._infoway_watchdog_armed = True
             logger.info("Price feed: Infoway WebSocket (depth)")
         else:
-            self.feed = FeedSimulator(tick_rate_multiplier=1.0)
-            if raw_key:
-                logger.warning(
-                    "INFOWAY_API_KEY unset or looks like a placeholder — using simulated feed + Binance crypto"
-                )
-            else:
-                logger.warning(
-                    "INFOWAY_API_KEY not set — using simulated forex/indices + Binance crypto"
-                )
+            # No simulated/mock fallback — a real price feed is required so the
+            # platform never serves fake prices. Configure Corecen LP
+            # (CORECEN_LP_ENABLED + keys) or Infoway (INFOWAY_API_KEY).
+            raise RuntimeError(
+                "No real price feed configured. Set CORECEN_LP_ENABLED=true with "
+                "CORECEN_LP_API_KEY/CORECEN_LP_API_SECRET, or set INFOWAY_API_KEY. "
+                "The simulated feed has been removed."
+            )
         self.aggregator = BarAggregator()
         self.store = TickStore()
         self.spread_cache = StreamSpreadCache()
@@ -218,16 +217,13 @@ class MarketDataService:
             return
         if not isinstance(self.feed, InfowayFeed):
             return
+        # No simulated fallback — never serve fake prices. If Infoway stalls,
+        # quotes simply go stale (clients show the last tick / "-") until it
+        # recovers. Investigate INFOWAY_API_KEY, outbound HTTPS/WSS, symbol codes.
         logger.error(
             "Infoway: no ticks in 55s — check INFOWAY_API_KEY, outbound HTTPS/WSS, and symbol codes. "
-            "Falling back to simulated feed so quotes appear."
+            "No simulated fallback; quotes will go stale until the feed recovers."
         )
-        try:
-            await self.feed.stop()
-        except Exception as exc:
-            logger.warning("Stopping Infoway feed: %s", exc)
-        self.feed = FeedSimulator(tick_rate_multiplier=1.0)
-        asyncio.create_task(self.feed.start())
 
     async def _auto_seed_bars(self) -> None:
         """Wait for first ticks to arrive, then seed historical bars if Redis is empty."""
