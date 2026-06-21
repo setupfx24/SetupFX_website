@@ -101,7 +101,17 @@ class PriceCache:
             return None
         if raw is not None:
             self._cache[sym] = raw
-        return raw
+            return raw
+        # Live tick expired — e.g. forex/indices whose market is closed over the
+        # weekend, or right after a gateway restart during a closed period. Serve
+        # the durable last-known price so the UI shows the last price instead of
+        # "-". Deliberately NOT cached: keep re-checking tick: so the moment a
+        # live quote returns (market reopen) we pick it up instead of the stale one.
+        try:
+            return await redis_client.get(PriceChannel.last_price_key(sym))
+        except Exception as exc:
+            logger.debug("price_cache: last_price fallback failed for %s: %s", sym, exc)
+            return None
 
     async def _listen_loop(self) -> None:
         """Subscribe to the global price channel and copy ticks into

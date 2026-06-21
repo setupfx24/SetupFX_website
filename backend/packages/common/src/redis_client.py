@@ -14,12 +14,19 @@ redis_client = aioredis.Redis(connection_pool=redis_pool)
 
 class PriceChannel:
     TICK_PREFIX = "tick:"
+    # Durable last-known price (no TTL) — read as a fallback when the live
+    # tick: key has expired (e.g. forex/indices over the weekend).
+    LAST_PRICE_PREFIX = "last_price:"
     PRICE_CHANNEL = "prices"
     ORDERBOOK_CHANNEL = "orderbook"
 
     @staticmethod
     def tick_key(symbol: str) -> str:
         return f"{PriceChannel.TICK_PREFIX}{symbol}"
+
+    @staticmethod
+    def last_price_key(symbol: str) -> str:
+        return f"{PriceChannel.LAST_PRICE_PREFIX}{symbol}"
 
     @staticmethod
     def price_channel(symbol: str) -> str:
@@ -45,6 +52,12 @@ async def publish_price(symbol: str, bid: float, ask: float, timestamp: str):
     # actually expires during healthy operation — it's a crash safety
     # net, not a cache window.
     await redis_client.set(PriceChannel.tick_key(symbol), data, ex=120)
+    # Durable last-known price (NO TTL). The tick: key self-expires in 120 s so
+    # a dead feed doesn't masquerade as "live"; but for instruments whose market
+    # is closed (forex / indices / metals over the weekend) we still want to SHOW
+    # the last price instead of "-". Readers fall back to this key when the live
+    # tick: has expired. Also survives market-data restarts / long closures.
+    await redis_client.set(PriceChannel.last_price_key(symbol), data)
     await redis_client.publish(PriceChannel.price_channel(symbol), data)
     await redis_client.publish(PriceChannel.PRICE_CHANNEL, data)
 

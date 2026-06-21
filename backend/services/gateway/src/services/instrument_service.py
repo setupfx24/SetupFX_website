@@ -80,18 +80,40 @@ async def get_symbol_market_status(symbol: str, db: AsyncSession) -> dict:
 
 
 async def get_all_prices() -> list[dict]:
-    keys = []
+    # Live ticks first — authoritative whenever present.
+    live_keys = []
     async for key in redis_client.scan_iter(f"{PriceChannel.TICK_PREFIX}*"):
-        keys.append(key)
+        live_keys.append(key)
 
-    if not keys:
-        return []
+    prices: list[dict] = []
+    seen: set[str] = set()
+    if live_keys:
+        for v in await redis_client.mget(live_keys):
+            if v:
+                rec = json.loads(v)
+                sym = (rec.get("symbol") or "").upper()
+                if sym:
+                    seen.add(sym)
+                prices.append(rec)
 
-    values = await redis_client.mget(keys)
-    prices = []
-    for v in values:
-        if v:
-            prices.append(json.loads(v))
+    # Fall back to the durable last-known price for any symbol whose live tick
+    # has expired — e.g. forex / indices / metals whose market is closed over the
+    # weekend. Without this they'd drop off the list and show "-" instead of the
+    # last price. Live ticks (above) always win for symbols that are still quoting.
+    last_keys = []
+    async for key in redis_client.scan_iter(f"{PriceChannel.LAST_PRICE_PREFIX}*"):
+        last_keys.append(key)
+    if last_keys:
+        for v in await redis_client.mget(last_keys):
+            if not v:
+                continue
+            rec = json.loads(v)
+            sym = (rec.get("symbol") or "").upper()
+            if sym and sym in seen:
+                continue
+            if sym:
+                seen.add(sym)
+            prices.append(rec)
 
     return prices
 
