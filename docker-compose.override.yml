@@ -40,15 +40,12 @@ services:
       args:
         NEXT_PUBLIC_TRADER_URL: "http://localhost:3010"
 
-  # The root .env carries a production INFOWAY_API_KEY (paid feed) that does
-  # not deliver ticks locally — the Infoway WS connects, sends nothing, then
-  # the service crashes and stays down (no restart policy), so Buy/Sell show
-  # no price. Clear the key to fall back to the built-in simulator (synthetic
-  # forex/indices + real Binance crypto), and auto-restart on transient crash.
+  # Use the production INFOWAY_API_KEY from the root .env (paid feed). If Infoway
+  # ever stalls, the service now falls back to LIVE crypto only (Binance) without
+  # crashing — no simulated/mock prices. (The old override that blanked the key
+  # forced the simulator and is removed.)
   market-data:
     restart: unless-stopped
-    environment:
-      INFOWAY_API_KEY: ""
 
   # Long-running trade workers — auto-recover instead of silently dying.
   b-book-engine:

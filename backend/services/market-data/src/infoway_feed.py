@@ -7,6 +7,7 @@ import contextlib
 import json
 import logging
 import secrets
+import socket
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -232,6 +233,10 @@ class InfowayFeed:
                 logger.info("Infoway [%s] connecting…", business)
                 async with websockets.connect(
                     url,
+                    # Force IPv4 — data.infoway.io is dual-stack (Cloudflare) and
+                    # this host prefers IPv6 outbound; Infoway's IP allow-list is
+                    # IPv4, so we must present the server's IPv4 address.
+                    family=socket.AF_INET,
                     ping_interval=20,
                     ping_timeout=25,
                     close_timeout=10,
