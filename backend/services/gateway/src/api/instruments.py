@@ -136,12 +136,15 @@ async def get_symbol_market_status(symbol: str, db: AsyncSession = Depends(get_d
 
 
 @router.get("/prices/all")
+@_limiter.exempt
 async def get_all_prices():
-    """Static path before /{symbol}/price so it is never captured as a symbol."""
+    """Static path before /{symbol}/price so it is never captured as a symbol.
+    Exempt from rate limiting — clients poll this sub-second for live prices."""
     return await instrument_service.get_all_prices()
 
 
 @router.get("/{symbol}/price", response_model=TickData)
+@_limiter.exempt
 async def get_price(symbol: str):
     return await instrument_service.get_price(symbol=symbol)
 

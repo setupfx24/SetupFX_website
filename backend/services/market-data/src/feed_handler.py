@@ -171,20 +171,17 @@ class FeedSimulator:
         return dict(self._prices)
 
     async def start(self):
-        """Start the LIVE crypto feed (Binance) only. Non-crypto symbols are NOT
-        simulated — without a real upstream feed they simply have no quotes, so
-        clients show '-'. No mock/fake prices are ever generated."""
+        """Start the LIVE crypto feed (Binance) ONLY. Non-crypto symbols are never
+        simulated — without a real upstream feed they stay unquoted ('-'). No
+        mock/fake prices are ever generated, under any flag."""
         self._running = True
         n_unquoted = sum(1 for s in INSTRUMENTS if s not in LIVE_CRYPTO_SYMBOLS)
         logger.info(
-            "Feed starting — crypto=LIVE via Binance; %d non-crypto symbols left UNQUOTED "
-            "(no simulation — they show '-' until a real feed provides them).",
+            "Feed starting — crypto=LIVE via Binance; %d non-crypto symbols UNQUOTED "
+            "(no simulation — show '-' until a real feed provides them).",
             n_unquoted,
         )
-
-        # Only the real Binance crypto stream — no GBM simulation, no news bursts.
         self._tasks.append(asyncio.create_task(self._binance_feed()))
-
         await asyncio.gather(*self._tasks, return_exceptions=True)
 
     async def stop(self):
