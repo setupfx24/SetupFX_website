@@ -329,13 +329,13 @@ export default function MarketingNavbar({
   )
 
   return (
-    <header className="sticky top-3 md:top-4 z-50 mx-3 md:mx-5 lg:mx-6 rounded-2xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-white/45">
-      <nav className="w-full mx-auto px-4 md:px-6 lg:px-8 relative flex items-center gap-4 h-16 md:h-[68px]">
+    <header className="sticky top-3 md:top-4 z-50 mx-3 md:mx-4 lg:mx-5 rounded-2xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 ring-1 ring-black/5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] supports-[backdrop-filter]:bg-white/45">
+      <nav className="w-full mx-auto px-3 md:px-4 lg:px-5 relative flex items-center gap-3 h-16 md:h-[68px]">
         <div className="shrink-0">
           <Wordmark />
         </div>
 
-        <ul className="hidden xl:flex flex-1 items-center justify-center gap-4 2xl:gap-6 min-w-0">
+        <ul className="hidden lg:flex flex-1 items-center justify-center gap-3 xl:gap-5 2xl:gap-6">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
             const cls = `whitespace-nowrap text-[13px] 2xl:text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
@@ -357,14 +357,14 @@ export default function MarketingNavbar({
           })}
         </ul>
 
-        <div className="hidden xl:flex items-center gap-2 ml-auto shrink-0">
+        <div className="hidden lg:flex items-center gap-1.5 xl:gap-2 ml-auto shrink-0">
           {/* Direct Android APK download. Plain <a download> so the browser
               fetches the file straight away; on Android the OS then shows the
               install prompt (user may need "install from unknown sources"). */}
           <a
             href="/downloads/swisscresta1.apk"
             download="SwissCresta.apk"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
           >
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
@@ -381,14 +381,14 @@ export default function MarketingNavbar({
             <>
               <Link
                 href="/auth/login"
-                className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-full border border-gray-900 text-[13px] font-semibold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+                className="inline-flex items-center justify-center whitespace-nowrap px-3.5 py-2 rounded-full border border-gray-900 text-[13px] font-semibold text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
               >
                 {t('nav.login')}
               </Link>
               <Button
                 variant="primary"
                 href="/auth/register"
-                className="whitespace-nowrap px-4 py-2 text-[13px] rounded-full"
+                className="whitespace-nowrap px-3.5 py-2 text-[13px] rounded-full"
               >
                 {ctaLabel}
               </Button>
@@ -397,7 +397,7 @@ export default function MarketingNavbar({
           <button
             type="button"
             onClick={toggleLang}
-            className="inline-flex items-center gap-1 text-sm text-gray-900 ml-1 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
+            className="inline-flex items-center gap-1 text-[13px] text-gray-900 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors"
             aria-label={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
             title={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
           >
@@ -408,7 +408,7 @@ export default function MarketingNavbar({
 
         <button
           type="button"
-          className="xl:hidden ml-auto p-2 -mr-2 text-gray-900"
+          className="lg:hidden ml-auto p-2 -mr-2 text-gray-900"
           aria-label="Toggle menu"
           onClick={() => setOpen((v) => !v)}
         >
@@ -418,7 +418,7 @@ export default function MarketingNavbar({
 
       {hasSubNav && (
         <div
-          className="hidden xl:block border-t border-black/5 relative"
+          className="hidden lg:block border-t border-black/5 relative"
           onMouseLeave={() => setHoveredLabel(null)}
         >
           <div className="w-full mx-auto px-5 md:px-8 lg:px-10 flex items-center justify-between h-11">
@@ -449,7 +449,7 @@ export default function MarketingNavbar({
       )}
 
       {open && (
-        <div className="xl:hidden border-t border-black/5 rounded-b-2xl bg-white/80 backdrop-blur-2xl backdrop-saturate-150">
+        <div className="lg:hidden border-t border-black/5 rounded-b-2xl bg-white/80 backdrop-blur-2xl backdrop-saturate-150">
           <ul className="w-full mx-auto px-6 md:px-10 lg:px-16 py-4 flex flex-col gap-3">
             {NAV_LINKS.map((link) => {
               const active = link.key === activePage
