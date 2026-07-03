@@ -47,7 +47,7 @@ const WebPlatform = () => {
         <div className="container-custom text-center">
           <ScrollReveal variant="fadeUp">
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              SwissCresta Web Platform — Trade Instantly, Anywhere
+              SetupFX Web Platform — Trade Instantly, Anywhere
             </h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
               No download required. Launch the platform from any browser and start trading in seconds.
@@ -107,7 +107,7 @@ const WebPlatform = () => {
                   className="aspect-video rounded-t-lg overflow-hidden"
                   style={{
                     background:
-                      'radial-gradient(ellipse 70% 60% at 50% 30%, rgba(233,78,27,0.28), transparent 65%), ' +
+                      'radial-gradient(ellipse 70% 60% at 50% 30%, rgba(16,116,254,0.28), transparent 65%), ' +
                       'linear-gradient(135deg, #0F1530 0%, #0B0F1A 100%)',
                   }}
                 />

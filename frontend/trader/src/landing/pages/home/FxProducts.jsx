@@ -14,7 +14,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
  *
  * Copy is original and generic — uses industry-standard product
  * descriptions that apply to any licensed broker offering these
- * instruments. No claims that aren't backed by SwissCresta's actual
+ * instruments. No claims that aren't backed by SetupFX's actual
  * product (spreads / leverage / instrument count). Update the chip
  * values in PRODUCTS below if marketing re-specs.
  */
@@ -101,8 +101,8 @@ export default function HomeProductGrid() {
                 <div
                   className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-4 transition-colors"
                   style={{
-                    background: 'rgba(233,78,27,0.10)',
-                    border: '1px solid rgba(233,78,27,0.25)',
+                    background: 'rgba(16,116,254,0.10)',
+                    border: '1px solid rgba(16,116,254,0.25)',
                   }}
                 >
                   <Icon size={20} style={{ color: '#A5B4FC' }} />

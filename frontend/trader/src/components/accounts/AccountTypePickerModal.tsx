@@ -278,11 +278,11 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
                       onClick={() => setSelectedId(g.id)}
                       className={clsx(
                         'relative text-left rounded-xl p-4 transition-all',
-                        sel ? 'ring-2 ring-[#E94E1B]/60' : '',
+                        sel ? 'ring-2 ring-[#1074FE]/60' : '',
                       )}
                       style={{
                         background: 'var(--bg-card-nested)',
-                        border: `1px solid ${sel ? '#E94E1B' : 'var(--border-primary)'}`,
+                        border: `1px solid ${sel ? '#1074FE' : 'var(--border-primary)'}`,
                       }}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -362,7 +362,7 @@ export default function AccountTypePickerModal({ open, onClose, onCreated }: Pro
             type="button"
             onClick={handleCreate}
             disabled={creating || !selected}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-[#E94E1B] hover:bg-[#C73E11] text-white shadow-[0_2px_8px_rgba(233,78,27,0.25)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-[#1074FE] hover:bg-[#0856C5] text-white shadow-[0_2px_8px_rgba(16,116,254,0.25)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creating && <Loader2 size={14} className="animate-spin" />}
             {creating ? 'Creating…' : 'Submit'}
@@ -392,7 +392,7 @@ function TypePill({
       type="button"
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
-      className="py-2.5 text-sm font-semibold rounded-full transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E94E1B]/40"
+      className="py-2.5 text-sm font-semibold rounded-full transition-colors select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1074FE]/40"
       style={{
         background: active ? 'var(--bg-card)' : 'transparent',
         color: active ? 'var(--text-primary)' : 'var(--text-secondary)',

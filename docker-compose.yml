@@ -1,20 +1,20 @@
-# SwissCresta stack (project name → container/volume prefix).
-name: swisscresta
+# SetupFX stack (project name → container/volume prefix).
+name: setupfx
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-swisscresta}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swisscresta_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-swisscresta}
+      POSTGRES_USER: ${POSTGRES_USER:-setupfx}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-setupfx_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-setupfx}
     # No host port binding — all services connect via Docker network (postgres:5432)
-    # For local dev access: docker compose exec postgres psql -U swisscresta
+    # For local dev access: docker compose exec postgres psql -U setupfx
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U swisscresta"]
+      test: ["CMD-SHELL", "pg_isready -U setupfx"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -25,15 +25,15 @@ services:
     # breaking SQL changes during a routine docker pull.
     image: timescale/timescaledb:2.17.2-pg16
     environment:
-      POSTGRES_USER: ${TIMESCALE_USER:-swisscresta}
-      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-swisscresta_dev}
+      POSTGRES_USER: ${TIMESCALE_USER:-setupfx}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-setupfx_dev}
       POSTGRES_DB: ${TIMESCALE_DB:-marketdata}
     # No host port binding — all services connect via Docker network (timescaledb:5432)
     volumes:
       - ts_data:/var/lib/postgresql/data
       - ./backend/infra/docker/init-timescale.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U swisscresta"]
+      test: ["CMD-SHELL", "pg_isready -U setupfx"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -76,7 +76,7 @@ services:
     environment:
       # Override: shared backend/.env uses REDIS_URL for gateway (db 0); admin service must use db 1
       REDIS_URL: redis://redis:6379/1
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-swisscresta}:${POSTGRES_PASSWORD:-swisscresta_dev}@postgres:5432/${POSTGRES_DB:-swisscresta}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-setupfx}:${POSTGRES_PASSWORD:-setupfx_dev}@postgres:5432/${POSTGRES_DB:-setupfx}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?Set ADMIN_JWT_SECRET in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       BANNERS_UPLOAD_DIR: /app/uploads/banners
@@ -227,7 +227,7 @@ services:
       - path: ./.env
         required: false
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://swisscresta:swisscresta_dev@postgres:5432/swisscresta}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://setupfx:setupfx_dev@postgres:5432/setupfx}
     volumes:
       - ./backend:/app
     profiles:

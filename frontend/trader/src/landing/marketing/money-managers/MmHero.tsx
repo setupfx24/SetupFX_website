@@ -9,7 +9,7 @@ export default function MmHero() {
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 pt-12 pb-10 md:pt-16 md:pb-14">
         <h1 className={HEADING_SECTION}>Money managers</h1>
         <p className="mt-5 max-w-2xl text-sm md:text-base text-gray-600 leading-relaxed">
-          SwissCresta offers multiple trade allocation tools integrated with deep liquidity and
+          SetupFX offers multiple trade allocation tools integrated with deep liquidity and
           precise execution, allowing full hedging and order capabilities not found with other
           brokers.
         </p>
@@ -20,7 +20,7 @@ export default function MmHero() {
           </Button>
           <a
             href="#mm-platform"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#E94E1B] hover:text-[#E94E1B] transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#1074FE] hover:text-[#1074FE] transition-colors"
           >
             <span>Access our platform</span>
             <ArrowRight className="w-4 h-4" strokeWidth={2.5} />

@@ -50,13 +50,13 @@ const config: Config = {
           bg: 'rgba(220,38,38,0.1)',
           glow: 'rgba(220,38,38,0.2)',
         },
-        /* Vantage-style accent — orange #E94E1B for CTAs, brand marks, NEW badges. */
+        /* Vantage-style accent — orange #1074FE for CTAs, brand marks, NEW badges. */
         accent: {
-          DEFAULT: '#E94E1B',
-          hover: '#C73E11',
-          soft: '#FCE6DD',
-          light: '#F58A60',
-          dark: '#C73E11',
+          DEFAULT: '#1074FE',
+          hover: '#0856C5',
+          soft: '#E8F1FF',
+          light: '#4D95FF',
+          dark: '#0856C5',
         },
         success: '#10B981',
         warning: '#F59E0B',
@@ -71,12 +71,12 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — SwissCresta brand */
+        /* Landing-page palette — SetupFX brand */
         'primary': {
           bg: '#FFFFFF',
           secondary: '#FAFAFA',
-          accent: '#E94E1B',
-          purple: '#C73E11',
+          accent: '#1074FE',
+          purple: '#0856C5',
         },
         /* ─────────────────────────────────────────────────────────
            Marketing site palette (`mkt.*` namespace)
@@ -112,7 +112,7 @@ const config: Config = {
         },
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, #F58A60 0%, #E94E1B 50%, #C73E11 100%)',
+        'gradient-primary': 'linear-gradient(135deg, #4D95FF 0%, #1074FE 50%, #0856C5 100%)',
         'gradient-hero': 'linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 50%, #F5F5F5 100%)',
         'gradient-section': 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
         'gradient-section-alt': 'linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%)',

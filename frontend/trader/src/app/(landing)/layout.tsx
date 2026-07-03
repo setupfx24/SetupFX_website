@@ -80,7 +80,7 @@ const HOME_SUBNAV_RIGHT = [
     href: '/',
     cards: [
       { title: 'HELP CENTER', body: 'Questions? Solutions. Find fast answers and expert support.', accent: 'news' as const },
-      { title: 'SWISSCRESTA INFO', body: 'Real-time updates on platform status, maintenance, and alerts.', accent: 'pricing' as const },
+      { title: 'SETUPFX INFO', body: 'Real-time updates on platform status, maintenance, and alerts.', accent: 'pricing' as const },
       { title: 'CUSTOMER CARE', body: 'We’re just a call, an email, or a chat away. Get support — your way, anytime.', accent: 'platform' as const },
     ],
   },
@@ -95,7 +95,7 @@ import '@/landing/landing.css'
 // rebuilds the home sections.
 import '@/styles/marketing.css'
 
-/* Marketing pages rendered on the light SwissCresta canvas (#FFFFFF).
+/* Marketing pages rendered on the light SetupFX canvas (#FFFFFF).
  * The shared Navbar reads `theme="light"` for these and `theme="dark"`
  * for everything else; LandingFooter swaps in for the legacy dark
  * Footer on these paths. Match is exact — `/platforms` is the light

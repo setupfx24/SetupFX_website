@@ -456,7 +456,7 @@ async def place_order(
                 )).scalar_one_or_none()
             if not u or not u.email:
                 return
-            if u.email.lower().endswith("@wallet.swisscresta.local"):
+            if u.email.lower().endswith("@wallet.setupfx.local"):
                 return
             st = get_settings()
             subject, html, text = render_trade_placed(
@@ -471,7 +471,7 @@ async def place_order(
                 stop_loss=_email_payload["stop_loss"],
                 take_profit=_email_payload["take_profit"],
                 when_utc=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
-                trader_app_url=st.TRADER_APP_URL or "https://trade.swisscresta.com",
+                trader_app_url=st.TRADER_APP_URL or "https://trade.setupfx24.com",
             )
             await send_email(u.email, subject, html, text=text)
         except Exception as e:

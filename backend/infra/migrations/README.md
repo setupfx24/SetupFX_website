@@ -1,4 +1,4 @@
-# SwissCresta — Alembic Migrations
+# SetupFX — Alembic Migrations
 
 Schema evolution is managed via Alembic. All migration files live in `versions/`.
 
@@ -12,7 +12,7 @@ current DB and the ORM models in `packages/common/src/models.py`.
 
 ```bash
 # From the backend/ root (where packages/ is visible)
-export DATABASE_URL=postgresql+asyncpg://swisscresta:swisscresta_dev@localhost:5432/swisscresta
+export DATABASE_URL=postgresql+asyncpg://setupfx:setupfx_dev@localhost:5432/setupfx
 ```
 
 Alembic must be installed (it is included in `packages/common` dependencies):

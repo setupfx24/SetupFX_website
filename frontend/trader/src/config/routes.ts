@@ -44,7 +44,7 @@ export const ROUTES = {
   // ── Landing ──
   HOME: '/',
   ABOUT: '/about',
-  WHY_SWISSCRESTA: '/company/why-swisscresta',
+  WHY_SETUPFX: '/company/why-setupfx',
   CONTACT: '/contact',
   PLATFORMS: '/platforms',
 

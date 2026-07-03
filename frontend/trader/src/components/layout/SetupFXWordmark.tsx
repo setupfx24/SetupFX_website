@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-const LOGO_SRC = '/marketing/swisscresta-logo.png';
+const LOGO_SRC = '/marketing/setupfx-logo.png';
 
 type Props = {
   href?: string;
@@ -27,7 +27,7 @@ type Props = {
  * touching any call-site. Set `hideFlag` if the surrounding chrome
  * already shows its own brand mark.
  */
-export function SwissCrestaWordmark({
+export function SetupFXWordmark({
   href = '/dashboard',
   className,
   textClassName,
@@ -46,19 +46,19 @@ export function SwissCrestaWordmark({
         title="Trading home"
         className={cn(
           'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#1074FE]',
           className,
         )}
       >
         {hideFlag ? (
           <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none">
             <span className="text-text-primary">S</span>
-            <span className="text-[#E94E1B]">C</span>
+            <span className="text-[#1074FE]">C</span>
           </span>
         ) : (
           <Image
-            src="/marketing/swisscresta_fevicon.png"
-            alt="SwissCresta"
+            src="/marketing/setupfx_fevicon.png"
+            alt="SetupFX"
             width={28}
             height={28}
             priority
@@ -79,15 +79,15 @@ export function SwissCrestaWordmark({
   return (
     <Link
       href={href}
-      aria-label="SwissCresta home"
+      aria-label="SetupFX home"
       className={cn(
-        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E94E1B]/60 focus-visible:rounded-md',
+        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1074FE]/60 focus-visible:rounded-md',
         className,
       )}
     >
       <Image
         src={LOGO_SRC}
-        alt="SwissCresta"
+        alt="SetupFX"
         width={220}
         height={48}
         priority

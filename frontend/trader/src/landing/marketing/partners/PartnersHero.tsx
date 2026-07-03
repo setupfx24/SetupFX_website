@@ -17,14 +17,14 @@ export default function PartnersHero() {
           </div>
         </div>
 
-        <h1 className={`relative z-10 ${TEXT_DISPLAY} text-[#E94E1B] leading-[0.9]`}>
+        <h1 className={`relative z-10 ${TEXT_DISPLAY} text-[#1074FE] leading-[0.9]`}>
           Your clients deserve the best.
         </h1>
 
         <div className="relative z-10 mt-10 max-w-xl">
           <p className="text-base md:text-lg text-gray-600 leading-relaxed">
             Grow your business with a solid partner. Offer your clients your expertise mixed with
-            SwissCresta&apos;s financial strength, transparency and security.
+            SetupFX&apos;s financial strength, transparency and security.
           </p>
           <div className="mt-8">
             <Button variant="primary" className="px-6 py-3 rounded-md">

@@ -17,7 +17,7 @@ export default function ProtocolPage() {
       <PrCompare />
       <PrFlow />
       <FxPageBanner
-        alt="SwissCresta Protocol"
+        alt="SetupFX Protocol"
         tagline="Execution runs on logic — not control."
         taglineSub="A transparent, system-driven trading protocol."
       />
@@ -25,7 +25,7 @@ export default function ProtocolPage() {
       <PrSecurity />
       <PrTable />
       <FxPageBanner
-        alt="SwissCresta Protocol"
+        alt="SetupFX Protocol"
         tone="elev"
         tagline="Your funds stay yours."
         taglineSub="Non-custodial by design — verifiable, automated settlement."

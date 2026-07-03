@@ -9,7 +9,7 @@ import TickerTape from '@/landing/components/TickerTape'
 import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react'
 
 /**
- * SwissCresta home hero.
+ * SetupFX home hero.
  *
  * Layout follows a conventional institutional-broker home: big product
  * list as the headline, leverage / execution spec as the subheading,
@@ -19,7 +19,7 @@ import { ArrowRight, Loader2, ShieldCheck } from 'lucide-react'
  * All on-chain / smart-contract / "decentralized custody" language
  * was removed when the wallet integration was retired — the messaging
  * is now positioned like a traditional licensed broker. Numeric
- * claims (e.g. 1:500 max leverage) are SwissCresta's actual product
+ * claims (e.g. 1:500 max leverage) are SetupFX's actual product
  * values; update in this file if marketing changes the spec sheet.
  */
 export default function HeroSection() {
@@ -45,7 +45,7 @@ export default function HeroSection() {
       className="relative overflow-hidden"
       style={{
         background:
-          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(233,78,27,0.18), transparent 60%), ' +
+          'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16,116,254,0.18), transparent 60%), ' +
           'linear-gradient(180deg, #0B0F1A 0%, #0B0F1A 60%, #0F1530 100%)',
       }}
     >
@@ -73,7 +73,7 @@ export default function HeroSection() {
           {/* Swiss-flag brand mark + "Swiss-built" eyebrow */}
           <div className="inline-flex items-center gap-2.5 fx-fade-up">
             {/* Inline Swiss-flag SVG — public-domain national symbol,
-                not a logo trademark. Same mark as SwissCrestaWordmark
+                not a logo trademark. Same mark as SetupFXWordmark
                 but slightly larger here to act as the hero anchor. */}
             <svg
               viewBox="0 0 32 32"
@@ -104,7 +104,7 @@ export default function HeroSection() {
           </h1>
 
           {/* Spec subheading — leverage + spreads spec sheet. Numbers
-              are SwissCresta's, not borrowed. Update here if marketing
+              are SetupFX's, not borrowed. Update here if marketing
               re-specs the tiers. */}
           <p
             className="mt-6 mx-auto max-w-2xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"

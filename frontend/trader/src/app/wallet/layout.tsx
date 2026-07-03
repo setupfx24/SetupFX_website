@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Wallet — SwissCresta',
+  title: 'Wallet — SetupFX',
   description: 'Deposit, withdraw, and manage funds across your trading accounts.',
 }
 

@@ -88,7 +88,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
     try {
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       const link = document.createElement('a');
-      link.download = `swisscresta-${position.symbol}-${position.side}.png`;
+      link.download = `setupfx-${position.symbol}-${position.side}.png`;
       link.href = dataUrl;
       link.click();
       toast.success('Image downloaded');
@@ -124,7 +124,7 @@ export default function ShareTradeModal({ open, onClose, position, leverage = 10
                 displayMode={displayMode}
                 pipSize={pipSize}
                 status="active"
-                shortUrl={shareUrl ?? 'swisscresta.com/s/xxxxxx'}
+                shortUrl={shareUrl ?? 'setupfx24.com/s/xxxxxx'}
               />
             </div>
           </div>

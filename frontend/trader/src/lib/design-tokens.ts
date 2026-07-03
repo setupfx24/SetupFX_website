@@ -44,7 +44,7 @@ export const mktColors = {
   lineDark: '#0A0A0A',
 
   // ── Accent + signal ────────────────────────────────────────
-  accent:    '#E94E1B',  // Vantage orange — primary CTA/brand accent
+  accent:    '#1074FE',  // Vantage orange — primary CTA/brand accent
   positive:  '#10B981',  // up-moves on quote tables
   negative:  '#DC2626',  // down-moves on quote tables
 } as const;

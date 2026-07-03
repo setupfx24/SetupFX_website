@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Trade Indices — SwissCresta',
+  title: 'Trade Indices — SetupFX',
   description: 'Global stock indices including S&P 500, NASDAQ, DAX, and FTSE.',
 }
 

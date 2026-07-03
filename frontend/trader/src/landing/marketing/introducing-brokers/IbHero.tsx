@@ -11,7 +11,7 @@ export default function IbHero() {
           </h1>
           <p className="mt-6 text-sm md:text-base text-gray-600 leading-relaxed max-w-xl">
             Thought the days of building your client base were tedious and unrewarding? Not for
-            long. Offer your clients SwissCresta&apos;s best-in-class financial services, and get
+            long. Offer your clients SetupFX&apos;s best-in-class financial services, and get
             rewarded in the process.
           </p>
           <div className="mt-6">

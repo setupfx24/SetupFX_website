@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { SwissCrestaWordmark } from '@/components/layout/SwissCrestaWordmark';
+import { SetupFXWordmark } from '@/components/layout/SetupFXWordmark';
 import { wsManager, ConnectionStatus } from '@/lib/ws/wsManager';
 import { useAuthStore } from '@/stores/authStore';
 import { useTradingStore } from '@/stores/tradingStore';
@@ -80,7 +80,7 @@ export default function TopBar() {
 
         {/* Brand — left anchor */}
         <div className="shrink-0 z-20 min-w-0 max-w-[min(52%,12rem)] sm:max-w-[14rem] md:max-w-none flex items-center h-7 sm:h-9 lg:h-[52px]">
-          <SwissCrestaWordmark
+          <SetupFXWordmark
             href="/dashboard"
             className="items-center"
             textClassName="text-lg sm:text-xl lg:text-3xl lg:leading-none"

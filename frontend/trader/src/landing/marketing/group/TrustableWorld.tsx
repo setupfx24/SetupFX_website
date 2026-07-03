@@ -36,7 +36,7 @@ function WorldMap() {
             <span
               key={i}
               className={`block aspect-square rounded-full ${
-                isDot ? 'bg-[#E94E1B]/60' : 'bg-transparent'
+                isDot ? 'bg-[#1074FE]/60' : 'bg-transparent'
               }`}
             />
           )
@@ -57,7 +57,7 @@ export default function TrustableWorld() {
         </div>
 
         <div className="mt-6">
-          <ExploreLink>SwissCresta group structure</ExploreLink>
+          <ExploreLink>SetupFX group structure</ExploreLink>
         </div>
       </div>
     </section>

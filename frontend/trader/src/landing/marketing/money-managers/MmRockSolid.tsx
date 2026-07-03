@@ -11,11 +11,11 @@ const COLUMNS: Column[] = [
     title: 'Strength',
     body: (
       <>
-        SwissCresta Group boasts a Tier 1 Capital ratio among the highest in the industry,
-        ensuring its financial strength and resilience. View SwissCresta&apos;s latest{' '}
+        SetupFX Group boasts a Tier 1 Capital ratio among the highest in the industry,
+        ensuring its financial strength and resilience. View SetupFX&apos;s latest{' '}
         <a
           href="#"
-          className="text-[#E94E1B] hover:underline underline-offset-2 font-semibold"
+          className="text-[#1074FE] hover:underline underline-offset-2 font-semibold"
         >
           financial reports
         </a>
@@ -27,7 +27,7 @@ const COLUMNS: Column[] = [
     title: 'Security',
     body: (
       <>
-        SwissCresta applies modern security practices end-to-end — segregated client funds,
+        SetupFX applies modern security practices end-to-end — segregated client funds,
         encrypted infrastructure, and continuous monitoring against fraud and abuse.
       </>
     ),
@@ -60,14 +60,14 @@ export default function MmRockSolid() {
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-20">
-        <h2 className={`${HEADING_SECTION} text-[#E94E1B] max-w-2xl`}>
+        <h2 className={`${HEADING_SECTION} text-[#1074FE] max-w-2xl`}>
           Rely on a rock solid partner
         </h2>
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-x-16 gap-y-6">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-sm bg-[#E94E1B] inline-block" />
-            <LogoChip label="SwissCresta" className="text-gray-900 font-bold" />
+            <span className="w-5 h-5 rounded-sm bg-[#1074FE] inline-block" />
+            <LogoChip label="SetupFX" className="text-gray-900 font-bold" />
           </div>
           <LogoChip label="finma" />
           <LogoChip label="/IX" />

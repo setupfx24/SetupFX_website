@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Web Trading Platform — SwissCresta',
+  title: 'Web Trading Platform — SetupFX',
   description: 'Trade from any browser with no installation. Full-featured terminal in your tab.',
 }
 

@@ -17,9 +17,9 @@ type ButtonAsAnchor = CommonProps & Omit<AnchorHTMLAttributes<HTMLAnchorElement>
 export type ButtonProps = ButtonAsButton | ButtonAsAnchor
 
 const STYLES: Record<Variant, string> = {
-  primary: 'bg-[#E94E1B] text-white hover:bg-[#E94E1B]',
+  primary: 'bg-[#1074FE] text-white hover:bg-[#1074FE]',
   outline: 'border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white',
-  ghost: 'text-gray-900 hover:text-[#E94E1B]',
+  ghost: 'text-gray-900 hover:text-[#1074FE]',
 }
 
 export default function Button(props: ButtonProps) {

@@ -20,12 +20,12 @@ export default function TrustNumbers() {
         <h2 className={`${HEADING_SECTION} text-center`}>Trust in the numbers</h2>
         <p className="mt-4 text-center text-gray-600 max-w-2xl mx-auto leading-relaxed">
           Our figures are our best ambassadors. Even with innovation and fintech at the core,
-          SwissCresta never forgets about its reliability, financial strength and Swissness.
+          SetupFX never forgets about its reliability, financial strength and Swissness.
         </p>
 
         <div className="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
           {STATS.map((s) => (
-            <div key={s.label} className="bg-[#E94E1B] text-white rounded-2xl p-6 md:p-7">
+            <div key={s.label} className="bg-[#1074FE] text-white rounded-2xl p-6 md:p-7">
               <p className="text-xs uppercase tracking-[0.15em] text-white/85 font-semibold">
                 {s.label}
               </p>

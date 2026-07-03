@@ -1,8 +1,8 @@
 # ============================================================
-# SwissCresta — Production overrides
+# SetupFX — Production overrides
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ============================================================
-name: swisscresta
+name: setupfx
 
 services:
   # ── Infrastructure — restart policy only (no host ports needed) ──
@@ -24,9 +24,9 @@ services:
     restart: always
     environment:
       # Admin API is reached exclusively from the admin SPA — never from
-      # the trader or marketing domain. Lock CORS to admin.swisscresta.com
+      # the trader or marketing domain. Lock CORS to admin.setupfx24.com
       # so a compromise of the other surfaces can't pivot here.
-      CORS_ORIGINS: https://admin.swisscresta.com
+      CORS_ORIGINS: https://admin.setupfx24.com
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]
 
   gateway:
@@ -34,20 +34,20 @@ services:
       - "127.0.0.1:8002:8000"
     restart: always
     environment:
-      # swisscresta.com is the apex marketing host and ALSO serves the
+      # setupfx24.com is the apex marketing host and ALSO serves the
       # auth pages (see frontend/trader/src/middleware.ts file header) —
       # so a login POST from /auth/login on the apex carries
-      # Origin: https://swisscresta.com and gateway must accept it.
+      # Origin: https://setupfx24.com and gateway must accept it.
       # Removing the apex broke login entirely (403 "Origin not allowed").
       #
       # The C1 audit risk this re-enables — XSS on the marketing site
       # pivoting to credentialed API calls — is mitigated properly by
       # moving the auth flow off the apex (TODO: redirect /auth/* on
-      # swisscresta.com to trade.swisscresta.com so the apex no longer
+      # setupfx24.com to trade.setupfx24.com so the apex no longer
       # needs gateway access). Until that's done we keep parity with
       # the pre-audit allow-list.
-      CORS_ORIGINS: https://swisscresta.com,https://trade.swisscresta.com,https://admin.swisscresta.com
-      COOKIE_DOMAIN: .swisscresta.com
+      CORS_ORIGINS: https://setupfx24.com,https://trade.setupfx24.com,https://admin.setupfx24.com
+      COOKIE_DOMAIN: .setupfx24.com
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     command: ["uvicorn", "services.gateway.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
 
@@ -67,9 +67,9 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-production}
-        NEXT_PUBLIC_WS_URL: wss://api.swisscresta.com
-        NEXT_PUBLIC_MARKETING_HOST: swisscresta.com
-        NEXT_PUBLIC_TRADE_HOST: trade.swisscresta.com
+        NEXT_PUBLIC_WS_URL: wss://api.setupfx24.com
+        NEXT_PUBLIC_MARKETING_HOST: setupfx24.com
+        NEXT_PUBLIC_TRADE_HOST: trade.setupfx24.com
         # Baked into the bundle at build time so the Google Sign-In button can render.
         # Same value as backend GOOGLE_CLIENT_ID. Leave blank to hide the button.
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
@@ -83,10 +83,10 @@ services:
       INTERNAL_API_URL: http://gateway:8000/api/v1
       TRADER_API_PROXY_TARGET: http://gateway:8000
       # Browser WebSocket connects directly to api subdomain
-      NEXT_PUBLIC_WS_URL: wss://api.swisscresta.com
+      NEXT_PUBLIC_WS_URL: wss://api.setupfx24.com
       # Host pair for the marketing/app domain split (read by src/middleware.ts)
-      NEXT_PUBLIC_MARKETING_HOST: swisscresta.com
-      NEXT_PUBLIC_TRADE_HOST: trade.swisscresta.com
+      NEXT_PUBLIC_MARKETING_HOST: setupfx24.com
+      NEXT_PUBLIC_TRADE_HOST: trade.setupfx24.com
       # DO NOT set NEXT_PUBLIC_GATEWAY_URL — browser uses same-origin /api/v1 proxy (avoids CORS)
     restart: always
 

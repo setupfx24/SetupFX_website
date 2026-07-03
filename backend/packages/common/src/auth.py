@@ -141,7 +141,7 @@ async def require_onboarded(
     if bool(getattr(user, "is_demo", False)):
         return current_user
 
-    is_placeholder = (user.email or "").lower().endswith("@wallet.swisscresta.local")
+    is_placeholder = (user.email or "").lower().endswith("@wallet.setupfx.local")
     profile_complete = bool(
         (user.first_name or "").strip()
         and (user.last_name or "").strip()

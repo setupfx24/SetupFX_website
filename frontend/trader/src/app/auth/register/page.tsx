@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Sign-up page (SwissCresta) — thin wrapper around the shared
+ * Sign-up page (SetupFX) — thin wrapper around the shared
  * FullScreenSignup card. ProfileCompleteGate prompts for first/last
  * name + phone + country the first time the new user hits the dashboard,
  * so we only collect email + password here.

@@ -22,7 +22,7 @@ const columns = {
   ],
   Company: [
     { name: 'About Us',       path: '/about' },
-    { name: 'Why SwissCresta',    path: '/company/why-swisscresta' },
+    { name: 'Why SetupFX',    path: '/company/why-setupfx' },
     { name: 'Contact',        path: '/contact' },
   ],
 }
@@ -52,7 +52,7 @@ export default function Footer() {
           {/* Brand block — spans more on mobile */}
           <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">
-              <Link to="/" className="inline-flex items-center gap-2 mb-5" aria-label="SwissCresta home">
+              <Link to="/" className="inline-flex items-center gap-2 mb-5" aria-label="SetupFX home">
                 {/* Same inline Swiss-flag lockup as the navbar — keeps
                     the brand consistent without depending on a logo
                     PNG that may not yet be the final asset. */}
@@ -67,19 +67,19 @@ export default function Footer() {
                 </svg>
                 <span className="inline-flex items-baseline font-bold tracking-tight text-lg select-none">
                   <span className="text-white">Swiss</span>
-                  <span className="text-[#E94E1B]">Cresta</span>
+                  <span className="text-[#1074FE]">Cresta</span>
                 </span>
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                SwissCresta is an institutional-grade forex and CFD broker. Built for serious
+                SetupFX is an institutional-grade forex and CFD broker. Built for serious
                 traders who demand fast execution, transparent pricing, and a platform that
                 works as hard as they do.
               </p>
 
               <div className="flex items-center gap-2 text-sm mb-5" style={{ color: 'var(--fx-text-3)' }}>
                 <Mail size={14} style={{ color: 'var(--fx-gold-light)' }} />
-                <a href="mailto:support@swisscresta.com" className="hover:underline" style={{ color: 'var(--fx-text-2)' }}>
-                  support@swisscresta.com
+                <a href="mailto:support@setupfx24.com" className="hover:underline" style={{ color: 'var(--fx-text-2)' }}>
+                  support@setupfx24.com
                 </a>
               </div>
 
@@ -97,7 +97,7 @@ export default function Footer() {
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = 'var(--fx-gold-light)'
-                      e.currentTarget.style.borderColor = 'rgba(233,78,27,0.4)'
+                      e.currentTarget.style.borderColor = 'rgba(16,116,254,0.4)'
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = 'var(--fx-text-2)'
@@ -158,7 +158,7 @@ export default function Footer() {
             and may not be suitable for all investors. You could lose more than your initial
             investment. Past performance is not indicative of future results. Please ensure
             you fully understand the risks involved and seek independent advice if necessary.
-            SwissCresta does not provide investment advice.
+            SetupFX does not provide investment advice.
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            © {year} SwissCresta Ltd. All rights reserved.
+            © {year} SetupFX Ltd. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--fx-text-3)' }}>
             <Link to="/privacy" className="hover:underline">Privacy Policy</Link>

@@ -9,7 +9,7 @@ interface Card {
 const CARDS: Card[] = [
   {
     title: 'Product Guide',
-    body: 'A complete summary of all SwissCresta Forex and CFD products with their corresponding trading conditions.',
+    body: 'A complete summary of all SetupFX Forex and CFD products with their corresponding trading conditions.',
     cta: 'Read the guide',
   },
   {

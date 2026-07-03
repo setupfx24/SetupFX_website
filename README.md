@@ -1,6 +1,6 @@
-# SwissCresta
+# SetupFX
 
-A premium multi-page Forex brokerage website by SwissCresta, built with React, Vite, Tailwind CSS, and Framer Motion.
+A premium multi-page Forex brokerage website by SetupFX, built with React, Vite, Tailwind CSS, and Framer Motion.
 
 ## Setup
 
@@ -43,7 +43,7 @@ multi-consumer scale.
 ## Backups & disaster recovery
 
 Daily snapshots of Postgres, TimescaleDB, and the `uploads/` directory are
-written to `/opt/swisscresta/backups/` and (optionally) mirrored to an offsite
+written to `/opt/setupfx/backups/` and (optionally) mirrored to an offsite
 `rclone` remote (Backblaze B2 / Cloudflare R2 / S3 / DO Spaces).
 
 **One-time setup on a server:**

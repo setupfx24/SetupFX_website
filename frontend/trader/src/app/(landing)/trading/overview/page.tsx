@@ -19,7 +19,7 @@ export default function TradingOverviewPage() {
       <TxOverview />
       <TxModes />
       <FxPageBanner
-        alt="SwissCresta Trading"
+        alt="SetupFX Trading"
         tagline="Trade smart. Pay less over time."
         taglineSub="Transparent pricing that improves the more you trade."
       />
@@ -27,7 +27,7 @@ export default function TradingOverviewPage() {
       <TxCostStructure />
       <TxXP />
       <FxPageBanner
-        alt="SwissCresta Trading"
+        alt="SetupFX Trading"
         tone="elev"
         tagline="Every cost, known upfront."
         taglineSub="No swap charges. No hidden fees. Just three clear components."

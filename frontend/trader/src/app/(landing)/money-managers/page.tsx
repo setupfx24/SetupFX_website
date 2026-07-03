@@ -10,7 +10,7 @@ import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = {
-  title: 'Money Managers — SwissCresta',
+  title: 'Money Managers — SetupFX',
   description: 'Precision, performance and deep liquidity for money managers.',
 }
 

@@ -6,15 +6,15 @@ import type { MetadataRoute } from 'next'
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'SwissCresta — Professional Trading Platform',
-    short_name: 'SwissCresta',
+    name: 'SetupFX — Professional Trading Platform',
+    short_name: 'SetupFX',
     description: 'Professional forex and CFD trading platform',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#E94E1B',
+    theme_color: '#1074FE',
     icons: [
-      { src: '/marketing/swisscresta_fevicon.png', sizes: 'any', type: 'image/png' },
+      { src: '/marketing/setupfx_fevicon.png', sizes: 'any', type: 'image/png' },
     ],
   }
 }

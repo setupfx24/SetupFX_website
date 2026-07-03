@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Layers, TrendingUp, TrendingDown, BarChart4, AlertTriangle, ArrowRight } from 'lucide-react'
 
-export const metadata = { title: 'CFDs — SwissCresta' }
+export const metadata = { title: 'CFDs — SetupFX' }
 
 const CFD_GROUPS = [
   { name: 'Indices', body: 'S&P 500, NASDAQ 100, DAX, FTSE 100, Nikkei 225 — the world’s benchmark indices, traded around the clock.' },
@@ -15,12 +15,12 @@ export default function CFDsPage() {
       <section className="relative bg-gradient-to-b from-white to-gray-50 pt-24 pb-16 md:pt-28 md:pb-20 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#E94E1B]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1074FE]">
               Markets · Contracts for Difference
             </p>
             <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.05]">
               Go long.<br />
-              <span className="text-[#E94E1B]">Go short.</span><br />
+              <span className="text-[#1074FE]">Go short.</span><br />
               Go anywhere.
             </h1>
             <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed max-w-xl">
@@ -31,7 +31,7 @@ export default function CFDsPage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/auth/register"
-                className="inline-flex items-center gap-2 bg-[#E94E1B] hover:bg-[#C73E11] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
+                className="inline-flex items-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
               >
                 Open your account <ArrowRight className="w-4 h-4" />
               </Link>
@@ -44,8 +44,8 @@ export default function CFDsPage() {
             </div>
           </div>
           <div className="relative flex items-center justify-center">
-            <div className="w-40 h-40 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-[#E94E1B]/40 to-[#E94E1B]/10 blur-3xl absolute" aria-hidden="true" />
-            <Layers className="relative w-32 h-32 md:w-44 md:h-44 text-[#E94E1B]" strokeWidth={1.25} />
+            <div className="w-40 h-40 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-[#1074FE]/40 to-[#1074FE]/10 blur-3xl absolute" aria-hidden="true" />
+            <Layers className="relative w-32 h-32 md:w-44 md:h-44 text-[#1074FE]" strokeWidth={1.25} />
           </div>
         </div>
       </section>
@@ -72,7 +72,7 @@ export default function CFDsPage() {
         <div className="max-w-5xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-white rounded-2xl p-7 border border-gray-200/60">
-              <span className="w-11 h-11 rounded-xl bg-[#E94E1B]/10 text-[#E94E1B] flex items-center justify-center">
+              <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" strokeWidth={2} />
               </span>
               <h3 className="mt-4 text-lg font-bold text-gray-900">Long or short</h3>
@@ -81,7 +81,7 @@ export default function CFDsPage() {
               </p>
             </div>
             <div className="bg-white rounded-2xl p-7 border border-gray-200/60">
-              <span className="w-11 h-11 rounded-xl bg-[#E94E1B]/10 text-[#E94E1B] flex items-center justify-center">
+              <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
                 <BarChart4 className="w-5 h-5" strokeWidth={2} />
               </span>
               <h3 className="mt-4 text-lg font-bold text-gray-900">Margin efficiency</h3>
@@ -91,7 +91,7 @@ export default function CFDsPage() {
               </p>
             </div>
             <div className="bg-white rounded-2xl p-7 border border-gray-200/60">
-              <span className="w-11 h-11 rounded-xl bg-[#E94E1B]/10 text-[#E94E1B] flex items-center justify-center">
+              <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
                 <TrendingDown className="w-5 h-5" strokeWidth={2} />
               </span>
               <h3 className="mt-4 text-lg font-bold text-gray-900">Hedge with precision</h3>
@@ -106,8 +106,8 @@ export default function CFDsPage() {
 
       <section className="bg-white py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <div className="rounded-2xl border border-[#E94E1B]/30 bg-[#E94E1B]/5 p-6 md:p-8 flex gap-4">
-            <AlertTriangle className="w-5 h-5 text-[#E94E1B] shrink-0 mt-0.5" strokeWidth={2} />
+          <div className="rounded-2xl border border-[#1074FE]/30 bg-[#1074FE]/5 p-6 md:p-8 flex gap-4">
+            <AlertTriangle className="w-5 h-5 text-[#1074FE] shrink-0 mt-0.5" strokeWidth={2} />
             <div>
               <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
                 A note on leverage
@@ -117,7 +117,7 @@ export default function CFDsPage() {
                 you can lose more than your initial deposit if your account drops below
                 the required margin. CFDs are not suitable for every investor — please
                 read the full{' '}
-                <Link href="/risk" className="underline font-semibold text-[#E94E1B]">
+                <Link href="/risk" className="underline font-semibold text-[#1074FE]">
                   Risk Disclosure
                 </Link>{' '}
                 before opening a position.
@@ -130,12 +130,12 @@ export default function CFDsPage() {
       <section className="bg-white py-12 md:py-16">
         <div className="max-w-3xl mx-auto px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-extrabold uppercase tracking-tight">
-            Take a position. <span className="text-[#E94E1B]">Any direction.</span>
+            Take a position. <span className="text-[#1074FE]">Any direction.</span>
           </h2>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/auth/register"
-              className="inline-flex items-center gap-2 bg-[#E94E1B] hover:bg-[#C73E11] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
+              className="inline-flex items-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
             >
               Open your account
             </Link>

@@ -1,7 +1,7 @@
 import { Users, Target, Shield, Globe } from 'lucide-react'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
-export const metadata = { title: 'About Us — SwissCresta' }
+export const metadata = { title: 'About Us — SetupFX' }
 
 export default function AboutPage() {
   return (
@@ -10,8 +10,8 @@ export default function AboutPage() {
       <section className="bg-gradient-to-b from-white to-gray-50 pt-16 pb-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-            About SwissCresta<br />
-            <span className="text-[#E94E1B]">Revolutionizing Global Trading</span>
+            About SetupFX<br />
+            <span className="text-[#1074FE]">Revolutionizing Global Trading</span>
           </h1>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             We're on a mission to democratize trading by providing everyone with institutional-grade tools, transparent pricing, and complete financial freedom.
@@ -27,10 +27,10 @@ export default function AboutPage() {
           </div>
           <div className="prose prose-lg max-w-none space-y-6">
             <p className="text-gray-500 leading-relaxed">
-              SwissCresta was founded with a simple belief: trading should be accessible, transparent, and fair for everyone. We saw traders struggling with high fees, slow withdrawals, and limited access to global markets. We decided to change that.
+              SetupFX was founded with a simple belief: trading should be accessible, transparent, and fair for everyone. We saw traders struggling with high fees, slow withdrawals, and limited access to global markets. We decided to change that.
             </p>
             <p className="text-gray-500 leading-relaxed">
-              Today, SwissCresta serves thousands of traders across 150+ countries, providing them with the tools and freedom they deserve. We're not just a broker—we're a movement toward financial independence.
+              Today, SetupFX serves thousands of traders across 150+ countries, providing them with the tools and freedom they deserve. We're not just a broker—we're a movement toward financial independence.
             </p>
             <p className="text-gray-500 leading-relaxed">
               Our commitment is simple: provide the best trading experience with zero compromises on security, speed, or transparency.
@@ -56,8 +56,8 @@ export default function AboutPage() {
               { icon: Globe, title: 'Global Access', desc: 'Making institutional-grade trading available to everyone, everywhere.' },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="text-center">
-                <div className="w-16 h-16 bg-[#FCE6DD] rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <Icon className="w-8 h-8 text-[#E94E1B]" />
+                <div className="w-16 h-16 bg-[#E8F1FF] rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Icon className="w-8 h-8 text-[#1074FE]" />
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
                 <p className="text-gray-500 text-sm">{desc}</p>
@@ -81,7 +81,7 @@ export default function AboutPage() {
               { value: '99.9%', label: 'Uptime' },
             ].map(({ value, label }) => (
               <div key={label} className="text-center">
-                <div className="text-4xl font-extrabold text-[#E94E1B] mb-2">{value}</div>
+                <div className="text-4xl font-extrabold text-[#1074FE] mb-2">{value}</div>
                 <div className="text-gray-500">{label}</div>
               </div>
             ))}

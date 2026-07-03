@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SwissCresta Admin',
-  description: 'SwissCresta broker administration panel',
+  title: 'SetupFX Admin',
+  description: 'SetupFX broker administration panel',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

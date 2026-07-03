@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/nextjs'
 
 /**
  * Marketing-scope error boundary. Light theme matches the
- * SwissCresta landing chrome (LandingHeader / LandingFooter render
+ * SetupFX landing chrome (LandingHeader / LandingFooter render
  * around this from the layout). Trader-app errors are caught by
  * src/app/error.tsx instead.
  */
@@ -39,14 +39,14 @@ export default function LandingError({
           <button
             onClick={reset}
             type="button"
-            className="inline-flex items-center justify-center gap-2 bg-[#E94E1B] hover:bg-[#C73E11] text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Try again
           </button>
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 border border-gray-300 hover:border-[#E94E1B] text-gray-900 font-medium px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 border border-gray-300 hover:border-[#1074FE] text-gray-900 font-medium px-6 py-3 rounded-lg transition-colors"
           >
             <Home className="w-4 h-4" />
             Home

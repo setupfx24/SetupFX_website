@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'More — SwissCresta',
+  title: 'More — SetupFX',
   description: 'Additional tools, settings, and account features.',
 }
 

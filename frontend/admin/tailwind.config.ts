@@ -28,16 +28,16 @@ const config: Config = {
           tertiary: 'rgb(var(--c-text-tertiary) / <alpha-value>)',
           inverse: 'rgb(var(--c-text-inverse) / <alpha-value>)',
         },
-        /* SwissCresta brand orange. Admin generic UI accents resolve
+        /* SetupFX brand orange. Admin generic UI accents resolve
          * through `accent.*`, and `buy` was historically used as a
          * generic primary too — so it's repointed to the brand orange
          * to keep every button/icon on-theme (sell stays red). */
         buy: {
-          DEFAULT: '#E94E1B',
-          light: '#FB7B4E',
-          dark: '#C73E11',
-          bg: 'rgba(233,78,27,0.08)',
-          glow: 'rgba(233,78,27,0.25)',
+          DEFAULT: '#1074FE',
+          light: '#4D95FF',
+          dark: '#0856C5',
+          bg: 'rgba(16,116,254,0.08)',
+          glow: 'rgba(16,116,254,0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -45,7 +45,7 @@ const config: Config = {
           dark: '#dc2626',
           bg: 'rgba(239,68,68,0.07)',
         },
-        accent: { DEFAULT: '#E94E1B', light: '#FB7B4E', dark: '#C73E11' },
+        accent: { DEFAULT: '#1074FE', light: '#4D95FF', dark: '#0856C5' },
         success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',

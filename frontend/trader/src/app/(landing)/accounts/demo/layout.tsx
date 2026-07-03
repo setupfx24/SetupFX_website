@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Demo Account — SwissCresta',
+  title: 'Demo Account — SetupFX',
   description: 'Practice trading with $100,000 in virtual funds. Zero risk, real markets.',
 }
 

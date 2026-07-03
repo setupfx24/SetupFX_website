@@ -1,6 +1,6 @@
 export type Lang = 'fr' | 'en'
 
-export const LANG_STORAGE_KEY = 'swisscresta-lang'
+export const LANG_STORAGE_KEY = 'setupfx-lang'
 
 type DictNode = string | { [key: string]: DictNode }
 
@@ -32,9 +32,9 @@ export const dict: Dict = {
       ctaDemo: 'Essayer en démo',
     },
     bank: {
-      titleA: 'SwissCresta Banking,',
+      titleA: 'SetupFX Banking,',
       titleB: 'Débancarisé.',
-      lead: 'Votre argent mérite mieux qu’un coffre poussiéreux. SwissCresta vous offre la précision de la banque suisse fusionnée avec la vitesse du trading moderne — pas de costumes obligatoires, pas de frais cachés tolérés.',
+      lead: 'Votre argent mérite mieux qu’un coffre poussiéreux. SetupFX vous offre la précision de la banque suisse fusionnée avec la vitesse du trading moderne — pas de costumes obligatoires, pas de frais cachés tolérés.',
       sub: 'Tradez le Forex. Conservez la crypto. Détenez des titres. Le tout depuis un seul compte, adossé à la régulation suisse et conçu pour ceux qui veulent vraiment comprendre leur argent.',
       eyebrow: 'Ce que vous pouvez trader',
       cards: {
@@ -96,7 +96,7 @@ export const dict: Dict = {
       eyebrow: 'Qui sommes-nous',
       titleA: 'Banque suisse. Cotée en bourse.',
       titleB: 'Zéro austérité.',
-      lead: 'Nous avons fait l’ingénierie inverse du système bancaire pour que vous n’ayez pas à le combattre. SwissCresta vous offre la stabilité de qualité institutionnelle avec l’agilité d’une fintech — car les deux n’ont jamais été ennemis.',
+      lead: 'Nous avons fait l’ingénierie inverse du système bancaire pour que vous n’ayez pas à le combattre. SetupFX vous offre la stabilité de qualité institutionnelle avec l’agilité d’une fintech — car les deux n’ont jamais été ennemis.',
       learnMore: 'En savoir plus',
     },
     follow: {
@@ -114,12 +114,12 @@ export const dict: Dict = {
     disclaimer: {
       title: 'Avis sur les risques',
       p1: 'Le trading de produits à effet de levier — y compris le change, les métaux précieux au comptant et les contrats sur la différence (CFD) — comporte un risque de perte significatif. L’effet de levier amplifie aussi bien les gains que les pertes, et ce type de trading peut ne pas convenir à tous les investisseurs. Vous pouvez perdre plus que votre dépôt initial et être amené à effectuer des versements supplémentaires si le solde de votre compte tombe sous la marge requise. Les positions ouvertes à effet de levier engagent également des frais de roll-over, de financement et autres frais applicables.',
-      p2: 'Avant d’ouvrir un compte chez SwissCresta, évaluez attentivement votre niveau d’expérience, vos objectifs d’investissement, vos ressources financières, vos revenus et votre tolérance personnelle au risque. Les pertes peuvent théoriquement être illimitées. Les performances passées ne préjugent pas des résultats futurs. Les données de marché présentées le sont à titre informatif uniquement, provenant de tiers réputés fiables ; SwissCresta n’en garantit pas l’exactitude et se réserve le droit de différer ou d’interrompre la diffusion sans préavis. Les clôtures de position sont exécutées sous forme d’ordres au marché au cours acheteur ou vendeur en vigueur ; un slippage peut survenir, notamment lors de fortes volatilités.',
+      p2: 'Avant d’ouvrir un compte chez SetupFX, évaluez attentivement votre niveau d’expérience, vos objectifs d’investissement, vos ressources financières, vos revenus et votre tolérance personnelle au risque. Les pertes peuvent théoriquement être illimitées. Les performances passées ne préjugent pas des résultats futurs. Les données de marché présentées le sont à titre informatif uniquement, provenant de tiers réputés fiables ; SetupFX n’en garantit pas l’exactitude et se réserve le droit de différer ou d’interrompre la diffusion sans préavis. Les clôtures de position sont exécutées sous forme d’ordres au marché au cours acheteur ou vendeur en vigueur ; un slippage peut survenir, notamment lors de fortes volatilités.',
       p3: 'Si vous n’êtes pas sûr que le trading à effet de levier convienne à votre situation, veuillez consulter un conseiller financier indépendant avant de poursuivre. Pour tous les détails sur l’effet de levier, les frais, les exigences de marge et les coûts de trading, référez-vous à notre documentation officielle.',
       p4: '',
       hq: 'Siège social :',
       hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
-      copyright: '© 2026 SwissCresta. Tous droits réservés.',
+      copyright: '© 2026 SetupFX. Tous droits réservés.',
       links: {
         privacy: 'Politique de confidentialité',
         terms: 'Conditions d’utilisation',
@@ -150,9 +150,9 @@ export const dict: Dict = {
       ctaDemo: 'Try a demo',
     },
     bank: {
-      titleA: 'SwissCresta Banking,',
+      titleA: 'SetupFX Banking,',
       titleB: 'Unbanked.',
-      lead: 'Your money deserves more than a dusty vault. SwissCresta brings you the precision of Swiss banking fused with the speed of modern trading — no suits required, no hidden fees tolerated.',
+      lead: 'Your money deserves more than a dusty vault. SetupFX brings you the precision of Swiss banking fused with the speed of modern trading — no suits required, no hidden fees tolerated.',
       sub: 'Trade Forex. Hold Crypto. Own Securities. All from one account, backed by Swiss regulation and built for people who actually want to understand their money.',
       eyebrow: 'What you can trade',
       cards: {
@@ -214,7 +214,7 @@ export const dict: Dict = {
       eyebrow: 'Who we are',
       titleA: 'Swiss bank. Publicly listed.',
       titleB: 'Zero stuffiness.',
-      lead: 'We reverse-engineered the banking system so you don’t have to fight it. SwissCresta gives you institutional-grade stability with the agility of a fintech — because the two were never meant to be enemies.',
+      lead: 'We reverse-engineered the banking system so you don’t have to fight it. SetupFX gives you institutional-grade stability with the agility of a fintech — because the two were never meant to be enemies.',
       learnMore: 'Learn more',
     },
     follow: {
@@ -232,12 +232,12 @@ export const dict: Dict = {
     disclaimer: {
       title: 'Risk Disclosure',
       p1: 'Trading leveraged products — including foreign exchange, spot precious metals, and Contracts for Difference (CFDs) — carries a significant risk of loss. Leverage amplifies both gains and losses, and this type of trading may not be suitable for all investors. You could lose more than your initial deposit, and you may be required to make additional payments if your account balance falls below the required margin. Open leveraged positions also incur rolling, financing, and other applicable fees.',
-      p2: 'Before opening an account with SwissCresta, carefully assess your level of experience, investment objectives, financial resources, income, and personal risk tolerance. Losses can theoretically be unlimited. Past performance is not indicative of future results. Market data displayed on this site is provided for informational purposes only, sourced from third parties believed to be reliable; SwissCresta does not guarantee its accuracy and reserves the right to delay or interrupt data delivery without prior notice. Position closures are executed as market orders at the prevailing bid or ask price; slippage may occur, particularly during periods of high volatility.',
+      p2: 'Before opening an account with SetupFX, carefully assess your level of experience, investment objectives, financial resources, income, and personal risk tolerance. Losses can theoretically be unlimited. Past performance is not indicative of future results. Market data displayed on this site is provided for informational purposes only, sourced from third parties believed to be reliable; SetupFX does not guarantee its accuracy and reserves the right to delay or interrupt data delivery without prior notice. Position closures are executed as market orders at the prevailing bid or ask price; slippage may occur, particularly during periods of high volatility.',
       p3: 'If you are unsure whether leveraged trading is appropriate for your situation, please consult an independent financial adviser before proceeding. For full details on leverage, fees, margin requirements, and trading costs, refer to our official documentation.',
       p4: '',
       hq: 'Headquarters:',
       hqAddr: 'Rue de la Tour-de-l’Île 4, 1204 Genève',
-      copyright: '© 2026 SwissCresta. All rights reserved.',
+      copyright: '© 2026 SetupFX. All rights reserved.',
       links: {
         privacy: 'Privacy Policy',
         terms: 'Terms of Service',

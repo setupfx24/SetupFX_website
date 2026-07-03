@@ -1,7 +1,7 @@
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
-export const metadata = { title: 'Contact Us — SwissCresta' }
+export const metadata = { title: 'Contact Us — SetupFX' }
 
 export default function ContactPage() {
   return (
@@ -11,7 +11,7 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
             Get in Touch<br />
-            <span className="text-[#E94E1B]">We're Here to Help</span>
+            <span className="text-[#1074FE]">We're Here to Help</span>
           </h1>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
             Have questions? Our support team is available 24/7 to assist you.
@@ -25,15 +25,15 @@ export default function ContactPage() {
           <div className="grid md:grid-cols-3 gap-8 mb-16">
             {[
               { icon: Phone, title: 'Phone', value: '+33 7 59 15 99 87', desc: 'Available 24/7' },
-              { icon: Mail, title: 'Email', value: 'support@swisscresta.com', desc: 'Response within 1 hour' },
+              { icon: Mail, title: 'Email', value: 'support@setupfx24.com', desc: 'Response within 1 hour' },
               { icon: MessageCircle, title: 'Live Chat', value: 'Chat with us', desc: 'Instant support' },
             ].map(({ icon: Icon, title, value, desc }) => (
               <div key={title} className="bg-gray-50 rounded-xl p-8 border border-gray-200 text-center hover:shadow-md transition-shadow">
-                <div className="w-14 h-14 bg-[#FCE6DD] rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <Icon className="w-7 h-7 text-[#E94E1B]" />
+                <div className="w-14 h-14 bg-[#E8F1FF] rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Icon className="w-7 h-7 text-[#1074FE]" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-                <p className="text-[#E94E1B] font-semibold mb-2">{value}</p>
+                <p className="text-[#1074FE] font-semibold mb-2">{value}</p>
                 <p className="text-gray-500 text-sm">{desc}</p>
               </div>
             ))}
@@ -48,7 +48,7 @@ export default function ContactPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E94E1B] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1074FE] focus:border-transparent"
                     placeholder="John"
                   />
                 </div>
@@ -56,7 +56,7 @@ export default function ContactPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E94E1B] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1074FE] focus:border-transparent"
                     placeholder="Doe"
                   />
                 </div>
@@ -65,13 +65,13 @@ export default function ContactPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E94E1B] focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1074FE] focus:border-transparent"
                   placeholder="john@example.com"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E94E1B] focus:border-transparent">
+                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1074FE] focus:border-transparent">
                   <option>General Inquiry</option>
                   <option>Technical Support</option>
                   <option>Account Issues</option>
@@ -82,13 +82,13 @@ export default function ContactPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                 <textarea
                   rows={5}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#E94E1B] focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1074FE] focus:border-transparent"
                   placeholder="How can we help you?"
                 />
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#E94E1B] hover:bg-[#C73E11] text-white font-semibold py-3 rounded-lg transition-colors"
+                className="w-full bg-[#1074FE] hover:bg-[#0856C5] text-white font-semibold py-3 rounded-lg transition-colors"
               >
                 Send Message
               </button>

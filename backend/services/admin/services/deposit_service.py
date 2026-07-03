@@ -222,7 +222,7 @@ async def set_payment_link(
         from packages.common.src.email_templates.base import render_layout
         from packages.common.src.config import get_settings as _gs
         if smtp_configured() and user_row and user_row.email:
-            trader_app_url = (_gs().TRADER_APP_URL or "https://trade.swisscresta.com").rstrip("/")
+            trader_app_url = (_gs().TRADER_APP_URL or "https://trade.setupfx24.com").rstrip("/")
             body_html = f"""
             <p>We've reviewed your deposit request and attached a payment link below.
             Click through to complete payment with your bank or card. Once you've paid,
@@ -241,7 +241,7 @@ async def set_payment_link(
             )
             fire_and_forget(send_email(
                 user_row.email,
-                "Your SwissCresta deposit payment link",
+                "Your SetupFX deposit payment link",
                 html,
             ))
     except Exception as e:  # pragma: no cover - email path is best-effort
@@ -409,7 +409,7 @@ async def approve_deposit(
         )
         from packages.common.src.config import get_settings as _get_settings
         if smtp_configured() and user_row.email:
-            app_url = (_get_settings().TRADER_APP_URL or "https://trade.swisscresta.com")
+            app_url = (_get_settings().TRADER_APP_URL or "https://trade.setupfx24.com")
             subject, html, text = render_deposit_confirmed(
                 first_name=user_row.first_name,
                 amount=deposit.amount,
@@ -589,7 +589,7 @@ async def approve_withdrawal(
                 method=withdrawal.method or "Manual",
                 destination=destination_str,
                 request_id=str(withdrawal.id),
-                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.setupfx24.com"),
             )
             fire_and_forget(send_email(u.email, subject, html, text=text))
     except Exception as _e:
@@ -705,7 +705,7 @@ async def reject_withdrawal(
                 currency="USD",
                 reason=reason_str or None,
                 request_id=str(withdrawal.id),
-                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.swisscresta.com"),
+                trader_app_url=(_gs().TRADER_APP_URL or "https://trade.setupfx24.com"),
             )
             fire_and_forget(send_email(u.email, subject, html, text=text))
     except Exception as _e:

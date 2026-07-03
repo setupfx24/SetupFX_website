@@ -70,7 +70,7 @@ export async function downloadWalletStatementPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('SwissCresta', margin, 7);
+  doc.text('SetupFX', margin, 7);
 
   doc.setTextColor(30, 30, 30);
   doc.setFontSize(16);
@@ -128,9 +128,9 @@ export async function downloadWalletStatementPdf(
       doc.setFontSize(7);
       doc.setTextColor(140, 140, 140);
       doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageW - margin - 24, pageH - 6);
-      doc.text('SwissCresta — for information only. Not tax or legal advice.', margin, pageH - 6);
+      doc.text('SetupFX — for information only. Not tax or legal advice.', margin, pageH - 6);
     },
   });
 
-  doc.save(`swisscresta-wallet-statement-${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`setupfx-wallet-statement-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

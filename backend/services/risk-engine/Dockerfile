@@ -13,8 +13,8 @@ COPY backend/services/risk-engine /app/services/risk_engine
 ENV PYTHONPATH=/app
 
 # H8 — drop root.
-RUN groupadd --system --gid 1001 swisscresta \
- && useradd  --system --uid 1001 --gid swisscresta --shell /usr/sbin/nologin swisscresta
-USER swisscresta
+RUN groupadd --system --gid 1001 setupfx \
+ && useradd  --system --uid 1001 --gid setupfx --shell /usr/sbin/nologin setupfx
+USER setupfx
 
 CMD ["python", "-m", "services.risk_engine.src.main"]

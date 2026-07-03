@@ -11,7 +11,7 @@ export default function QuoteSection() {
 
           <div className="lg:col-span-7">
             <blockquote className="text-2xl md:text-3xl lg:text-4xl font-extrabold uppercase tracking-tight leading-[1.1] text-gray-900">
-              &quot;SwissCresta combines a unique multi-asset class trading platform with the
+              &quot;SetupFX combines a unique multi-asset class trading platform with the
               innovative power of a fintech company based on a solid Swiss bank.&quot;
             </blockquote>
             <p className="mt-6 text-sm text-gray-600">Marc Bürki, Co-founder and CEO</p>

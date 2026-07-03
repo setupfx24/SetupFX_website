@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Standard Account — SwissCresta',
+  title: 'Standard Account — SetupFX',
   description: 'Commission-free trading with competitive spreads. Perfect for new traders.',
 }
 

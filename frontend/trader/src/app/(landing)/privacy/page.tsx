@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy — SwissCresta' }
+export const metadata = { title: 'Privacy Policy — SetupFX' }
 
 export default function PrivacyPage() {
   return (
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
           <Section title="1. Introduction">
-            SwissCresta ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
+            SetupFX ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our trading platform.
           </Section>
 
           <Section title="2. Information We Collect">
@@ -101,7 +101,7 @@ export default function PrivacyPage() {
 
           <Section title="9. Contact Us">
             If you have questions about this Privacy Policy or our privacy practices, please contact us:
-            <ContactBox team="Privacy Team" email="privacy@swisscresta.com" />
+            <ContactBox team="Privacy Team" email="privacy@setupfx24.com" />
           </Section>
         </div>
       </section>
@@ -138,11 +138,11 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">SwissCresta {team}</p>
+      <p className="font-semibold text-gray-900">SetupFX {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">
         Phone:{' '}
-        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#E94E1B] transition-colors">
+        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#1074FE] transition-colors">
           +33 7 59 15 99 87
         </a>
       </p>

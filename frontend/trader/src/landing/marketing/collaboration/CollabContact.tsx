@@ -21,7 +21,7 @@ export default function CollabContact() {
         <h2 className={HEADING_SECTION}>Get in touch</h2>
         <p className="mt-4 text-gray-600 max-w-xl">
           We are eager to know how we can further customise our solutions to your needs. Choose
-          your SwissCresta office and reach out now!
+          your SetupFX office and reach out now!
         </p>
         <div className="mt-3">
           <ExploreLink>View all offices</ExploreLink>
@@ -47,11 +47,11 @@ export default function CollabContact() {
         <div className="mt-6 flex justify-end items-center gap-3">
           <span className="flex gap-1.5">
             <span className="w-2 h-2 rounded-full bg-gray-200" />
-            <span className="w-2 h-2 rounded-full bg-[#E94E1B]" />
+            <span className="w-2 h-2 rounded-full bg-[#1074FE]" />
           </span>
           <button
             type="button"
-            className="w-9 h-9 rounded-full bg-[#E94E1B] text-white flex items-center justify-center hover:bg-[#E94E1B] transition-colors"
+            className="w-9 h-9 rounded-full bg-[#1074FE] text-white flex items-center justify-center hover:bg-[#1074FE] transition-colors"
             aria-label="Next"
           >
             <ChevronRight className="w-4 h-4" strokeWidth={2.5} />

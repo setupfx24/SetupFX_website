@@ -6,7 +6,7 @@ from .base import render_layout
 def render_password_reset(
     *,
     code: str,
-    app_name: str = "SwissCresta",
+    app_name: str = "SetupFX",
     expires_in_minutes: int = 15,
 ) -> tuple[str, str, str]:
     subject = f"Your {app_name} password reset code"

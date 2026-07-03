@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'IB Management — SwissCresta',
+  title: 'IB Management — SetupFX',
   description: 'Introducing-broker portal with multi-tier commissions and real-time reporting.',
 }
 

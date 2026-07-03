@@ -18,13 +18,13 @@ const BOTTOM_LINKS: { id: 'privacy' | 'terms' | 'risk' | 'vuln'; href: string }[
 export default function Disclaimer({ minimal = false }: DisclaimerProps) {
   const { t } = useLang()
   return (
-    <footer className="bg-[#E94E1B] text-white/85 text-xs">
+    <footer className="bg-[#1074FE] text-white/85 text-xs">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-12 md:py-16">
-        <Link href="/" aria-label="SwissCresta home" className="inline-block mb-8">
+        <Link href="/" aria-label="SetupFX home" className="inline-block mb-8">
           <span className="inline-flex items-center bg-white rounded-xl px-4 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.12)]">
             <Image
-              src="/marketing/swisscresta-logo.png"
-              alt="SwissCresta"
+              src="/marketing/setupfx-logo.png"
+              alt="SetupFX"
               width={1947}
               height={361}
               priority={false}

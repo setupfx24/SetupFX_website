@@ -19,17 +19,17 @@ export default function TalentPerseverance() {
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/30 to-transparent" />
             <div className="absolute left-6 bottom-6 right-6 text-white">
               <h3 className="text-sm font-bold uppercase">
-                The beginning of SwissCresta, the end of banking as we know it
+                The beginning of SetupFX, the end of banking as we know it
               </h3>
               <p className="mt-2 text-xs text-white/85 leading-relaxed max-w-md">
-                At the founding of SwissCresta, a group of computer experts set out to build a
+                At the founding of SetupFX, a group of computer experts set out to build a
                 pioneering trade execution offer that would later empower investors and high
                 engagement to its clients.
               </p>
             </div>
           </div>
 
-          <div className="bg-[#E94E1B] text-white rounded-2xl p-6 md:p-8 flex flex-col gap-4">
+          <div className="bg-[#1074FE] text-white rounded-2xl p-6 md:p-8 flex flex-col gap-4">
             <ImagePlaceholder
               label="Article"
               rounded="rounded-md"
@@ -39,7 +39,7 @@ export default function TalentPerseverance() {
               Profiled among the most exciting Swiss companies
             </h3>
             <p className="text-sm text-white/90 leading-relaxed">
-              Get the inside story of SwissCresta and our CEO, Marc Bürki, in the latest chapter
+              Get the inside story of SetupFX and our CEO, Marc Bürki, in the latest chapter
               of the book &quot;Die 100 spannendsten Schweizer Unternehmen&quot; by Peter Müllenbner.
             </p>
             <div className="mt-auto">

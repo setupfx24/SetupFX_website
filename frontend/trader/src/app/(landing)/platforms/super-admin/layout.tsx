@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Super Admin Console — SwissCresta',
+  title: 'Super Admin Console — SetupFX',
   description: 'Operator dashboard for trade ops, risk management, and user administration.',
 }
 

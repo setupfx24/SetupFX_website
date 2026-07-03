@@ -3,7 +3,7 @@ import ScrollReveal from '@/landing/components/animations/ScrollReveal'
 import CtFaqList from '@/landing/pages/copy-trading/CtFaqList'
 
 const faq = [
-  { q: 'Does SwissCresta hold my funds?',     a: 'No. Funds are allocated to a system-controlled contract environment.' },
+  { q: 'Does SetupFX hold my funds?',     a: 'No. Funds are allocated to a system-controlled contract environment.' },
   { q: 'Can withdrawals be delayed?',      a: 'Withdrawals follow system rules and are not manually controlled.' },
   { q: 'Who controls trade execution?',    a: 'Execution is based on predefined system logic.' },
   { q: 'Is this a decentralized system?',  a: 'It is a structured protocol combining system automation with trading infrastructure.' },

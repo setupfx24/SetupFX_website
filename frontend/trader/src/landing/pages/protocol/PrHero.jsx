@@ -16,7 +16,7 @@ export default function PrHero() {
         className="absolute inset-0 z-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(233,78,27,0.10) 0%, rgba(233,78,27,0) 60%)',
+            'linear-gradient(180deg, rgba(8,10,14,0.55) 0%, rgba(8,10,14,0.78) 100%), radial-gradient(60% 60% at 80% 25%, rgba(16,116,254,0.10) 0%, rgba(16,116,254,0) 60%)',
         }}
       />
       <div className="fx-container relative z-10 w-full pt-28 md:pt-32 lg:pt-36 pb-8 md:pb-12">
@@ -30,7 +30,7 @@ export default function PrHero() {
               className="mt-6 max-w-xl text-base md:text-lg leading-relaxed fx-fade-up fx-fade-up-d2"
               style={{ color: 'var(--fx-text-2)' }}
             >
-              SwissCresta does not hold your funds. Your trades operate through a structured
+              SetupFX does not hold your funds. Your trades operate through a structured
               smart contract system.
             </p>
             <p

@@ -14,7 +14,7 @@ export default function IntroducingBrokers() {
               Growing your business means serving your clients
             </h2>
             <p className="mt-5 text-gray-600 leading-relaxed max-w-xl">
-              Build your client base and boost your revenue with SwissCresta&apos;s swift,
+              Build your client base and boost your revenue with SetupFX&apos;s swift,
               tailored solutions for your business. In exchange, your clients get unrivalled
               access to financial products and platforms that match the quality they&apos;re used
               to.

@@ -17,7 +17,7 @@ export default function CopyTradingPage() {
       <CtWhat />
       <CtHow />
       <FxPageBanner
-        alt="SwissCresta Copy Trading"
+        alt="SetupFX Copy Trading"
         tagline="Copy proven traders."
         taglineSub="Mirror verified strategies automatically — at your size, on your terms."
       />
@@ -25,7 +25,7 @@ export default function CopyTradingPage() {
       <CtProfit />
       <CtFee />
       <FxPageBanner
-        alt="SwissCresta Copy Trading"
+        alt="SetupFX Copy Trading"
         tone="elev"
         tagline="Performance earns trust."
         taglineSub="Prove your results and become a verified Master Trader."

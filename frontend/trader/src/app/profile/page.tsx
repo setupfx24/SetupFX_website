@@ -26,7 +26,7 @@ interface Profile {
   // Onboarding flag from /profile (mirror /auth/me) — drives the
   // EmailVerificationCard's "verified" badge and the Change-Email
   // button. `is_wallet_placeholder` removed with the wallet-integration
-  // purge: no SIWE flow means no @wallet.swisscresta.local placeholder
+  // purge: no SIWE flow means no @wallet.setupfx.local placeholder
   // emails any more.
   email_verified?: boolean;
 }
@@ -258,7 +258,7 @@ export default function ProfilePage() {
             <div className="relative z-10 px-4 sm:px-6 py-5 sm:py-7">
               <h1 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight">Settings</h1>
               <p className="text-sm text-text-secondary mt-1 max-w-2xl">
-                Profile, security, notifications, and active sessions — aligned with SwissCresta.
+                Profile, security, notifications, and active sessions — aligned with SetupFX.
               </p>
             </div>
           </section>
@@ -467,16 +467,16 @@ export default function ProfilePage() {
           <div className="max-w-lg mx-auto space-y-6">
             <div className="rounded-xl border border-border-primary bg-card p-5 sm:p-6 noise-texture">
               <h3 className="text-base font-semibold text-text-primary mb-1">Theme</h3>
-              <p className="text-xs text-text-tertiary mb-5">Choose how SwissCresta looks on this device.</p>
+              <p className="text-xs text-text-tertiary mb-5">Choose how SetupFX looks on this device.</p>
 
               <div className="grid grid-cols-2 gap-3">
                 {([
                   { id: 'light' as const, label: 'Light', icon: Sun,
-                    swatch: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #FCE6DD 100%)',
-                    ring: '#E94E1B' },
+                    swatch: 'linear-gradient(135deg, #ffffff 0%, #ffffff 55%, #E8F1FF 100%)',
+                    ring: '#1074FE' },
                   { id: 'dark' as const, label: 'Dark', icon: Moon,
                     swatch: 'radial-gradient(120% 90% at 50% 0%, #3a1c08 0%, #1a0d04 45%, #0a0a0a 100%)',
-                    ring: '#E94E1B' },
+                    ring: '#1074FE' },
                 ]).map((opt) => {
                   const Icon = opt.icon;
                   const active = theme === opt.id;

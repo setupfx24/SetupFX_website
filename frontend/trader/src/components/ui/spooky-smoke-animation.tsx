@@ -160,7 +160,7 @@ interface SmokeBackgroundProps {
 }
 
 export const SmokeBackground: React.FC<SmokeBackgroundProps> = ({
-  smokeColor = '#E94E1B',
+  smokeColor = '#1074FE',
   className = 'w-full h-full block',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

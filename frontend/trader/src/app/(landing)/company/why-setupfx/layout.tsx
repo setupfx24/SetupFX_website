@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Why SwissCresta — Professional Trading Platform',
+  title: 'Why SetupFX — Professional Trading Platform',
   description: 'Swiss-built precision-engineered trading platform with institutional-grade infrastructure.',
 }
 

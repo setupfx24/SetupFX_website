@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export const metadata = {
-  title: 'Copy Trading — SwissCresta',
+  title: 'Copy Trading — SetupFX',
   description: 'Follow proven traders and auto-replicate their positions in real-time.',
 }
 

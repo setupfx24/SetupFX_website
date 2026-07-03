@@ -16,7 +16,7 @@ const navItems = [
 ]
 
 /* Two-mode palette. Layout passes `theme="light"` on the new
- * SwissCresta-branded marketing pages (canvas #FFFFFF) and `theme="dark"`
+ * SetupFX-branded marketing pages (canvas #FFFFFF) and `theme="dark"`
  * on legacy dark sections (canvas #08090b). Keeps a single Navbar
  * component instead of swapping in/out two different chrome systems. */
 const THEMES = {
@@ -31,13 +31,13 @@ const THEMES = {
     accent:      'var(--fx-gold-light)',
     accentSoft:  'var(--fx-gold-soft)',
     brandLeft:   '#FFFFFF',                    // "Swiss"
-    brandRight:  '#E94E1B',                    // "Cresta"
+    brandRight:  '#1074FE',                    // "Cresta"
     dropdownBg:  'rgba(16,17,20,0.96)',
     iconBg:      'rgba(255,255,255,0.04)',
     hoverBg:     'rgba(255,255,255,0.04)',
     ctaGhostText:    '#F5F5F5',
     ctaGhostBorder:  'rgba(255,255,255,0.18)',
-    ctaPrimaryBg:    '#E94E1B',
+    ctaPrimaryBg:    '#1074FE',
     ctaPrimaryText:  '#FFFFFF',
   },
   light: {
@@ -108,7 +108,7 @@ export default function Navbar({ theme = 'dark' }) {
       <div className="fx-container">
         <div className="flex items-center justify-between h-16 md:h-[72px]">
 
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" aria-label="SwissCresta home">
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" aria-label="SetupFX home">
             <svg
               viewBox="0 0 32 32"
               aria-hidden="true"

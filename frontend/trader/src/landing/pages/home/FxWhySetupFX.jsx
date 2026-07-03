@@ -60,7 +60,7 @@ export default function HomeWhyUs() {
                 className="text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.16em] mb-3"
                 style={{ color: '#A5B4FC' }}
               >
-                Why SwissCresta
+                Why SetupFX
               </p>
               <h2 className="text-3xl md:text-4xl lg:text-[44px] font-bold text-white leading-[1.1] mb-6">
                 Built like a Swiss bank.
@@ -72,12 +72,12 @@ export default function HomeWhyUs() {
                 style={{ color: 'var(--fx-text-2)' }}
               >
                 Most brokers force a trade-off between low cost and
-                operational rigour. SwissCresta is engineered to give you
+                operational rigour. SetupFX is engineered to give you
                 both: institutional-grade safety on the back-end, tight
                 spreads and direct execution on the front.
               </p>
               <Link
-                to="/company/why-swisscresta"
+                to="/company/why-setupfx"
                 className="inline-flex items-center gap-2 text-sm font-medium hover:gap-3 transition-all"
                 style={{ color: '#A5B4FC' }}
               >
@@ -102,8 +102,8 @@ export default function HomeWhyUs() {
                     <div
                       className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl mt-0.5 transition-colors"
                       style={{
-                        background: 'rgba(233,78,27,0.10)',
-                        border: '1px solid rgba(233,78,27,0.25)',
+                        background: 'rgba(16,116,254,0.10)',
+                        border: '1px solid rgba(16,116,254,0.25)',
                       }}
                     >
                       <Icon size={20} style={{ color: '#A5B4FC' }} />

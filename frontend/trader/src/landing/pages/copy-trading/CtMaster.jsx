@@ -36,7 +36,7 @@ const faq = [
     a: 'To ensure followers copy only reliable and consistent traders.',
   },
   {
-    q: 'Can I apply if Iâ€™m new to SwissCresta?',
+    q: 'Can I apply if Iâ€™m new to SetupFX?',
     a: 'Yes, via verified external performance.',
   },
   {
@@ -63,9 +63,9 @@ export default function CtMaster() {
               className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(233,78,27,0.10) 0%, rgba(233,78,27,0.02) 60%), var(--fx-bg-elev)',
-                border: '1px solid rgba(233,78,27,0.35)',
-                boxShadow: '0 24px 60px -28px rgba(233,78,27,0.35)',
+                  'linear-gradient(180deg, rgba(16,116,254,0.10) 0%, rgba(16,116,254,0.02) 60%), var(--fx-bg-elev)',
+                border: '1px solid rgba(16,116,254,0.35)',
+                boxShadow: '0 24px 60px -28px rgba(16,116,254,0.35)',
               }}
             >
               <div className="flex items-center justify-between mb-5">
@@ -88,9 +88,9 @@ export default function CtMaster() {
                 <span
                   className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
                   style={{
-                    background: 'rgba(233,78,27,0.15)',
+                    background: 'rgba(16,116,254,0.15)',
                     color: 'var(--fx-gold-light)',
-                    border: '1px solid rgba(233,78,27,0.35)',
+                    border: '1px solid rgba(16,116,254,0.35)',
                   }}
                 >
                   Verification
@@ -120,7 +120,7 @@ export default function CtMaster() {
             </div>
           </ScrollReveal>
 
-          {/* Qualify via SwissCresta */}
+          {/* Qualify via SetupFX */}
           <ScrollReveal variant="fadeUp" delay={0.1}>
             <div
               className="relative h-full rounded-2xl p-7 md:p-8 overflow-hidden"
@@ -149,7 +149,7 @@ export default function CtMaster() {
                       Path 2 Â· For Platform Users
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
-                      Qualify Through SwissCresta
+                      Qualify Through SetupFX
                     </h3>
                   </div>
                 </div>

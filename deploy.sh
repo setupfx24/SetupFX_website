@@ -9,7 +9,7 @@
 #   ./deploy.sh
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/opt/swisscresta}"
+REPO_DIR="${REPO_DIR:-/opt/setupfx}"
 COMPOSE="docker compose -f $REPO_DIR/docker-compose.yml -f $REPO_DIR/docker-compose.prod.yml"
 
 cd "$REPO_DIR"
@@ -72,7 +72,7 @@ fi
 
 if [ $NEEDS_NGINX -eq 1 ]; then
   echo "▶ Reloading nginx…"
-  sudo cp deploy/nginx/swisscresta.conf /etc/nginx/sites-available/swisscresta.conf
+  sudo cp deploy/nginx/setupfx.conf /etc/nginx/sites-available/setupfx.conf
   # cloudflare-real-ip.conf is dropped into conf.d once at install time;
   # we re-copy it on each deploy so edits to the file flow through.
   if [ -f deploy/nginx/cloudflare-real-ip.conf ]; then
@@ -84,10 +84,10 @@ fi
 
 echo "▶ Healthcheck…"
 sleep 4
-CODE_API=$(curl -sk -o /dev/null -w "%{http_code}" https://api.swisscresta.com/health   || echo "000")
-CODE_TRD=$(curl -sk -o /dev/null -w "%{http_code}" https://trade.swisscresta.com/       || echo "000")
-echo "  api.swisscresta.com/health  → HTTP $CODE_API"
-echo "  trade.swisscresta.com       → HTTP $CODE_TRD"
+CODE_API=$(curl -sk -o /dev/null -w "%{http_code}" https://api.setupfx24.com/health   || echo "000")
+CODE_TRD=$(curl -sk -o /dev/null -w "%{http_code}" https://trade.setupfx24.com/       || echo "000")
+echo "  api.setupfx24.com/health  → HTTP $CODE_API"
+echo "  trade.setupfx24.com       → HTTP $CODE_TRD"
 
 # 5xx or a flat 000 (no connection) is a real failure. 4xx still means the
 # stack is up — caller can decide whether the route should exist.

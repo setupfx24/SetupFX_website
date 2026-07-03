@@ -97,18 +97,18 @@ export default function HomePlatforms() {
                 style={{
                   background: accent ? 'var(--fx-bg-elev-2)' : 'var(--fx-bg)',
                   border: accent
-                    ? '1px solid rgba(233,78,27,0.35)'
+                    ? '1px solid rgba(16,116,254,0.35)'
                     : '1px solid var(--fx-line)',
                   boxShadow: accent
-                    ? '0 24px 60px -40px rgba(233,78,27,0.4)'
+                    ? '0 24px 60px -40px rgba(16,116,254,0.4)'
                     : 'none',
                 }}
               >
                 <div
                   className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-5"
                   style={{
-                    background: 'rgba(233,78,27,0.12)',
-                    border: '1px solid rgba(233,78,27,0.30)',
+                    background: 'rgba(16,116,254,0.12)',
+                    border: '1px solid rgba(16,116,254,0.30)',
                   }}
                 >
                   <Icon size={22} style={{ color: '#A5B4FC' }} />

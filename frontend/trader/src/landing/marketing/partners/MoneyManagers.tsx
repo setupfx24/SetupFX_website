@@ -20,7 +20,7 @@ export default function MoneyManagers() {
             <Eyebrow>Money Managers</Eyebrow>
             <h2 className={`${HEADING_SECTION} mt-3`}>Precision, performance and deep liquidity</h2>
             <p className="mt-5 text-gray-600 leading-relaxed max-w-xl">
-              Elevate your Forex and CFD trading on behalf of your clients with SwissCresta&apos;s
+              Elevate your Forex and CFD trading on behalf of your clients with SetupFX&apos;s
               multiple trade allocation tools, integrated with deep liquidity and precise
               execution, allowing full hedging and order capabilities not found with other brokers.
             </p>

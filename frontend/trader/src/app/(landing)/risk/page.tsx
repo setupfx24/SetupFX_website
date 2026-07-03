@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 
-export const metadata = { title: 'Risk Disclosure — SwissCresta' }
+export const metadata = { title: 'Risk Disclosure — SetupFX' }
 
 export default function RiskPage() {
   return (
@@ -27,7 +27,7 @@ export default function RiskPage() {
           </div>
 
           <Section title="1. Leverage Risk">
-            SwissCresta offers leverage up to 1:500 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.
+            SetupFX offers leverage up to 1:500 on certain instruments. Leverage amplifies both gains and losses. A small adverse price movement can result in substantial losses or even the complete loss of your deposit.
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4 text-sm text-gray-500">
               <strong className="text-gray-800">Example:</strong> With 1:100 leverage, a 1% adverse price movement results in a 100% loss of your margin.
             </div>
@@ -56,7 +56,7 @@ export default function RiskPage() {
           </Section>
 
           <Section title="4. Counterparty Risk">
-            Your trades are executed through SwissCresta&apos;s liquidity providers. If a liquidity provider defaults or experiences financial difficulties, your funds may be at risk despite our segregated account structure.
+            Your trades are executed through SetupFX&apos;s liquidity providers. If a liquidity provider defaults or experiences financial difficulties, your funds may be at risk despite our segregated account structure.
           </Section>
 
           <Section title="5. Technology Risk">
@@ -106,7 +106,7 @@ export default function RiskPage() {
           </Section>
 
           <Section title="9. Negative Balance Protection">
-            While SwissCresta offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:
+            While SetupFX offers negative balance protection, meaning your account cannot go below zero, this protection may not apply in all circumstances, including:
             <List items={[
               'Extreme market gaps and flash crashes',
               'System failures during market volatility',
@@ -130,12 +130,12 @@ export default function RiskPage() {
           </Section>
 
           <Section title="11. Acknowledgment">
-            By opening an account with SwissCresta, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that SwissCresta is not responsible for any losses incurred.
+            By opening an account with SetupFX, you acknowledge that you have read and understood this Risk Disclosure, and you accept all risks associated with trading on our platform. You confirm that you are trading at your own risk and that SetupFX is not responsible for any losses incurred.
           </Section>
 
           <Section title="12. Contact Information">
             For questions about risk management or this disclosure, please contact:
-            <ContactBox team="Risk Management Team" email="risk@swisscresta.com" />
+            <ContactBox team="Risk Management Team" email="risk@setupfx24.com" />
           </Section>
         </div>
       </section>
@@ -163,11 +163,11 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">SwissCresta {team}</p>
+      <p className="font-semibold text-gray-900">SetupFX {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">
         Phone:{' '}
-        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#E94E1B] transition-colors">
+        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#1074FE] transition-colors">
           +33 7 59 15 99 87
         </a>
       </p>

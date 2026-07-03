@@ -11,8 +11,8 @@ import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = {
-  title: 'Introducing Brokers — SwissCresta',
-  description: "Build your client base with SwissCresta's IB program.",
+  title: 'Introducing Brokers — SetupFX',
+  description: "Build your client base with SetupFX's IB program.",
 }
 
 export default function IntroducingBrokersPage() {

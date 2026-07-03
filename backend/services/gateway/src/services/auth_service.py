@@ -25,7 +25,7 @@ from packages.common.src.auth import (
 
 logger = logging.getLogger("auth_service")
 
-DEMO_SHARED_EMAIL = "demo@swisscresta.com"
+DEMO_SHARED_EMAIL = "demo@setupfx24.com"
 DEMO_STARTING_BALANCE = Decimal("10000")
 
 _rate_buckets: dict[str, list[float]] = {}
@@ -181,7 +181,7 @@ def _send_welcome_email(user: User, *, via_google: bool) -> None:
         st = get_settings()
         subject, html, text = render_welcome(
             first_name=user.first_name,
-            trader_app_url=st.TRADER_APP_URL or "https://trade.swisscresta.com",
+            trader_app_url=st.TRADER_APP_URL or "https://trade.setupfx24.com",
             via_google=via_google,
         )
         fire_and_forget(send_email(user.email, subject, html, text=text))
@@ -200,7 +200,7 @@ async def _send_login_notification_email(
     Fires on every login (email/password, Google, wallet) so the account
     owner has a paper trail. Best-effort, fire-and-forget — never blocks
     the login response or rolls anything back. Skips wallet-placeholder
-    addresses (@wallet.swisscresta.local) since those aren't real mailboxes;
+    addresses (@wallet.setupfx.local) since those aren't real mailboxes;
     those users get notified once they add a real email via the profile."""
     try:
         from packages.common.src.smtp_mail import (
@@ -209,8 +209,8 @@ async def _send_login_notification_email(
         if not smtp_configured() or not user.email:
             return
         # Wallet-first signups get a synthesized placeholder email; sending
-        # to wallet.swisscresta.local would just bounce.
-        if user.email.lower().endswith("@wallet.swisscresta.local"):
+        # to wallet.setupfx.local would just bounce.
+        if user.email.lower().endswith("@wallet.setupfx.local"):
             return
 
         ua = (request.headers.get("user-agent") or "").strip()
@@ -225,7 +225,7 @@ async def _send_login_notification_email(
             user_agent=ua,
             location=None,
             when_utc=when_utc,
-            trader_app_url=st.TRADER_APP_URL or "https://trade.swisscresta.com",
+            trader_app_url=st.TRADER_APP_URL or "https://trade.setupfx24.com",
         )
         fire_and_forget(send_email(user.email, subject, html, text=text))
     except Exception as e:
@@ -820,7 +820,7 @@ def _reset_link_base(request: Request) -> str:
     if origin.startswith("http") and (not allowed or origin in allowed):
         return origin
     cfg = (get_settings().TRADER_APP_URL or "").strip().rstrip("/")
-    return cfg or "https://trade.swisscresta.com"
+    return cfg or "https://trade.setupfx24.com"
 
 
 async def forgot_password(email: str, request: Request, db: AsyncSession) -> dict:
@@ -889,7 +889,7 @@ async def setup_2fa(user_id: UUID, db: AsyncSession) -> dict:
     user = result.scalar_one_or_none()
     secret = pyotp.random_base32()
     totp = pyotp.TOTP(secret)
-    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="SwissCresta")
+    provisioning_uri = totp.provisioning_uri(name=user.email, issuer_name="SetupFX")
     user.two_factor_secret = secret
     await db.commit()
     return {"secret": secret, "qr_uri": provisioning_uri}
@@ -1051,7 +1051,7 @@ async def get_me(user_id: UUID, db: AsyncSession) -> dict:
     # actually try to move money.
     ONBOARDING_RULE_CUTOFF = datetime(2026, 5, 8, tzinfo=timezone.utc)
     is_wallet_placeholder = bool(
-        (user.email or "").lower().endswith("@wallet.swisscresta.local")
+        (user.email or "").lower().endswith("@wallet.setupfx.local")
     )
     wallet_linked = bool((user.wallet_address or "").strip())
     email_verified = bool(getattr(user, "email_verified", False))

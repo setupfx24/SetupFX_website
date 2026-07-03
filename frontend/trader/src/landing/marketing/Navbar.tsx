@@ -10,7 +10,7 @@ import { useLang } from '@/landing/i18n/LangProvider'
 import { useAuthStore } from '@/stores/authStore'
 
 /**
- * Comprehensive SwissCresta marketing Navbar, ported from the legacy
+ * Comprehensive SetupFX marketing Navbar, ported from the legacy
  * Swistrade Next.js site. The legacy app's `LanguageDrawer` (a
  * full-screen i18n region/language picker) was dropped — the trader
  * app does not ship i18n. The Globe button below is a static label.
@@ -65,7 +65,7 @@ export interface NavbarProps {
 
 const NAV_LINKS: { label: string; key: ActivePage; href: string; external?: boolean }[] = [
   { label: 'Platforms', key: 'platforms', href: '/platforms' },
-  { label: 'Liquidity', key: 'liquidity', href: 'https://liquidity.swisscresta.com', external: true },
+  { label: 'Liquidity', key: 'liquidity', href: 'https://liquidity.setupfx24.com', external: true },
   { label: 'Partners', key: 'partners', href: '/partners' },
   { label: 'Policy', key: 'policy', href: '/policy' },
   { label: 'About', key: 'about', href: '/about' },
@@ -74,10 +74,10 @@ const NAV_LINKS: { label: string; key: ActivePage; href: string; external?: bool
 
 function Wordmark() {
   return (
-    <Link href="/" className="inline-flex items-center" aria-label="SwissCresta home">
+    <Link href="/" className="inline-flex items-center" aria-label="SetupFX home">
       <Image
-        src="/marketing/swisscresta-logo.png"
-        alt="SwissCresta"
+        src="/marketing/setupfx-logo.png"
+        alt="SetupFX"
         width={220}
         height={48}
         priority
@@ -106,7 +106,7 @@ function DropdownCard({ title, body, accent = 'currency' }: DropdownCardProps) {
       <p className="absolute z-10 bottom-16 left-6 right-6 text-sm text-gray-900/80 leading-relaxed max-w-[60%]">
         {body}
       </p>
-      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-gray-900/40 flex items-center justify-center text-gray-900 z-10 group-hover:border-[#E94E1B] group-hover:text-[#E94E1B] transition-colors">
+      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-gray-900/40 flex items-center justify-center text-gray-900 z-10 group-hover:border-[#1074FE] group-hover:text-[#1074FE] transition-colors">
         <ChevronRight className="w-4 h-4" strokeWidth={2} />
       </span>
     </a>
@@ -127,7 +127,7 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
         href={href}
         className="group relative block rounded-2xl overflow-hidden h-full min-h-[420px] bg-[#475a6b] text-white"
       >
-        <span className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#E94E1B] z-20" aria-hidden="true" />
+        <span className="absolute top-0 bottom-0 left-0 w-1.5 bg-[#1074FE] z-20" aria-hidden="true" />
         <div
           className="absolute inset-0 z-0"
           style={{
@@ -144,7 +144,7 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
           aria-hidden="true"
         />
         <p className="absolute bottom-6 left-8 right-16 text-sm font-semibold leading-snug z-10">{body}</p>
-        <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#E94E1B] transition-colors">
+        <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#1074FE] transition-colors">
           <ChevronRight className="w-4 h-4" strokeWidth={2} />
         </span>
       </a>
@@ -154,13 +154,13 @@ function FeaturedHero({ title, body, accent = 'orange' }: FeaturedHeroProps) {
     <a
       href={href}
       className={`group relative block rounded-2xl overflow-hidden p-6 h-full min-h-[420px] ${
-        accent === 'orange' ? 'bg-[#E94E1B] text-white' : 'bg-gray-50 text-gray-900'
+        accent === 'orange' ? 'bg-[#1074FE] text-white' : 'bg-gray-50 text-gray-900'
       }`}
     >
       <h3 className="text-3xl font-extrabold uppercase tracking-tight relative z-10">{title}</h3>
       <div className="absolute inset-0 marketing-featured-illustration" />
       <p className="absolute bottom-6 left-6 right-16 text-sm font-semibold leading-snug z-10">{body}</p>
-      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#E94E1B] transition-colors">
+      <span className="absolute bottom-5 right-5 w-9 h-9 rounded-full border border-white/70 flex items-center justify-center text-white z-10 group-hover:bg-white group-hover:text-[#1074FE] transition-colors">
         <ChevronRight className="w-4 h-4" strokeWidth={2} />
       </span>
     </a>
@@ -183,7 +183,7 @@ function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
           <li key={label}>
             <a
               href={`/${slugify(label)}`}
-              className="text-[15px] text-gray-900 hover:text-[#E94E1B] transition-colors"
+              className="text-[15px] text-gray-900 hover:text-[#1074FE] transition-colors"
             >
               {label}
             </a>
@@ -200,7 +200,7 @@ function LinkGroup({ title, items, extraTitle, extraItems }: LinkGroupProps) {
               <li key={label}>
                 <a
                   href={`/${slugify(label)}`}
-                  className="text-[15px] text-gray-900 hover:text-[#E94E1B] transition-colors"
+                  className="text-[15px] text-gray-900 hover:text-[#1074FE] transition-colors"
                 >
                   {label}
                 </a>
@@ -281,7 +281,7 @@ function SubNavItem({ link, onHover, isActive }: SubNavItemProps) {
       <a
         href={link.href}
         className={`block py-3 text-sm font-bold transition-colors ${
-          showAccent ? 'text-[#E94E1B]' : 'text-gray-900 hover:text-[#E94E1B]'
+          showAccent ? 'text-[#1074FE]' : 'text-gray-900 hover:text-[#1074FE]'
         }`}
       >
         {link.label}
@@ -338,8 +338,8 @@ export default function MarketingNavbar({
         <ul className="hidden lg:flex flex-1 items-center justify-center gap-3 xl:gap-5 2xl:gap-6">
           {NAV_LINKS.map((link) => {
             const active = link.key === activePage
-            const cls = `whitespace-nowrap text-[13px] 2xl:text-[14px] font-semibold tracking-tight transition-colors hover:text-[#E94E1B] ${
-              active ? 'text-[#E94E1B]' : 'text-gray-900'
+            const cls = `whitespace-nowrap text-[13px] 2xl:text-[14px] font-semibold tracking-tight transition-colors hover:text-[#1074FE] ${
+              active ? 'text-[#1074FE]' : 'text-gray-900'
             }`
             return (
               <li key={link.key}>
@@ -362,9 +362,9 @@ export default function MarketingNavbar({
               fetches the file straight away; on Android the OS then shows the
               install prompt (user may need "install from unknown sources"). */}
           <a
-            href="/downloads/swisscresta1.apk"
-            download="SwissCresta.apk"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#E94E1B] text-[13px] font-semibold text-[#E94E1B] hover:bg-[#E94E1B] hover:text-white transition-colors"
+            href="/downloads/setupfx1.apk"
+            download="SetupFX.apk"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 rounded-full border border-[#1074FE] text-[13px] font-semibold text-[#1074FE] hover:bg-[#1074FE] hover:text-white transition-colors"
           >
             <Download className="w-4 h-4 shrink-0" strokeWidth={2} />
             Download APK
@@ -401,7 +401,7 @@ export default function MarketingNavbar({
             aria-label={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
             title={`Switch language to ${lang === 'fr' ? 'English' : 'Français'}`}
           >
-            <Globe className="w-4 h-4 text-[#E94E1B]" strokeWidth={2} />
+            <Globe className="w-4 h-4 text-[#1074FE]" strokeWidth={2} />
             <span className="font-semibold uppercase">{lang === 'fr' ? 'FR' : 'EN'}</span>
           </button>
         </div>
@@ -454,7 +454,7 @@ export default function MarketingNavbar({
             {NAV_LINKS.map((link) => {
               const active = link.key === activePage
               const cls = `block text-sm font-semibold py-1 ${
-                active ? 'text-[#E94E1B]' : 'text-gray-900/80'
+                active ? 'text-[#1074FE]' : 'text-gray-900/80'
               }`
               return (
                 <li key={link.key}>
@@ -499,10 +499,10 @@ export default function MarketingNavbar({
             )}
             <li className="pt-3 border-t border-gray-200">
               <a
-                href="/downloads/swisscresta1.apk"
-                download="SwissCresta.apk"
+                href="/downloads/setupfx1.apk"
+                download="SetupFX.apk"
                 onClick={() => setOpen(false)}
-                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#E94E1B] text-[#E94E1B] text-sm font-semibold hover:bg-[#E94E1B] hover:text-white transition-colors"
+                className="inline-flex w-full items-center justify-center gap-1.5 px-5 py-2.5 rounded-full border border-[#1074FE] text-[#1074FE] text-sm font-semibold hover:bg-[#1074FE] hover:text-white transition-colors"
               >
                 <Download className="w-4 h-4" strokeWidth={2} />
                 Download APK
@@ -545,7 +545,7 @@ export default function MarketingNavbar({
       <style>{`
         .marketing-dropdown-accent-currency {
           background:
-            radial-gradient(circle at 78% 60%, rgba(233,78,27,0.18) 0, transparent 35%),
+            radial-gradient(circle at 78% 60%, rgba(16,116,254,0.18) 0, transparent 35%),
             radial-gradient(circle at 88% 30%, rgba(30,80,200,0.18) 0, transparent 30%),
             radial-gradient(circle at 70% 80%, rgba(199,62,17,0.18) 0, transparent 30%);
         }
@@ -556,7 +556,7 @@ export default function MarketingNavbar({
         }
         .marketing-dropdown-accent-crypto {
           background:
-            radial-gradient(circle at 75% 45%, rgba(233,78,27,0.30) 0, transparent 32%),
+            radial-gradient(circle at 75% 45%, rgba(16,116,254,0.30) 0, transparent 32%),
             radial-gradient(circle at 90% 75%, rgba(212,175,55,0.30) 0, transparent 30%),
             radial-gradient(circle at 70% 75%, rgba(30,80,200,0.18) 0, transparent 28%);
         }
@@ -567,7 +567,7 @@ export default function MarketingNavbar({
         }
         .marketing-dropdown-accent-news {
           background:
-            radial-gradient(circle at 80% 55%, rgba(233,78,27,0.22) 0, transparent 36%);
+            radial-gradient(circle at 80% 55%, rgba(16,116,254,0.22) 0, transparent 36%);
         }
         .marketing-dropdown-accent-pricing {
           background:

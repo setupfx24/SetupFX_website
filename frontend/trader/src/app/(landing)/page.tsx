@@ -1,5 +1,5 @@
 /**
- * SwissCresta marketing home — full broker landing port from the
+ * SetupFX marketing home — full broker landing port from the
  * legacy Swistrade Next 14 site. Keep the file as a thin composer —
  * each section lives in `@/landing/marketing/*` and is independently
  * editable.

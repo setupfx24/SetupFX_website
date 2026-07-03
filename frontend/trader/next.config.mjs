@@ -123,7 +123,7 @@ const nextConfig = {
       // 'unsafe-inline' needed for: layout.tsx inline bootloader,
       // framer-motion inline styles, TradingView widget script.innerHTML.
       // 'unsafe-eval' needed for: Next.js client runtime in some configs.
-      // Kept in sync with the enforced nginx CSP (deploy/nginx/swisscresta.conf).
+      // Kept in sync with the enforced nginx CSP (deploy/nginx/setupfx.conf).
       // *.razorpay.com covers checkout.js + the cdn.razorpay.com risk script.
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://*.googleusercontent.com https://verify.walletconnect.com https://verify.walletconnect.org https://s3.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://static.cloudflareinsights.com https://*.razorpay.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",

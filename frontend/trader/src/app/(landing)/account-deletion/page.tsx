@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'Account & Data Deletion — SwissCresta',
+  title: 'Account & Data Deletion — SetupFX',
   description:
-    'How to request deletion of your SwissCresta account and associated data, what is removed, and what we are legally required to retain.',
+    'How to request deletion of your SetupFX account and associated data, what is removed, and what we are legally required to retain.',
 }
 
 export default function AccountDeletionPage() {
@@ -18,21 +18,21 @@ export default function AccountDeletionPage() {
         <div className="w-full px-3 sm:px-6 lg:px-8 space-y-10">
 
           <Section title="Overview">
-            This page explains how you, as a SwissCresta user, can request deletion of your
+            This page explains how you, as a SetupFX user, can request deletion of your
             account and the personal data associated with it. It also describes which data is
             permanently deleted, which data we are legally required to retain, and how long the
-            process takes. This applies to accounts created through the SwissCresta mobile app
-            (Android) and the SwissCresta web platform.
+            process takes. This applies to accounts created through the SetupFX mobile app
+            (Android) and the SetupFX web platform.
           </Section>
 
           <Section title="How to request deletion">
             You can request deletion of your account using any of the methods below. For security,
             requests must come from — or be verifiable against — the email address registered to
-            your SwissCresta account.
+            your SetupFX account.
 
             <Sub title="Option 1 — From within the app">
               <List items={[
-                'Open the SwissCresta app and sign in.',
+                'Open the SetupFX app and sign in.',
                 'Go to Profile → Support.',
                 'Create a request with the subject "Delete my account".',
               ]} />
@@ -40,11 +40,11 @@ export default function AccountDeletionPage() {
 
             <Sub title="Option 2 — By email">
               Send an email from your registered email address to{' '}
-              <a href="mailto:support@swisscresta.com?subject=Account%20Deletion%20Request"
-                 className="text-[#E94E1B] hover:underline">support@swisscresta.com</a>{' '}
+              <a href="mailto:support@setupfx24.com?subject=Account%20Deletion%20Request"
+                 className="text-[#1074FE] hover:underline">support@setupfx24.com</a>{' '}
               with the subject line <span className="font-semibold text-gray-700">&quot;Account Deletion Request&quot;</span>.
               Please include the email address (and, if known, the account number) tied to your
-              SwissCresta account so we can locate and verify it.
+              SetupFX account so we can locate and verify it.
             </Sub>
 
             <p className="mt-4 text-gray-500">
@@ -67,7 +67,7 @@ export default function AccountDeletionPage() {
           </Section>
 
           <Section title="What data we must retain (and why)">
-            SwissCresta operates a regulated financial / trading service. Certain records cannot be
+            SetupFX operates a regulated financial / trading service. Certain records cannot be
             deleted immediately on request because we are legally obligated to keep them under
             financial, anti-money-laundering (AML), and tax regulations:
             <List items={[
@@ -101,7 +101,7 @@ export default function AccountDeletionPage() {
           <Section title="Contact">
             For any questions about account or data deletion, or to check the status of a request,
             contact us:
-            <ContactBox team="Data Protection Team" email="support@swisscresta.com" />
+            <ContactBox team="Data Protection Team" email="support@setupfx24.com" />
           </Section>
         </div>
       </section>
@@ -138,11 +138,11 @@ function List({ items }: { items: string[] }) {
 function ContactBox({ team, email }: { team: string; email: string }) {
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-4 text-sm space-y-1">
-      <p className="font-semibold text-gray-900">SwissCresta {team}</p>
+      <p className="font-semibold text-gray-900">SetupFX {team}</p>
       <p className="text-gray-500">Email: {email}</p>
       <p className="text-gray-500">
         Phone:{' '}
-        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#E94E1B] transition-colors">
+        <a href="tel:+33759159987" className="text-gray-900 hover:text-[#1074FE] transition-colors">
           +33 7 59 15 99 87
         </a>
       </p>

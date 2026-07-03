@@ -14,9 +14,9 @@ import {
 } from 'lucide-react'
 
 export const metadata = {
-  title: 'Partners & Introducing Brokers — SwissCresta',
+  title: 'Partners & Introducing Brokers — SetupFX',
   description:
-    'Earn USD 16 per standard lot with the SwissCresta Introducing Broker programme. Transparent payouts, lifetime client value, Swiss-regulated counterparty.',
+    'Earn USD 16 per standard lot with the SetupFX Introducing Broker programme. Transparent payouts, lifetime client value, Swiss-regulated counterparty.',
 }
 
 const HIGHLIGHTS = [
@@ -28,7 +28,7 @@ const HIGHLIGHTS = [
   {
     icon: Wallet,
     title: 'Lifetime client value',
-    body: 'Earn on every trade your referred clients make — for as long as their account stays active with SwissCresta.',
+    body: 'Earn on every trade your referred clients make — for as long as their account stays active with SetupFX.',
   },
   {
     icon: TrendingUp,
@@ -70,38 +70,38 @@ export default function PartnersPage() {
           <div className="relative order-2 md:order-1">
             <div
               aria-hidden="true"
-              className="absolute inset-8 rounded-[2.5rem] bg-[#E94E1B]/25 blur-3xl"
+              className="absolute inset-8 rounded-[2.5rem] bg-[#1074FE]/25 blur-3xl"
             />
             <div className="relative w-full aspect-[4/5] md:aspect-[5/6] max-w-[640px] mx-auto">
               <Image
                 src="/assets/ib.png"
-                alt="SwissCresta Introducing Broker programme"
+                alt="SetupFX Introducing Broker programme"
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, 640px"
-                className="object-contain drop-shadow-[0_36px_60px_rgba(233,78,27,0.28)]"
+                className="object-contain drop-shadow-[0_36px_60px_rgba(16,116,254,0.28)]"
               />
             </div>
           </div>
           <div className="order-1 md:order-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#E94E1B]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1074FE]">
               Introducing Broker Programme
             </p>
             <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.04]">
-              Earn <span className="text-[#E94E1B]">USD 16</span>
+              Earn <span className="text-[#1074FE]">USD 16</span>
               <br />
               per standard lot.
             </h1>
             <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed max-w-xl">
-              Refer traders to SwissCresta and earn a flat USD 16 rebate on every
+              Refer traders to SetupFX and earn a flat USD 16 rebate on every
               standard FX lot they trade — for the life of the account. No tiered
               spreadsheets, no undisclosed haircuts, no clawbacks.
             </p>
-            <div className="mt-6 inline-flex items-baseline gap-2 bg-white rounded-2xl border border-[#E94E1B]/25 shadow-[0_8px_24px_rgba(233,78,27,0.12)] px-5 py-3">
+            <div className="mt-6 inline-flex items-baseline gap-2 bg-white rounded-2xl border border-[#1074FE]/25 shadow-[0_8px_24px_rgba(16,116,254,0.12)] px-5 py-3">
               <span className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
                 Rebate
               </span>
-              <span className="text-3xl md:text-4xl font-extrabold text-[#E94E1B] leading-none tracking-tight">
+              <span className="text-3xl md:text-4xl font-extrabold text-[#1074FE] leading-none tracking-tight">
                 USD 16
               </span>
               <span className="text-xs font-medium text-gray-600">/ standard lot</span>
@@ -109,7 +109,7 @@ export default function PartnersPage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="#apply"
-                className="inline-flex items-center gap-2 bg-[#E94E1B] hover:bg-[#C73E11] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
+                className="inline-flex items-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors"
               >
                 Become a partner <ArrowRight className="w-4 h-4" />
               </Link>
@@ -137,7 +137,7 @@ export default function PartnersPage() {
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-5">
             {HIGHLIGHTS.map(({ icon: Icon, title, body }) => (
               <div key={title} className="bg-gray-50 rounded-2xl p-7 border border-gray-200/60">
-                <span className="w-11 h-11 rounded-xl bg-[#E94E1B]/10 text-[#E94E1B] flex items-center justify-center">
+                <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
                   <Icon className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <h3 className="mt-4 text-lg font-bold text-gray-900">{title}</h3>
@@ -152,7 +152,7 @@ export default function PartnersPage() {
         <div className="max-w-5xl mx-auto px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-extrabold uppercase tracking-tight">
-              What volume <span className="text-[#E94E1B]">actually pays</span>
+              What volume <span className="text-[#1074FE]">actually pays</span>
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -165,7 +165,7 @@ export default function PartnersPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">
                   {row.lots}
                 </p>
-                <div className="mt-3 text-3xl md:text-4xl font-extrabold text-[#E94E1B]">
+                <div className="mt-3 text-3xl md:text-4xl font-extrabold text-[#1074FE]">
                   {row.earn}
                 </div>
                 <p className="mt-2 text-xs text-gray-500">Estimated monthly rebate</p>
@@ -184,7 +184,7 @@ export default function PartnersPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {WHY.map(({ icon: Icon, title, body }) => (
               <div key={title} className="bg-gray-50 rounded-2xl p-7 border border-gray-200/60">
-                <span className="w-11 h-11 rounded-xl bg-[#E94E1B]/10 text-[#E94E1B] flex items-center justify-center">
+                <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
                   <Icon className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <h3 className="mt-4 text-lg font-bold text-gray-900">{title}</h3>
@@ -205,7 +205,7 @@ export default function PartnersPage() {
           <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {STEPS.map((s) => (
               <li key={s.n} className="bg-white rounded-2xl p-7 border border-gray-200/60">
-                <div className="text-4xl font-extrabold text-[#E94E1B]/30 leading-none">{s.n}</div>
+                <div className="text-4xl font-extrabold text-[#1074FE]/30 leading-none">{s.n}</div>
                 <h3 className="mt-3 text-base font-bold text-gray-900">{s.t}</h3>
                 <p className="mt-2 text-sm text-gray-600 leading-relaxed">{s.d}</p>
               </li>
@@ -216,10 +216,10 @@ export default function PartnersPage() {
 
       <section id="apply" className="bg-white py-16 md:py-20">
         <div className="max-w-2xl mx-auto px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-[#E94E1B] to-[#C73E11] rounded-3xl p-8 md:p-10 text-white shadow-[0_24px_60px_rgba(233,78,27,0.28)]">
+          <div className="bg-gradient-to-br from-[#1074FE] to-[#0856C5] rounded-3xl p-8 md:p-10 text-white shadow-[0_24px_60px_rgba(16,116,254,0.28)]">
             <Handshake className="w-10 h-10 text-white/90" strokeWidth={1.5} />
             <h2 className="mt-5 text-2xl md:text-3xl font-extrabold uppercase tracking-tight">
-              Apply to become a SwissCresta partner
+              Apply to become a SetupFX partner
             </h2>
             <p className="mt-3 text-sm md:text-base text-white/90 leading-relaxed">
               Tell us a bit about your audience and we&apos;ll route you to a partner manager
@@ -241,7 +241,7 @@ export default function PartnersPage() {
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href="/auth/register?partner=1"
-                className="inline-flex items-center gap-2 bg-white text-[#E94E1B] hover:bg-gray-100 text-sm font-semibold px-6 py-3 rounded-full transition-colors"
+                className="inline-flex items-center gap-2 bg-white text-[#1074FE] hover:bg-gray-100 text-sm font-semibold px-6 py-3 rounded-full transition-colors"
               >
                 Start application <ArrowRight className="w-4 h-4" />
               </Link>
@@ -256,7 +256,7 @@ export default function PartnersPage() {
 
           <p className="mt-6 text-xs italic text-gray-500 text-center">
             Rebate amounts are quoted per standard FX lot (100,000 units of base currency).
-            Payouts are subject to the SwissCresta Partner Agreement and standard AML / KYC
+            Payouts are subject to the SetupFX Partner Agreement and standard AML / KYC
             verification of both the partner entity and the referred client.
           </p>
         </div>

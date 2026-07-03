@@ -16,7 +16,7 @@ export default function AboutUs() {
             <Eyebrow>{t('about.eyebrow')}</Eyebrow>
             <h2 className={`mt-4 ${HEADING_SECTION}`}>
               {t('about.titleA')}{' '}
-              <span className="text-[#E94E1B]">{t('about.titleB')}</span>
+              <span className="text-[#1074FE]">{t('about.titleB')}</span>
             </h2>
             <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed">
               {t('about.lead')}
@@ -30,11 +30,11 @@ export default function AboutUs() {
             <div className="relative w-full max-w-[920px] aspect-[4/5] md:aspect-[5/6]">
               <div
                 aria-hidden="true"
-                className="absolute inset-10 rounded-[2.5rem] bg-[#E94E1B]/25 blur-3xl"
+                className="absolute inset-10 rounded-[2.5rem] bg-[#1074FE]/25 blur-3xl"
               />
               <Image
                 src="/assets/asianboy.png"
-                alt="SwissCresta trader"
+                alt="SetupFX trader"
                 fill
                 sizes="(max-width: 768px) 100vw, 920px"
                 className="relative object-contain drop-shadow-[0_36px_60px_rgba(0,0,0,0.28)]"

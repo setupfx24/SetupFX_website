@@ -17,8 +17,8 @@ import { fontVariableClass } from '@/styles/fonts';
  * here would beat the file convention).
  */
 export const metadata: Metadata = {
-  title: 'SwissCresta',
-  description: 'SwissCresta — professional forex and CFD trading platform',
+  title: 'SetupFX',
+  description: 'SetupFX — professional forex and CFD trading platform',
 };
 
 export const viewport: Viewport = {
@@ -80,10 +80,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
             <Toaster
               position="top-center"
-              containerClassName="swisscresta-toaster"
+              containerClassName="setupfx-toaster"
               gutter={10}
               // Belt-and-suspenders cap on the lib's outer container.
-              // The CSS rule on .swisscresta-toaster also clamps this,
+              // The CSS rule on .setupfx-toaster also clamps this,
               // but inline styles always win over a possibly-stale CSS
               // chunk, so this guarantees no toast overflows even if
               // the stylesheet hasn't loaded yet.
@@ -92,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               }}
               toastOptions={{
                 duration: 2500,
-                className: 'swisscresta-hot-toast',
+                className: 'setupfx-hot-toast',
                 // maxWidth caps the toast at a readable column so long
                 // backend error messages (e.g. balance-gate copy) wrap
                 // onto a second line instead of stretching across the
@@ -111,22 +111,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
                 success: {
                   duration: 2200,
-                  className: 'swisscresta-hot-toast',
+                  className: 'setupfx-hot-toast',
                   // White check on an amber disc reads as "good" instantly on
                   // dark surface without losing the brand accent.
                   iconTheme: { primary: '#F59E0B', secondary: '#1A140A' },
                 },
                 error: {
                   duration: 4000,
-                  className: 'swisscresta-hot-toast',
+                  className: 'setupfx-hot-toast',
                   // White X on a saturated red disc — high contrast on the
                   // dark toast background, no fade-out into the BG colour.
                   iconTheme: { primary: '#EF4444', secondary: '#ffffff' },
                 },
                 loading: {
                   duration: Infinity,
-                  className: 'swisscresta-hot-toast',
-                  iconTheme: { primary: '#E94E1B', secondary: 'var(--toast-bg)' },
+                  className: 'setupfx-hot-toast',
+                  iconTheme: { primary: '#1074FE', secondary: 'var(--toast-bg)' },
                 },
               }}
             />

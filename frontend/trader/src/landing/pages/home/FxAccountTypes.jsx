@@ -101,10 +101,10 @@ export default function HomeAccountTiers() {
                 style={{
                   background: tier.accent ? 'var(--fx-bg-elev-2)' : 'var(--fx-bg-elev)',
                   border: tier.accent
-                    ? '1px solid rgba(233,78,27,0.50)'
+                    ? '1px solid rgba(16,116,254,0.50)'
                     : '1px solid var(--fx-line)',
                   boxShadow: tier.accent
-                    ? '0 30px 80px -40px rgba(233,78,27,0.45)'
+                    ? '0 30px 80px -40px rgba(16,116,254,0.45)'
                     : 'none',
                 }}
               >
@@ -112,9 +112,9 @@ export default function HomeAccountTiers() {
                   <span
                     className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10.5px] font-bold uppercase tracking-wider"
                     style={{
-                      background: 'linear-gradient(135deg, #E94E1B, #C73E11)',
+                      background: 'linear-gradient(135deg, #1074FE, #0856C5)',
                       color: '#fff',
-                      boxShadow: '0 6px 20px rgba(233,78,27,0.50)',
+                      boxShadow: '0 6px 20px rgba(16,116,254,0.50)',
                     }}
                   >
                     Most chosen

@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 /**
  * Domain split (asymmetric, by design):
- *   - swisscresta.com (apex): marketing + auth + every user-app page.
+ *   - setupfx24.com (apex): marketing + auth + every user-app page.
  *     If the user lands on the apex with /trading/terminal, we bounce
  *     them to the trade subdomain so the terminal has a clean origin.
- *   - trade.swisscresta.com: hosts the trading terminal canonically, but
+ *   - trade.setupfx24.com: hosts the trading terminal canonically, but
  *     ALSO serves every other page. Previously we redirected non-
  *     terminal traffic back to the apex, but that caused two persistent
  *     production issues: (1) RSC prefetches and TradingView chart
@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  *     adds no real cost — they're authenticated app pages, not
  *     marketing pages with SEO concerns.
  *
- * The auth cookie is Domain=.swisscresta.com so a single session works on
+ * The auth cookie is Domain=.setupfx24.com so a single session works on
  * apex AND subdomain. If NEXT_PUBLIC_MARKETING_HOST or
  * NEXT_PUBLIC_TRADE_HOST is unset (local dev), this middleware no-ops.
  *

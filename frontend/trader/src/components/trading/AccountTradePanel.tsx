@@ -279,7 +279,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                     </span>
                   ) : (
                     <span className="flex items-center gap-1" title="Disconnected">
-                      <WifiOff size={10} className="text-[#f57c00]" />
+                      <WifiOff size={10} className="text-[#0856C5]" />
                     </span>
                   )}
                 </div>
@@ -472,7 +472,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                 { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                 { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-primary)' },
                 { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#6366F1' },
-                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#6366F1' : '#f57c00' },
+                { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#6366F1' : '#0856C5' },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between">
                   <span className="text-[10px] text-text-tertiary">{row.label}</span>

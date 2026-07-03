@@ -13,7 +13,7 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     title: 'Strength',
-    body: 'SwissCresta Group boasts a Tier 1 Capital Ratio among the highest in the industry, ensuring its financial strength and resilience.',
+    body: 'SetupFX Group boasts a Tier 1 Capital Ratio among the highest in the industry, ensuring its financial strength and resilience.',
   },
   {
     title: 'Transparency',
@@ -21,15 +21,15 @@ const FEATURES: Feature[] = [
   },
   {
     title: 'Security',
-    body: 'SwissCresta applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
+    body: 'SetupFX applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
   },
   {
     title: 'Trust',
-    body: "Over 500k clients have trusted SwissCresta's services. The access to one of the largest Forex & CFDs offerings worldwide and our 3 pops platforms: MT4, MT5 and CFXD.",
+    body: "Over 500k clients have trusted SetupFX's services. The access to one of the largest Forex & CFDs offerings worldwide and our 3 pops platforms: MT4, MT5 and CFXD.",
   },
   {
     title: 'Innovation',
-    body: 'Exclusive expert analysis and research and the most comprehensive trading platforms on the market coupled with high-performance applications. SwissCresta challenges innovation — for your success.',
+    body: 'Exclusive expert analysis and research and the most comprehensive trading platforms on the market coupled with high-performance applications. SetupFX challenges innovation — for your success.',
   },
   {
     title: 'Excellence',
@@ -56,7 +56,7 @@ function useVisibleCount(): number {
 function FeatureCard({ title, body }: Feature) {
   return (
     <div className="bg-white rounded-xl p-5 md:p-6 flex flex-col gap-3 shadow-sm h-full">
-      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#E94E1B] text-white">
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1074FE] text-white">
         <Check className="w-4 h-4" strokeWidth={3} />
       </span>
       <h3 className="text-base font-bold text-gray-900">{title}</h3>
@@ -83,14 +83,14 @@ export default function SolidPartner() {
         <div className="text-center max-w-3xl mx-auto">
           <Eyebrow>A Solid Partner</Eyebrow>
           <h2 className={`${HEADING_SECTION} mt-3`}>
-            Your expertise is your best attribute. SwissCresta, its best complement.
+            Your expertise is your best attribute. SetupFX, its best complement.
           </h2>
         </div>
 
-        <div className="mt-12 relative rounded-3xl bg-[#E94E1B] text-white overflow-hidden">
+        <div className="mt-12 relative rounded-3xl bg-[#1074FE] text-white overflow-hidden">
           <div className="p-6 md:p-10 lg:p-12">
             <p className="max-w-3xl text-sm md:text-[15px] leading-relaxed text-white/95">
-              As the Swiss leader in digital banking, SwissCresta offers reliability, innovation
+              As the Swiss leader in digital banking, SetupFX offers reliability, innovation
               and competence altogether, aiming to serve your business and your clients as if
               they were our own.
             </p>
@@ -132,7 +132,7 @@ export default function SolidPartner() {
                   onClick={prev}
                   disabled={index === 0}
                   aria-label="Previous"
-                  className="w-9 h-9 rounded-full bg-white text-[#E94E1B] flex items-center justify-center transition-opacity hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-9 h-9 rounded-full bg-white text-[#1074FE] flex items-center justify-center transition-opacity hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronLeft className="w-4 h-4" strokeWidth={2.5} />
                 </button>
@@ -141,7 +141,7 @@ export default function SolidPartner() {
                   onClick={next}
                   disabled={index >= maxIndex}
                   aria-label="Next"
-                  className="w-9 h-9 rounded-full bg-white text-[#E94E1B] flex items-center justify-center transition-opacity hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-9 h-9 rounded-full bg-white text-[#1074FE] flex items-center justify-center transition-opacity hover:bg-white/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
                 </button>

@@ -10,7 +10,7 @@ from html import escape
 # Brand orange replaces the old gold accent so every transactional email
 # matches the platform's Vantage palette. The rest of the surface stays
 # dark — clients on dark/light Gmail / Outlook both read fine on it.
-_ACCENT = "#E94E1B"
+_ACCENT = "#1074FE"
 _BG = "#0a0a0a"
 _CARD = "#141414"
 _KV_BG = "#0d0d0d"
@@ -24,7 +24,7 @@ _BORDER_BRIGHT = "#3a3a3a"
 # attaches the bundled PNG with this exact Content-ID, so the <img> below
 # resolves without an outbound network fetch — works even when the client
 # blocks remote images (Gmail's "Show pictures", Outlook's safe mode, etc).
-LOGO_CID = "swisscresta-logo"
+LOGO_CID = "setupfx-logo"
 
 
 def render_layout(
@@ -36,7 +36,7 @@ def render_layout(
     cta_url: str | None = None,
     footer_note: str | None = None,
 ) -> str:
-    """Wraps body content in the standard SwissCresta email shell.
+    """Wraps body content in the standard SetupFX email shell.
 
     Args:
       title:       big headline at the top of the card (escaped)
@@ -85,7 +85,7 @@ def render_layout(
                       border:1px solid {_BORDER};border-radius:12px;overflow:hidden;">
           <tr>
             <td style="padding:24px 32px;border-bottom:1px solid {_BORDER};">
-              <img src="cid:{LOGO_CID}" alt="SwissCresta"
+              <img src="cid:{LOGO_CID}" alt="SetupFX"
                    height="36"
                    style="display:block;height:36px;width:auto;border:0;outline:none;text-decoration:none;" />
             </td>
@@ -106,11 +106,11 @@ def render_layout(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid {_BORDER};
                        color:{_TEXT_DIM};font-size:12px;line-height:1.5;">
-              SwissCresta — Trade without giving your money to any broker.<br>
-              You received this because of activity on your SwissCresta account.
+              SetupFX — Trade without giving your money to any broker.<br>
+              You received this because of activity on your SetupFX account.
               Need help? Reply to this email or contact
-              <a href="mailto:support@swisscresta.com" style="color:{_ACCENT};text-decoration:none;">
-                support@swisscresta.com</a>.
+              <a href="mailto:support@setupfx24.com" style="color:{_ACCENT};text-decoration:none;">
+                support@setupfx24.com</a>.
             </td>
           </tr>
         </table>

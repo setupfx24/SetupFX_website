@@ -1,8 +1,8 @@
 /** Dashboard / in-app product name. */
-export const BRAND_NAME = 'SwissCresta';
+export const BRAND_NAME = 'SetupFX';
 
 /** Zustand persist key for UI preferences (theme, terminal layout). */
-export const STORAGE_KEY_UI = 'swisscresta-ui';
+export const STORAGE_KEY_UI = 'setupfx-ui';
 
 /** Legacy localStorage keys from earlier brand iterations. The inline
  * migration shim in `app/layout.tsx` checks each in turn on first load

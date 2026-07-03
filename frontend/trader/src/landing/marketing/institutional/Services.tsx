@@ -37,7 +37,7 @@ function CryptoCoins() {
       {coins.map((c, i) => (
         <span
           key={i}
-          className="absolute rounded-full bg-[#E94E1B]/20 border border-[#E94E1B]/30"
+          className="absolute rounded-full bg-[#1074FE]/20 border border-[#1074FE]/30"
           style={{ width: c.size, height: c.size, top: c.top, right: c.right }}
         />
       ))}
@@ -57,7 +57,7 @@ export default function Services() {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
           <ServiceCard
             title="All things trading, one single platform"
-            body="SwissCresta's intelligent brokerage solutions for institutional clients to deploy their portfolio, with the objective to access the diversity, execution and pricing for a sound financial decision."
+            body="SetupFX's intelligent brokerage solutions for institutional clients to deploy their portfolio, with the objective to access the diversity, execution and pricing for a sound financial decision."
           >
             <ImagePlaceholder
               label="Platform"
@@ -98,7 +98,7 @@ export default function Services() {
                 Trade with the first European bank to believe in crypto
               </h3>
               <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                While many were still seeing crypto as a fiction, we at SwissCresta went all-in
+                While many were still seeing crypto as a fiction, we at SetupFX went all-in
                 on crypto. As early believers, we possess the technological expertise to provide
                 professional banking services to your digital assets.
               </p>

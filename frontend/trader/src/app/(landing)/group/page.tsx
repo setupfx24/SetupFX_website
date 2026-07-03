@@ -14,8 +14,8 @@ import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = {
-  title: 'Group — SwissCresta',
-  description: 'A Swiss Bank unlike any other. The SwissCresta Group.',
+  title: 'Group — SetupFX',
+  description: 'A Swiss Bank unlike any other. The SetupFX Group.',
 }
 
 export default function GroupPage() {

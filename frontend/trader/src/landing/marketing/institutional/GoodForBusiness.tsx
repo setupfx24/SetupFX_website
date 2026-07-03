@@ -24,7 +24,7 @@ export default function GoodForBusiness() {
           A bank that is good for your business is good for you
         </h2>
         <p className="mt-5 max-w-2xl text-gray-600 leading-relaxed">
-          SwissCresta offers institutional clients and corporations a platform built for
+          SetupFX offers institutional clients and corporations a platform built for
           strength, security and transparency — with the operational rigor serious traders
           expect.
         </p>
@@ -39,7 +39,7 @@ export default function GoodForBusiness() {
             <div className="p-6 flex flex-col gap-3">
               <h3 className="text-base font-bold text-gray-900">Strength</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                SwissCresta Group boasts a Tier 1 Capital Ratio among the highest in the industry,
+                SetupFX Group boasts a Tier 1 Capital Ratio among the highest in the industry,
                 ensuring its financial strength and resilience.
               </p>
             </div>
@@ -61,7 +61,7 @@ export default function GoodForBusiness() {
             <div className="bg-gray-50 rounded-2xl p-6 flex flex-col gap-3">
               <h3 className="text-base font-bold text-gray-900">Transparency</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                SwissCresta Group (SQN) is listed on the SIX Swiss Exchange since May 2000. This
+                SetupFX Group (SQN) is listed on the SIX Swiss Exchange since May 2000. This
                 means that we hold to higher standards of transparency than most Forex
                 competitors not publicly listed.
               </p>
@@ -72,7 +72,7 @@ export default function GoodForBusiness() {
             <div className="p-6 flex flex-col gap-3 flex-1">
               <h3 className="text-base font-bold text-gray-900">Security</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                SwissCresta applies modern security practices end-to-end — segregated client
+                SetupFX applies modern security practices end-to-end — segregated client
                 funds, encrypted infrastructure, and continuous monitoring against fraud and
                 abuse.
               </p>

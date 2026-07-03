@@ -433,14 +433,14 @@ export default function OrderPanel() {
           <div className="flex items-center gap-1">
             <span
               className={clsx('font-bold', isTradingTerminal ? 'text-[9px]' : 'text-[10px]')}
-              style={{ color: marketStatus.isOpen ? '#6366F1' : '#f57c00' }}
+              style={{ color: marketStatus.isOpen ? '#6366F1' : '#0856C5' }}
             >
               {marketStatus.isOpen ? 'OPEN' : 'CLOSED'}
             </span>
             {isConnected ? (
               <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#6366F1]" />
             ) : (
-              <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#f57c00]" />
+              <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#0856C5]" />
             )}
           </div>
         </div>
@@ -556,7 +556,7 @@ export default function OrderPanel() {
                     </span>
                     <span
                       className={clsx(
-                        'font-mono font-bold tabular-nums text-[#E94E1B] leading-tight',
+                        'font-mono font-bold tabular-nums text-[#1074FE] leading-tight',
                         isTradingTerminal ? 'text-[11px]' : 'text-sm',
                       )}
                     >
@@ -819,7 +819,7 @@ export default function OrderPanel() {
                   { label: 'Exec. Price', value: execPrice > 0 ? execPrice.toFixed(digits) : '—', color: 'var(--text-primary)' },
                   { label: 'Margin Required', value: `$${marginRequired.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : 'var(--text-secondary)' },
                   { label: 'Free Margin', value: `$${freeMargin.toFixed(2)}`, color: !hasEnoughMargin ? '#ef5350' : '#6366F1' },
-                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#6366F1' : '#f57c00' },
+                  { label: 'Feed', value: isConnected ? '● Connected' : '○ Disconnected', color: isConnected ? '#6366F1' : '#0856C5' },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between">
                     <span className="text-[11px] text-text-tertiary">{row.label}</span>
@@ -881,7 +881,7 @@ export default function OrderPanel() {
                 Free ${freeMargin.toFixed(2)}
               </span>
               <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#6366F1]' : 'text-[#f57c00]')}
+                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#6366F1]' : 'text-[#0856C5]')}
                 title={isConnected ? 'Feed connected' : 'Feed disconnected'}
               >
                 {isConnected ? '●' : '○'}

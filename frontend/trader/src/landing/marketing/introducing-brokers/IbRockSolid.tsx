@@ -10,7 +10,7 @@ const PILLARS: Pillar[] = [
   },
   {
     title: 'Security',
-    body: 'SwissCresta applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
+    body: 'SetupFX applies modern security practices end-to-end — segregated client funds, encrypted infrastructure, and continuous monitoring against fraud and abuse.',
   },
   {
     title: 'Transparency',
@@ -30,12 +30,12 @@ export default function IbRockSolid() {
   return (
     <section className="bg-white">
       <div className="w-full mx-auto px-6 md:px-10 lg:px-16 py-16 md:py-24">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-[#E94E1B] text-center max-w-3xl mx-auto leading-tight">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold uppercase tracking-tight text-[#1074FE] text-center max-w-3xl mx-auto leading-tight">
           Rely on a rock-solid partner
         </h2>
 
         <div className="mt-12 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-          <LogoChip label="SwissCresta" />
+          <LogoChip label="SetupFX" />
           <LogoChip label="finma" />
           <LogoChip label="SIX" />
         </div>

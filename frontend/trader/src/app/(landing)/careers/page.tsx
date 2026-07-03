@@ -8,8 +8,8 @@ import Sponsors from '@/landing/marketing/Sponsors'
 import Disclaimer from '@/landing/marketing/Disclaimer'
 
 export const metadata = {
-  title: 'Careers — SwissCresta',
-  description: 'Join the SwissCresta team. We are all in.',
+  title: 'Careers — SetupFX',
+  description: 'Join the SetupFX team. We are all in.',
 }
 
 export default function CareersPage() {

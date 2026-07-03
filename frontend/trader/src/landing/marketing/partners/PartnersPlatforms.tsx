@@ -21,9 +21,9 @@ function FloatingWidget({ title, value, sub, className = '' }: WidgetProps) {
       </div>
       <div className="mt-1 text-base font-bold text-gray-900">{value}</div>
       <div className="mt-2 flex gap-1">
-        <span className="flex-1 h-1.5 rounded-sm bg-[#E94E1B]/70" />
+        <span className="flex-1 h-1.5 rounded-sm bg-[#1074FE]/70" />
         <span className="flex-1 h-1.5 rounded-sm bg-gray-900/80" />
-        <span className="flex-1 h-1.5 rounded-sm bg-[#E94E1B]/40" />
+        <span className="flex-1 h-1.5 rounded-sm bg-[#1074FE]/40" />
       </div>
     </div>
   )
@@ -56,8 +56,8 @@ export default function PartnersPlatforms() {
 
         <div className="mt-12 max-w-3xl mx-auto text-center">
           <p className="text-gray-600 leading-relaxed">
-            With SwissCresta, you and your clients get access to our trading and banking platforms
-            (CFXD, SwissCresta App, etc.), with TradingView charts, integrated Autochartist, and
+            With SetupFX, you and your clients get access to our trading and banking platforms
+            (CFXD, SetupFX App, etc.), with TradingView charts, integrated Autochartist, and
             the necessary features to easily receive and transfer your commissions. Efficient
             client digital onboarding, advanced client tracking systems and comprehensive
             reporting tools are the cherry on top.
