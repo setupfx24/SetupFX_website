@@ -24,6 +24,9 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
         select(func.count(User.id)).where(
             User.role.notin_(["admin", "super_admin", "employee", "manager", "support"]),
             User.is_demo == False,  # noqa: E712 — SQLAlchemy needs literal False
+            # Only fully-onboarded traders — matches the Users list, which
+            # hides pending signups (email_verified=False) until they verify.
+            User.email_verified.is_(True),
         )
     )
     total_users = total_users_q.scalar() or 0
@@ -57,6 +60,7 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
         .where(
             User.role.notin_(["admin", "super_admin", "employee", "manager", "support"]),
             User.is_demo == False,  # noqa: E712
+            User.email_verified.is_(True),
         )
     )
     active_traders = active_traders_q.scalar() or 0
