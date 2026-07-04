@@ -41,6 +41,10 @@ def _apply_filters(
         stmt = stmt.where(UserAuditLog.created_at >= datetime.combine(date_from, time.min, tzinfo=timezone.utc))
     if date_to:
         stmt = stmt.where(UserAuditLog.created_at <= datetime.combine(date_to, time.max, tzinfo=timezone.utc))
+    # Never surface demo ("Try with demo") activity — audit logs are for real users only.
+    stmt = stmt.where(
+        UserAuditLog.user_id.notin_(select(User.id).where(User.is_demo == True).scalar_subquery())  # noqa: E712
+    )
     return stmt
 
 
