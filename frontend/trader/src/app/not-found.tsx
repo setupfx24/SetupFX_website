@@ -12,7 +12,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white px-6">
       <div className="max-w-md w-full text-center">
-        <p className="text-[120px] font-bold leading-none text-[#1074FE] mb-2">404</p>
+        <p className="text-[120px] font-bold leading-none text-accent mb-2">404</p>
         <h1 className="text-2xl font-bold mb-3">Page not found</h1>
         <p className="text-gray-400 mb-8 leading-relaxed">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
@@ -20,7 +20,7 @@ export default function NotFound() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/dashboard"
-            className="inline-flex items-center justify-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
             <Home className="w-4 h-4" />
             Dashboard

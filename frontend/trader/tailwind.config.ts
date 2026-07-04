@@ -50,13 +50,15 @@ const config: Config = {
           bg: 'rgba(220,38,38,0.1)',
           glow: 'rgba(220,38,38,0.2)',
         },
-        /* Vantage-style accent — orange #1074FE for CTAs, brand marks, NEW badges. */
+        /* Brand accent — reads the SetupFX brand tokens from src/styles/theme.css.
+           Change the colour there (one place) → every bg-accent/text-accent/… updates. */
         accent: {
-          DEFAULT: '#1074FE',
-          hover: '#0856C5',
-          soft: '#E8F1FF',
-          light: '#4D95FF',
-          dark: '#0856C5',
+          DEFAULT: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          hover: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
+          soft: 'rgb(var(--brand-soft-rgb) / <alpha-value>)',
+          light: 'rgb(var(--brand-light-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
+          active: 'rgb(var(--brand-active-rgb) / <alpha-value>)',
         },
         success: '#10B981',
         warning: '#F59E0B',
@@ -71,12 +73,12 @@ const config: Config = {
           purple: '#9775FA',
           pink: '#F06595',
         },
-        /* Landing-page palette — SetupFX brand */
+        /* Landing-page palette — SetupFX brand (accent from theme.css tokens) */
         'primary': {
           bg: '#FFFFFF',
           secondary: '#FAFAFA',
-          accent: '#1074FE',
-          purple: '#0856C5',
+          accent: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          purple: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
         },
         /* ─────────────────────────────────────────────────────────
            Marketing site palette (`mkt.*` namespace)

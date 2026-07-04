@@ -259,7 +259,7 @@ export default function AccountsPage() {
   };
 
   const newAccountCtaClass =
-    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-[#1074FE] text-[#1074FE] text-sm font-bold hover:bg-[#1074FE]/10 transition-colors shrink-0';
+    'inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-accent text-accent text-sm font-bold hover:bg-accent/10 transition-colors shrink-0';
 
   /** Live account creation no longer gates on KYC — the only KYC gate left is
    *  on Razorpay (Card / UPI) deposits. Everything else (open account, trade,
@@ -297,7 +297,7 @@ export default function AccountsPage() {
             <Link
               href="/auth/register"
               onClick={() => setDemoUpgradeOpen(false)}
-              className="px-5 py-2.5 rounded-lg bg-[#1074FE] text-white text-sm font-bold hover:bg-[#0856C5] transition-colors text-center"
+              className="px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-bold hover:bg-accent-hover transition-colors text-center"
             >
               Register Real Account
             </Link>
@@ -710,7 +710,7 @@ function AccountCard({
           </span>
           {isManagedAccount && (
             <span
-              className="inline-flex items-center gap-1 rounded-md bg-[#E8F1FF] px-2 py-0.5 text-xs font-medium text-[#1074FE]"
+              className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent"
               title="Copy-trading account — trades are mirrored from the master you follow"
             >
               <Users size={12} />
@@ -777,7 +777,7 @@ function AccountCard({
           accounts show their group + server line. */}
       <p className="mt-2 text-xs text-[#6B7280]">
         {isManagedAccount ? (
-          <span className="font-medium text-[#1074FE]">Copy Trading</span>
+          <span className="font-medium text-accent">Copy Trading</span>
         ) : (
           <>
             {groupName} STP <span className="mx-2 text-[#D1D5DB]">|</span> {serverLabel}
@@ -788,8 +788,8 @@ function AccountCard({
       {/* Inner summary tile */}
       <div className="mt-4 rounded-xl bg-[#F5F5F5] p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E8F1FF]">
-            <Wallet size={20} className="text-[#1074FE]" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft">
+            <Wallet size={20} className="text-accent" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] uppercase tracking-wide font-semibold text-[#9A9A9A]">Equity</p>
@@ -825,7 +825,7 @@ function AccountCard({
                 ? 'Managed account — trades are mirrored from the master. Open the terminal to view the copied positions.'
                 : undefined
             }
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-[#1074FE] hover:text-[#1074FE] transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#E5E5E5] bg-white px-4 py-2 text-sm font-semibold text-[#0A0A0A] hover:border-accent hover:text-accent transition-colors"
           >
             <TrendingUp size={15} />
             {isManagedAccount ? 'View Trades' : 'Trade'}

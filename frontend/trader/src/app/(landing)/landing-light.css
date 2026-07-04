@@ -303,7 +303,7 @@
 .landing-root .bg-primary\/10         { background-color: rgba(16, 116, 254, 0.08) !important; }
 .landing-root .bg-primary\/25         { background-color: rgba(16, 116, 254, 0.18) !important; }
 .landing-root .bg-primary\/60         { background-color: rgba(16, 116, 254, 0.50) !important; }
-.landing-root .text-primary           { color: #1074FE !important; }
+.landing-root .text-primary           { color: var(--brand-primary) !important; }
 .landing-root .text-primary\/70       { color: rgba(16, 116, 254, 0.70) !important; }
 .landing-root .border-primary\/30     { border-color: rgba(16, 116, 254, 0.30) !important; }
 .landing-root .border-primary\/35     { border-color: rgba(16, 116, 254, 0.35) !important; }
@@ -377,4 +377,4 @@
 .landing-root .setupfx-footer-dark .border-border            { border-color: rgba(245,245,245,0.10) !important; }
 .landing-root .setupfx-footer-dark .border-foreground\/10    { border-color: rgba(245,245,245,0.10) !important; }
 /* Brand colour stays the same; just make sure primary blue reads on dark */
-.landing-root .setupfx-footer-dark .text-primary             { color: #4D95FF !important; }
+.landing-root .setupfx-footer-dark .text-primary             { color: var(--brand-light) !important; }

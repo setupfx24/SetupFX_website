@@ -40,7 +40,7 @@ export default function Error({
           <button
             onClick={reset}
             type="button"
-            className="inline-flex items-center justify-center gap-2 bg-[#1074FE] hover:bg-[#0856C5] text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-semibold px-6 py-3 rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
             Try again

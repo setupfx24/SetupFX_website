@@ -33,11 +33,11 @@ const config: Config = {
          * generic primary too — so it's repointed to the brand orange
          * to keep every button/icon on-theme (sell stays red). */
         buy: {
-          DEFAULT: '#1074FE',
-          light: '#4D95FF',
-          dark: '#0856C5',
-          bg: 'rgba(16,116,254,0.08)',
-          glow: 'rgba(16,116,254,0.25)',
+          DEFAULT: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          light: 'rgb(var(--brand-light-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
+          bg: 'rgb(var(--brand-primary-rgb) / 0.08)',
+          glow: 'rgb(var(--brand-primary-rgb) / 0.25)',
         },
         sell: {
           DEFAULT: '#ef4444',
@@ -45,7 +45,14 @@ const config: Config = {
           dark: '#dc2626',
           bg: 'rgba(239,68,68,0.07)',
         },
-        accent: { DEFAULT: '#1074FE', light: '#4D95FF', dark: '#0856C5' },
+        accent: {
+          DEFAULT: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          hover: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
+          soft: 'rgb(var(--brand-soft-rgb) / <alpha-value>)',
+          light: 'rgb(var(--brand-light-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--brand-hover-rgb) / <alpha-value>)',
+          active: 'rgb(var(--brand-active-rgb) / <alpha-value>)',
+        },
         success: '#22c55e',
         warning: '#FFB300',
         info: '#29B6F6',

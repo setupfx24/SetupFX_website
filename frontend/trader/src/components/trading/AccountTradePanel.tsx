@@ -279,7 +279,7 @@ export default function AccountTradePanel({ account, onClose }: AccountTradePane
                     </span>
                   ) : (
                     <span className="flex items-center gap-1" title="Disconnected">
-                      <WifiOff size={10} className="text-[#0856C5]" />
+                      <WifiOff size={10} className="text-accent-hover" />
                     </span>
                   )}
                 </div>

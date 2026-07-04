@@ -6,9 +6,9 @@
   --auth-bg: #FFFFFF;
   --auth-input-bg: #FFFFFF;
   --auth-border: #E5E5E5;
-  --auth-accent: #1074FE;        /* SetupFX orange */
-  --auth-accent-light: #4D95FF;
-  --auth-accent-dark: #0856C5;
+  --auth-accent: var(--brand-primary);        /* SetupFX orange */
+  --auth-accent-light: var(--brand-light);
+  --auth-accent-dark: var(--brand-hover);
   --auth-text: #0A0A0A;
   --auth-muted: #5B5B5B;
   --auth-radius-md: 12px;

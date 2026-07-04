@@ -440,7 +440,7 @@ export default function OrderPanel() {
             {isConnected ? (
               <Wifi size={isTradingTerminal ? 11 : 12} className="text-[#6366F1]" />
             ) : (
-              <WifiOff size={isTradingTerminal ? 11 : 12} className="text-[#0856C5]" />
+              <WifiOff size={isTradingTerminal ? 11 : 12} className="text-accent-hover" />
             )}
           </div>
         </div>
@@ -556,7 +556,7 @@ export default function OrderPanel() {
                     </span>
                     <span
                       className={clsx(
-                        'font-mono font-bold tabular-nums text-[#1074FE] leading-tight',
+                        'font-mono font-bold tabular-nums text-accent leading-tight',
                         isTradingTerminal ? 'text-[11px]' : 'text-sm',
                       )}
                     >
@@ -881,7 +881,7 @@ export default function OrderPanel() {
                 Free ${freeMargin.toFixed(2)}
               </span>
               <span
-                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#6366F1]' : 'text-[#0856C5]')}
+                className={clsx('shrink-0 font-mono', isConnected ? 'text-[#6366F1]' : 'text-accent-hover')}
                 title={isConnected ? 'Feed connected' : 'Feed disconnected'}
               >
                 {isConnected ? '●' : '○'}

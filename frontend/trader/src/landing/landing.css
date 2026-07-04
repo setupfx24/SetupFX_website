@@ -17,9 +17,9 @@
   --fx-line:         rgba(255, 255, 255, 0.06);
   --fx-line-strong:  rgba(255, 255, 255, 0.12);
 
-  --fx-gold:         #1074FE;   /* primary accent — matches logo */
-  --fx-gold-light:   #4D95FF;   /* highlight */
-  --fx-gold-dark:    #0856C5;   /* deep gold */
+  --fx-gold:         var(--brand-primary);   /* primary accent — matches logo */
+  --fx-gold-light:   var(--brand-light);   /* highlight */
+  --fx-gold-dark:    var(--brand-hover);   /* deep gold */
   --fx-gold-soft:    rgba(16,116,254, 0.12);
 
   --fx-text:         #f5f5f5;

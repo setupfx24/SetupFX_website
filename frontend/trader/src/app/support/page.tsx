@@ -245,7 +245,7 @@ export default function SupportPage() {
     return (
       <DashboardShell mainClassName="flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 py-12">
-          <div className="w-8 h-8 border-2 border-[#1074FE] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-text-tertiary">Loading support…</span>
         </div>
       </DashboardShell>

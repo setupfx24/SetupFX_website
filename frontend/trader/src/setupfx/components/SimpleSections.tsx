@@ -216,7 +216,7 @@ export function WhyTrade() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 80}>
-              <div className="group relative h-full p-6 rounded-2xl bg-white border border-[#CFE0FF] hover:border-[#1074FE]/50 hover:shadow-[0_8px_30px_-12px_rgba(16,116,254,0.35)] transition-all">
+              <div className="group relative h-full p-6 rounded-2xl bg-white border border-[#CFE0FF] hover:border-accent/50 hover:shadow-[0_8px_30px_-12px_rgba(16,116,254,0.35)] transition-all">
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
                   style={{
@@ -302,7 +302,7 @@ export function AccountTiers() {
               <div
                 className={`relative h-full p-6 rounded-2xl border transition-shadow bg-white ${
                   t.popular
-                    ? 'border-[#1074FE]/50 shadow-[0_12px_36px_-12px_rgba(16,116,254,0.35)]'
+                    ? 'border-accent/50 shadow-[0_12px_36px_-12px_rgba(16,116,254,0.35)]'
                     : 'border-[#CFE0FF] hover:shadow-[0_8px_24px_-12px_rgba(0,0,0,0.15)]'
                 }`}
               >
@@ -617,7 +617,7 @@ export function Markets() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {classes.map((c, i) => (
             <ScrollReveal key={c.title} delay={i * 90}>
-              <div className="group relative p-6 rounded-2xl bg-white border border-[#CFE0FF] overflow-hidden h-full transition-all hover:border-[#1074FE]/40 hover:shadow-[0_18px_40px_-18px_rgba(16,116,254,0.40)]">
+              <div className="group relative p-6 rounded-2xl bg-white border border-[#CFE0FF] overflow-hidden h-full transition-all hover:border-accent/40 hover:shadow-[0_18px_40px_-18px_rgba(16,116,254,0.40)]">
                 {/* Decorative corner pulse on hover */}
                 <div
                   className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"

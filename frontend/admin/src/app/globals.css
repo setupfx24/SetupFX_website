@@ -1,3 +1,5 @@
+/* SetupFX brand tokens — single source of truth. */
+@import '../styles/theme.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -100,7 +102,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Utility ── */
 .transition-fast { transition: all 150ms ease; }
-.focus-ring:focus { outline: 1px solid #1074FE; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid var(--brand-primary); outline-offset: -1px; }
 
 /* ═══════════════════════════════════════════════════════════
    Glassmorphism
@@ -133,7 +135,7 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
   box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .skeu-btn-accent {
-  background: linear-gradient(180deg, #4D95FF 0%, #1074FE 50%, #0856C5 100%);
+  background: linear-gradient(180deg, var(--brand-light) 0%, var(--brand-primary) 50%, var(--brand-hover) 100%);
   border: 1px solid rgba(16,116,254,0.5);
   box-shadow: 0 2px 8px rgba(16,116,254,0.3), 0 1px 2px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.2);
   color: #ffffff;
@@ -188,8 +190,8 @@ input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
    ═══════════════════════════════════════════════════════════ */
 .nav-active {
   background: rgba(16,116,254,0.08);
-  border-left: 2px solid #1074FE;
-  color: #1074FE;
+  border-left: 2px solid var(--brand-primary);
+  color: var(--brand-primary);
   box-shadow: inset 3px 0 12px rgba(16,116,254,0.06);
 }
 

@@ -46,8 +46,8 @@ export default function DemoLockGate({ feature, description, children }: Props) 
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
         }}
       >
-        <div className="mx-auto w-14 h-14 rounded-full bg-[#1074FE]/15 border border-[#1074FE]/30 flex items-center justify-center mb-4">
-          <Lock className="w-6 h-6 text-[#1074FE]" strokeWidth={2.2} />
+        <div className="mx-auto w-14 h-14 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center mb-4">
+          <Lock className="w-6 h-6 text-accent" strokeWidth={2.2} />
         </div>
         <h2 className="text-lg sm:text-xl font-bold text-text-primary">
           {feature} is disabled in your demo account
@@ -60,7 +60,7 @@ export default function DemoLockGate({ feature, description, children }: Props) 
           <button
             type="button"
             onClick={startRealRegistration}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#1074FE] text-white text-sm font-bold hover:bg-[#0856C5] transition-colors shadow-[0_2px_8px_rgba(16,116,254,0.25)]"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-white text-sm font-bold hover:bg-accent-hover transition-colors shadow-[0_2px_8px_rgba(16,116,254,0.25)]"
           >
             <UserPlus className="w-4 h-4" />
             Create real account

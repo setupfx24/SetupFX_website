@@ -219,8 +219,8 @@ function BrokerHome() {
         <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-[#E8F1FF] flex items-center justify-center shrink-0">
-                <WalletIcon size={20} className="text-[#1074FE]" />
+              <div className="w-11 h-11 rounded-xl bg-accent-soft flex items-center justify-center shrink-0">
+                <WalletIcon size={20} className="text-accent" />
               </div>
               <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Total Balance</p>
             </div>

@@ -27,7 +27,7 @@
   /* ── Raw palette (HSL triplets, no hsl() so Tailwind alpha works) ── */
   --ink:           0 0% 6%;
   --cream:         0 0% 96%;
-  --brand-green:  217 99% 53%;       /* #1074FE — primary */
+  --brand-green:  217 99% 53%;       /* var(--brand-primary) — primary */
   --brand-red:     0 100% 41%;      /* #d00000 — destructive */
 
   --background:               var(--ink);

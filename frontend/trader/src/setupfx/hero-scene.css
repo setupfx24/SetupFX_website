@@ -1,7 +1,7 @@
 /* ═════════════════════════════════════════════════════════════════════
    HeroScene — dark cinematic hero (theme P1: white+blue+black palette).
    CSS-only layered background. No fragment shader, no rAF, no canvas.
-   Brand blue #1074FE replaces cyan/aurora. Scoped to .setupfx-home so
+   Brand blue var(--brand-primary) replaces cyan/aurora. Scoped to .setupfx-home so
    it cannot leak into the trader dashboard.
    ═════════════════════════════════════════════════════════════════════ */
 
@@ -270,8 +270,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #4D95FF;
-  box-shadow: 0 0 12px #4D95FF;
+  background: var(--brand-light);
+  box-shadow: 0 0 12px var(--brand-light);
   top: -3px;
   left: 50%;
   transform: translateX(-50%);
@@ -367,7 +367,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #ffffff;
-  background: linear-gradient(135deg, #1074FE 0%, #0856C5 100%);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-hover) 100%);
   transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow:

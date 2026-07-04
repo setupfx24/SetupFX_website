@@ -23,7 +23,7 @@ export default function InsuranceMarketingPage() {
       <div className="fx-glow-gold" aria-hidden="true" />
 
       <section className="fx-container relative z-10 pt-28 md:pt-36 pb-16">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#1074FE]/85 mb-3">Trade Insurance</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-accent/85 mb-3">Trade Insurance</p>
         <h1 className="fx-headline text-[40px] sm:text-[52px] md:text-[64px] xl:text-[72px] leading-tight max-w-4xl">
           Trade With
           <br />
@@ -35,10 +35,10 @@ export default function InsuranceMarketingPage() {
           Controlled risk. Smarter trading.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/auth/register" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#1074FE] text-bg-base font-bold text-sm hover:brightness-110">
+          <Link href="/auth/register" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-accent text-bg-base font-bold text-sm hover:brightness-110">
             Activate Protection <ArrowRight size={14} />
           </Link>
-          <Link href="/insurance" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#1074FE]/40 text-text-primary text-sm hover:border-[#1074FE]/70">
+          <Link href="/insurance" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-accent/40 text-text-primary text-sm hover:border-accent/70">
             View My Policies
           </Link>
         </div>
@@ -85,7 +85,7 @@ export default function InsuranceMarketingPage() {
             'Daily payout cap protects the fund',
           ].map((r) => (
             <li key={r} className="flex items-start gap-2 text-sm" style={{ color: 'var(--fx-text-2)' }}>
-              <Check size={14} className="mt-0.5 shrink-0 text-[#1074FE]" />
+              <Check size={14} className="mt-0.5 shrink-0 text-accent" />
               <span>{r}</span>
             </li>
           ))}
@@ -93,15 +93,15 @@ export default function InsuranceMarketingPage() {
       </section>
 
       <section className="fx-container relative z-10 py-20">
-        <div className="rounded-2xl border border-[#1074FE]/30 p-10 md:p-14 text-center bg-[rgba(16,116,254,0.04)]">
-          <ShieldCheck size={28} className="text-[#1074FE] mx-auto mb-4" />
+        <div className="rounded-2xl border border-accent/30 p-10 md:p-14 text-center bg-[rgba(16,116,254,0.04)]">
+          <ShieldCheck size={28} className="text-accent mx-auto mb-4" />
           <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: 'var(--fx-text)' }}>
             Trade With Confidence and Control
           </h2>
           <p className="text-sm md:text-base max-w-xl mx-auto mb-6" style={{ color: 'var(--fx-text-2)' }}>
             Flexible protection designed to support your trading decisions.
           </p>
-          <Link href="/auth/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1074FE] text-bg-base font-bold text-sm hover:brightness-110">
+          <Link href="/auth/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-accent text-bg-base font-bold text-sm hover:brightness-110">
             Start Trading <ArrowRight size={14} />
           </Link>
         </div>

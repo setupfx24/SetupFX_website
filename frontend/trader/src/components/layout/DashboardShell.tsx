@@ -57,7 +57,7 @@ export default function DashboardShell({
 
       <Link
         href="/support"
-        className="fixed bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-[#1074FE] hover:bg-[#0856C5] shadow-lg shadow-[#1074FE]/20 flex items-center justify-center transition-colors"
+        className="fixed bottom-6 right-6 z-[75] w-12 h-12 rounded-full bg-accent hover:bg-accent-hover shadow-lg shadow-accent/20 flex items-center justify-center transition-colors"
         aria-label="Support"
       >
         <MessageSquare size={20} className="text-white" />

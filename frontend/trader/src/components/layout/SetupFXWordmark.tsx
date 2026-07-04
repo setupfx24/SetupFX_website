@@ -46,14 +46,14 @@ export function SetupFXWordmark({
         title="Trading home"
         className={cn(
           'flex items-center justify-center rounded-md hover:bg-bg-hover w-9 h-9 transition-colors',
-          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#1074FE]',
+          'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent',
           className,
         )}
       >
         {hideFlag ? (
           <span className="inline-flex items-baseline font-bold tracking-tight text-base select-none">
             <span className="text-text-primary">S</span>
-            <span className="text-[#1074FE]">C</span>
+            <span className="text-accent">C</span>
           </span>
         ) : (
           <Image
@@ -81,7 +81,7 @@ export function SetupFXWordmark({
       href={href}
       aria-label="SetupFX home"
       className={cn(
-        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1074FE]/60 focus-visible:rounded-md',
+        'inline-flex items-center min-w-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/60 focus-visible:rounded-md',
         className,
       )}
     >

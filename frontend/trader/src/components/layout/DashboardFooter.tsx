@@ -44,19 +44,19 @@ export default function DashboardFooter() {
         <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 text-[11px]">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-text-tertiary">
             <span>© {YEAR} SetupFX. All rights reserved.</span>
-            <Link href="/terms" className="hover:text-[#1074FE] transition-colors">
+            <Link href="/terms" className="hover:text-accent transition-colors">
               Terms &amp; Conditions
             </Link>
-            <Link href="/privacy" className="hover:text-[#1074FE] transition-colors">
+            <Link href="/privacy" className="hover:text-accent transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/risk" className="hover:text-[#1074FE] transition-colors">
+            <Link href="/risk" className="hover:text-accent transition-colors">
               Risk Disclosure
             </Link>
-            <Link href="/how-it-works" className="hover:text-[#1074FE] transition-colors">
+            <Link href="/how-it-works" className="hover:text-accent transition-colors">
               How It Works
             </Link>
-            <Link href="/support" className="hover:text-[#1074FE] transition-colors">
+            <Link href="/support" className="hover:text-accent transition-colors">
               Support
             </Link>
           </div>

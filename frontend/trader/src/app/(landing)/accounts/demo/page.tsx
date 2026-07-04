@@ -59,7 +59,7 @@ export default function DemoAccountPage() {
       style={{ background: 'var(--bg-primary, #ffffff)' }}
     >
       <div className="text-center max-w-md">
-        <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#1074FE] to-[#4D95FF] flex items-center justify-center shadow-lg shadow-[#1074FE]/30">
+        <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-accent to-accent-light flex items-center justify-center shadow-lg shadow-accent/30">
           {error ? (
             <Play className="w-6 h-6 text-white" />
           ) : (
@@ -81,7 +81,7 @@ export default function DemoAccountPage() {
             type="button"
             onClick={launchDemo}
             disabled={busy}
-            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#0856C5] to-[#4D95FF] text-white text-sm font-semibold shadow-md shadow-[#1074FE]/30 hover:shadow-lg hover:shadow-[#1074FE]/40 transition-shadow disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-accent-hover to-accent-light text-white text-sm font-semibold shadow-md shadow-accent/30 hover:shadow-lg hover:shadow-accent/40 transition-shadow disabled:opacity-60"
           >
             {busy ? (
               <Loader2 className="w-4 h-4 animate-spin" />

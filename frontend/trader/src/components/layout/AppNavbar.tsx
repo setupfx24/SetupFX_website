@@ -97,7 +97,7 @@ function isActive(pathname: string, href: string): boolean {
 
 function NewBadge() {
   return (
-    <span className="ml-1.5 inline-flex items-center rounded-full bg-[#1074FE] px-1.5 py-[1px] text-[10px] font-semibold uppercase leading-none text-white">
+    <span className="ml-1.5 inline-flex items-center rounded-full bg-accent px-1.5 py-[1px] text-[10px] font-semibold uppercase leading-none text-white">
       NEW
     </span>
   );
@@ -185,7 +185,7 @@ export default function AppNavbar() {
                     type="button"
                     className={cn(
                       'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
-                      groupActive ? 'bg-[#E8F1FF] text-[#1074FE]' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                      groupActive ? 'bg-accent-soft text-accent' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
                     )}
                     aria-haspopup="menu"
                   >
@@ -205,7 +205,7 @@ export default function AppNavbar() {
                             prefetch={false}
                             className={cn(
                               'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                              childActive ? 'bg-[#E8F1FF] text-[#1074FE]' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
+                              childActive ? 'bg-accent-soft text-accent' : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
                             )}
                           >
                             <ChildIcon size={16} strokeWidth={1.9} />
@@ -227,7 +227,7 @@ export default function AppNavbar() {
                 className={cn(
                   'inline-flex items-center rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
                   active
-                    ? 'bg-[#E8F1FF] text-[#1074FE]'
+                    ? 'bg-accent-soft text-accent'
                     : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
                 )}
               >
@@ -245,7 +245,7 @@ export default function AppNavbar() {
               className={cn(
                 'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13.5px] font-medium transition-colors',
                 MORE_ITEMS.some((i) => isActive(pathname, i.href))
-                  ? 'bg-[#E8F1FF] text-[#1074FE]'
+                  ? 'bg-accent-soft text-accent'
                   : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
               )}
               aria-haspopup="menu"
@@ -272,14 +272,14 @@ export default function AppNavbar() {
                         className={cn(
                           'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                           active
-                            ? 'bg-[#E8F1FF] text-[#1074FE]'
+                            ? 'bg-accent-soft text-accent'
                             : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
                         )}
                       >
                         <span
                           className={cn(
                             'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                            active ? 'bg-[#1074FE] text-white' : 'bg-[#F5F5F5] text-[#0A0A0A]',
+                            active ? 'bg-accent text-white' : 'bg-[#F5F5F5] text-[#0A0A0A]',
                           )}
                         >
                           <Icon size={17} strokeWidth={1.9} />
@@ -339,7 +339,7 @@ export default function AppNavbar() {
               aria-haspopup="menu"
               aria-expanded={userMenuOpen}
             >
-              <div className="h-8 w-8 rounded-full bg-[#E8F1FF] border border-[#1074FE]/30 flex items-center justify-center text-[12px] font-bold uppercase text-[#1074FE]">
+              <div className="h-8 w-8 rounded-full bg-accent-soft border border-accent/30 flex items-center justify-center text-[12px] font-bold uppercase text-accent">
                 {initials}
               </div>
               <ChevronDown size={14} className="text-[#5B5B5B] mr-1" />
@@ -441,7 +441,7 @@ export default function AppNavbar() {
                     className={cn(
                       'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors',
                       active
-                        ? 'bg-[#E8F1FF] text-[#1074FE]'
+                        ? 'bg-accent-soft text-accent'
                         : 'text-[#0A0A0A] hover:bg-[#F5F5F5]',
                     )}
                   >

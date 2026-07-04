@@ -1,0 +1,35 @@
+/**
+ * ─────────────────────────────────────────────────────────────────────
+ *  SetupFX — GLOBAL BRAND THEME TOKENS  (single source of truth)
+ * ─────────────────────────────────────────────────────────────────────
+ *  Change the brand colour in ONE place — here. Every component reads
+ *  these via the Tailwind `accent` token (bg-accent, text-accent, …) or
+ *  directly via `var(--brand-primary)` in inline styles / plain CSS.
+ *
+ *  Two formats per colour:
+ *    --brand-*      → hex, for inline styles / CSS: color: var(--brand-primary)
+ *    --brand-*-rgb  → space-separated channels, so Tailwind opacity works:
+ *                     rgb(var(--brand-primary-rgb) / <alpha-value>)  →  bg-accent/10
+ * ─────────────────────────────────────────────────────────────────────
+ */
+:root {
+  /* Primary brand blue */
+  --brand-primary: #1074FE;
+  --brand-primary-rgb: 16 116 254;
+
+  /* Hover / darker */
+  --brand-hover: #0856C5;
+  --brand-hover-rgb: 8 86 197;
+
+  /* Soft tint (chips, subtle backgrounds) */
+  --brand-soft: #E8F1FF;
+  --brand-soft-rgb: 232 241 255;
+
+  /* Light */
+  --brand-light: #4D95FF;
+  --brand-light-rgb: 77 149 255;
+
+  /* Active (pressed) */
+  --brand-active: #063E8F;
+  --brand-active-rgb: 6 62 143;
+}

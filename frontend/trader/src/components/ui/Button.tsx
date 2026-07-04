@@ -17,7 +17,7 @@ const variants: Record<Variant, string> = {
   // Brand orange — used for every CTA outside the trading terminal. `buy`
   // stays blue because in trading-context blue=buy is a semantic convention,
   // not a brand choice.
-  primary: 'bg-[#1074FE] hover:bg-[#0856C5] active:bg-[#063E8F] text-white font-semibold transition-colors',
+  primary: 'bg-accent hover:bg-accent-hover active:bg-accent-active text-white font-semibold transition-colors',
   buy: 'skeu-btn-buy text-white font-semibold',
   sell: 'skeu-btn-sell text-white font-semibold',
   ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-hover/50 skeu-btn',

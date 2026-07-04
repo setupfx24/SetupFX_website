@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* SetupFX brand tokens — single source of truth for the brand colour. */
+@import '../styles/theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -26,7 +28,7 @@
 
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #1074FE;
+  --border-accent: var(--brand-primary);
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
 
@@ -35,9 +37,9 @@
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
 
-  --accent: #1074FE;
-  --accent-hover: #0856C5;
-  --accent-soft: #E8F1FF;
+  --accent: var(--brand-primary);
+  --accent-hover: var(--brand-hover);
+  --accent-soft: var(--brand-soft);
 
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
@@ -46,7 +48,7 @@
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #1074FE;
+  --input-focus-border: var(--brand-primary);
   --input-focus-shadow: 0 0 0 3px rgba(16,116,254, 0.12);
   --input-placeholder: #9A9A9A;
 
@@ -193,7 +195,7 @@
 
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #1074FE;
+  --border-accent: var(--brand-primary);
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
 
@@ -202,9 +204,9 @@
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
 
-  --accent: #1074FE;
-  --accent-hover: #0856C5;
-  --accent-soft: #E8F1FF;
+  --accent: var(--brand-primary);
+  --accent-hover: var(--brand-hover);
+  --accent-soft: var(--brand-soft);
 
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
@@ -213,7 +215,7 @@
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #1074FE;
+  --input-focus-border: var(--brand-primary);
   --input-focus-shadow: 0 0 0 3px rgba(16,116,254, 0.12);
   --input-placeholder: #9A9A9A;
 
@@ -336,23 +338,23 @@
   --bg-glass-heavy: rgba(255, 255, 255, 0.92);
   --border-primary: #E5E5E5;
   --border-secondary: #EDEDED;
-  --border-accent: #1074FE;
+  --border-accent: var(--brand-primary);
   --border-glass: rgba(0, 0, 0, 0.06);
   --border-glass-bright: rgba(0, 0, 0, 0.10);
   --text-primary: #0A0A0A;
   --text-secondary: #5B5B5B;
   --text-tertiary: #9A9A9A;
   --text-inverse: #FFFFFF;
-  --accent: #1074FE;
-  --accent-hover: #0856C5;
-  --accent-soft: #E8F1FF;
+  --accent: var(--brand-primary);
+  --accent-hover: var(--brand-hover);
+  --accent-soft: var(--brand-soft);
   --scrollbar-track: #F5F5F5;
   --scrollbar-thumb: #D4D4D4;
   --scrollbar-hover: #9CA3AF;
   --input-bg: #FFFFFF;
   --input-border: #E5E5E5;
   --input-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  --input-focus-border: #1074FE;
+  --input-focus-border: var(--brand-primary);
   --input-focus-shadow: 0 0 0 3px rgba(16,116,254, 0.12);
   --input-placeholder: #9A9A9A;
   --selection-bg: rgba(16,116,254, 0.14);
@@ -769,7 +771,7 @@ html {
 
 .resize-handle-h { cursor: col-resize; }
 .resize-handle-v { cursor: row-resize; }
-.focus-ring:focus { outline: 1px solid #1074FE; outline-offset: -1px; }
+.focus-ring:focus { outline: 1px solid var(--brand-primary); outline-offset: -1px; }
 .no-drag { -webkit-user-drag: none; user-select: none; }
 
 @layer components {
