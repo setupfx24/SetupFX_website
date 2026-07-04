@@ -65,14 +65,14 @@ export default function AdminLoginPage() {
 
         {/* Left dark hero panel */}
         <div className="bg-black text-white p-8 md:p-12 md:w-1/2 relative overflow-hidden z-10 flex flex-col justify-between min-h-[22rem] md:min-h-[38rem]">
-          <span className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5">
+          <span className="inline-flex items-center self-start relative z-10">
             <Image
-              src="/logo.png"
+              src="/setupfx-homebar-white.png"
               alt="SetupFX"
               width={200}
               height={44}
               priority
-              className="h-8 w-auto"
+              className="h-9 w-auto"
             />
           </span>
 

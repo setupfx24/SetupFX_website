@@ -143,7 +143,7 @@ export default function AdminSidebar({
           <img src="/logo.png" alt="SetupFX" className="w-7 h-7 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center min-w-0">
-            <img src="/setupfx-logo.png" alt="SetupFX" className="h-7 w-auto object-contain shrink-0" />
+            <img src="/setupfx-homebar.png" alt="SetupFX" className="h-7 w-auto object-contain shrink-0" />
           </Link>
         )}
         {/* Desktop collapse toggle */}
