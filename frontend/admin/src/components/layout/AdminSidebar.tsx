@@ -140,27 +140,38 @@ export default function AdminSidebar({
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {!showLabels ? (
-          <img src="/logo.png" alt="SetupFX" className="w-9 h-9 object-contain mx-auto" />
+          /* Collapsed (desktop): the brand icon IS the expand trigger — nothing else shows */
+          <button
+            onClick={() => setCollapsed(false)}
+            className="mx-auto p-1 rounded-md hover:bg-accent/10 transition-fast"
+            aria-label="Expand sidebar"
+            title="Expand"
+          >
+            <img src="/setupfx_icon.png" alt="SetupFX" className="w-9 h-9 object-contain" />
+          </button>
         ) : (
-          <Link href="/" className="flex items-center min-w-0">
-            <img src="/setupfx-homebar.png" alt="SetupFX" className="h-9 w-auto object-contain shrink-0" />
-          </Link>
+          <>
+            <Link href="/" className="flex items-center min-w-0">
+              <img src="/setupfx-homebar.png" alt="SetupFX" className="h-9 w-auto object-contain shrink-0" />
+            </Link>
+            {/* Desktop collapse toggle */}
+            <button
+              onClick={() => setCollapsed(true)}
+              className="hidden md:block ml-auto p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+            {/* Mobile close button */}
+            <button
+              onClick={() => onClose?.()}
+              className="md:hidden ml-auto p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </>
         )}
-        {/* Desktop collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn('hidden md:block p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10', !collapsed && 'ml-auto')}
-        >
-          {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
-        </button>
-        {/* Mobile close button */}
-        <button
-          onClick={() => onClose?.()}
-          className="md:hidden ml-auto p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10"
-          aria-label="Close menu"
-        >
-          <X size={18} />
-        </button>
       </div>
 
       {/* Nav */}

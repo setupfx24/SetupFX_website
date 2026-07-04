@@ -112,9 +112,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 success: {
                   duration: 2200,
                   className: 'setupfx-hot-toast',
-                  // White check on an amber disc reads as "good" instantly on
-                  // dark surface without losing the brand accent.
-                  iconTheme: { primary: '#F59E0B', secondary: '#1A140A' },
+                  // White check on a brand-blue disc — matches the SetupFX
+                  // accent and reads as "good" instantly on any surface.
+                  iconTheme: { primary: '#1074FE', secondary: '#ffffff' },
                 },
                 error: {
                   duration: 4000,
