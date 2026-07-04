@@ -84,10 +84,13 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStats:
     withdrawals_today = float(withdrawals_today_q.scalar() or 0)
 
     # Platform P&L (all-time): broker wins when traders lose → negate total user profit.
-    # Also add commissions earned (always positive for broker).
+    # Also add commissions earned (always positive for broker). Demo accounts
+    # ("Try with demo") are play-money and must be excluded from every metric.
+    _demo_accts = select(TradingAccount.id).where(TradingAccount.is_demo == True).scalar_subquery()  # noqa: E712
     pnl_q = await db.execute(
         select(func.coalesce(func.sum(Position.profit), 0)).where(
             Position.status == PositionStatus.CLOSED.value,
+            Position.account_id.notin_(_demo_accts),
         )
     )
     user_pnl = float(pnl_q.scalar() or 0)

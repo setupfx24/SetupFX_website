@@ -28,14 +28,16 @@ def _start_of_month():
 
 
 async def _revenue_stats(db: AsyncSession, since=None):
-    commission_filter = [Position.commission != 0]
-    swap_filter = [Position.swap != 0]
-    pnl_filter = []
+    # Demo accounts ("Try with demo") must never appear in platform revenue /
+    # P&L — their trades are play-money and would pollute every metric.
+    _demo_accts = select(TradingAccount.id).where(TradingAccount.is_demo == True).scalar_subquery()  # noqa: E712
+
+    commission_filter = [Position.commission != 0, Position.account_id.notin_(_demo_accts)]
+    swap_filter = [Position.swap != 0, Position.account_id.notin_(_demo_accts)]
 
     if since:
         commission_filter.append(Position.created_at >= since)
         swap_filter.append(Position.created_at >= since)
-        pnl_filter.append(TradeHistory.closed_at >= since)
 
     comm_q = await db.execute(
         select(func.coalesce(func.sum(Position.commission), 0)).where(*commission_filter)
@@ -47,12 +49,11 @@ async def _revenue_stats(db: AsyncSession, since=None):
     )
     total_swap = abs(float(swap_q.scalar() or 0))
 
-    pnl_q_filters = []
+    pnl_q_filters = [TradeHistory.account_id.notin_(_demo_accts)]
     if since:
         pnl_q_filters.append(TradeHistory.closed_at >= since)
     pnl_q = await db.execute(
-        select(func.coalesce(func.sum(TradeHistory.profit), 0)).where(*pnl_q_filters) if pnl_q_filters
-        else select(func.coalesce(func.sum(TradeHistory.profit), 0))
+        select(func.coalesce(func.sum(TradeHistory.profit), 0)).where(*pnl_q_filters)
     )
     user_pnl = float(pnl_q.scalar() or 0)
 
@@ -85,11 +86,17 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
     )
     total_withdrawals = float(wd_q.scalar() or 0)
 
+    _demo_accts = select(TradingAccount.id).where(TradingAccount.is_demo == True).scalar_subquery()  # noqa: E712
     open_pos_q = await db.execute(
-        select(func.count(Position.id)).where(Position.status == PositionStatus.OPEN.value)
+        select(func.count(Position.id)).where(
+            Position.status == PositionStatus.OPEN.value,
+            Position.account_id.notin_(_demo_accts),
+        )
     )
 
-    closed_trades_q = await db.execute(select(func.count(TradeHistory.id)))
+    closed_trades_q = await db.execute(
+        select(func.count(TradeHistory.id)).where(TradeHistory.account_id.notin_(_demo_accts))
+    )
 
     # Admin commission earned from all sources (PAMM performance fee, copy-trade, etc.)
     admin_comm_all_q = await db.execute(
@@ -208,6 +215,7 @@ async def analytics_dashboard(db: AsyncSession) -> dict:
 
 
 async def get_exposure(db: AsyncSession) -> dict:
+    _demo_accts = select(TradingAccount.id).where(TradingAccount.is_demo == True).scalar_subquery()  # noqa: E712
     result = await db.execute(
         select(
             Position.instrument_id,
@@ -224,7 +232,10 @@ async def get_exposure(db: AsyncSession) -> dict:
                 case((Position.side == OrderSide.SELL.value, 1), else_=0)
             ).label("sell_count"),
         )
-        .where(Position.status == PositionStatus.OPEN.value)
+        .where(
+            Position.status == PositionStatus.OPEN.value,
+            Position.account_id.notin_(_demo_accts),
+        )
         .group_by(Position.instrument_id)
     )
     rows = result.all()
@@ -252,6 +263,7 @@ async def get_exposure(db: AsyncSession) -> dict:
             func.count(TradeHistory.id).label("trades_count"),
             func.sum(case((TradeHistory.profit > 0, 1), else_=0)).label("wins"),
         )
+        .where(TradeHistory.account_id.notin_(_demo_accts))
         .group_by(TradeHistory.account_id)
         .order_by(func.sum(TradeHistory.profit).desc())
         .limit(10)
