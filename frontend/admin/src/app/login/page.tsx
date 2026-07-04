@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
               width={200}
               height={44}
               priority
-              className="h-9 w-auto"
+              className="h-11 w-auto"
             />
           </span>
 

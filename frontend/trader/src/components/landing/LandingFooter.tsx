@@ -14,7 +14,7 @@ export default function LandingFooter() {
                 alt="SetupFX"
                 width={1947}
                 height={361}
-                className="h-9 w-auto"
+                className="h-11 w-auto"
               />
             </Link>
             <p className="text-gray-500 text-sm leading-relaxed mb-3 max-w-sm">

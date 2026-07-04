@@ -140,10 +140,10 @@ export default function AdminSidebar({
       {/* Header */}
       <div className="flex items-center h-14 px-3 border-b border-border-primary/40">
         {!showLabels ? (
-          <img src="/logo.png" alt="SetupFX" className="w-7 h-7 object-contain mx-auto" />
+          <img src="/logo.png" alt="SetupFX" className="w-9 h-9 object-contain mx-auto" />
         ) : (
           <Link href="/" className="flex items-center min-w-0">
-            <img src="/setupfx-homebar.png" alt="SetupFX" className="h-7 w-auto object-contain shrink-0" />
+            <img src="/setupfx-homebar.png" alt="SetupFX" className="h-9 w-auto object-contain shrink-0" />
           </Link>
         )}
         {/* Desktop collapse toggle */}

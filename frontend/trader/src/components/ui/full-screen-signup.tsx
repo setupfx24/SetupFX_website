@@ -226,7 +226,7 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
               width={220}
               height={48}
               priority
-              className="h-9 w-auto"
+              className="h-11 w-auto"
             />
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">

@@ -216,7 +216,7 @@ export function Navbar() {
           <img
             src={BRAND.logo}
             alt={BRAND.name}
-            className="h-7 lg:h-7 xl:h-8 w-auto object-contain"
+            className="h-9 lg:h-9 xl:h-10 w-auto object-contain"
           />
         </Link>
 

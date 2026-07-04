@@ -169,7 +169,7 @@ export default function AppNavbar() {
             width={200}
             height={44}
             priority
-            className="h-9 w-auto"
+            className="h-11 w-auto"
           />
         </Link>
 
