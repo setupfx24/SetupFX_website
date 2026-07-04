@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, CandlestickChart, Wallet, Landmark,
   Settings, Sliders, BarChart3, Gift, Image, HeadphonesIcon,
   UserCog, ChevronDown, ChevronRight, Network, Share2,
-  DollarSign, Percent, ArrowLeftRight, PanelLeftClose, PanelLeft,
+  DollarSign, Percent, ArrowLeftRight,
   Receipt, Layers, ShieldCheck, ScrollText, BookOpen, X,
 } from 'lucide-react';
 
@@ -154,13 +154,14 @@ export default function AdminSidebar({
             <Link href="/" className="flex items-center min-w-0">
               <img src="/setupfx-homebar.png" alt="SetupFX" className="h-9 w-auto object-contain shrink-0" />
             </Link>
-            {/* Desktop collapse toggle */}
+            {/* Desktop collapse toggle — uses the brand arrow icon */}
             <button
               onClick={() => setCollapsed(true)}
-              className="hidden md:block ml-auto p-1.5 text-text-tertiary hover:text-accent transition-fast rounded-md hover:bg-accent/10"
+              className="hidden md:block ml-auto p-1 rounded-md hover:bg-accent/10 transition-fast"
               aria-label="Collapse sidebar"
+              title="Collapse"
             >
-              <PanelLeftClose size={16} />
+              <img src="/setupfx_icon.png" alt="Collapse sidebar" className="w-6 h-6 object-contain" />
             </button>
             {/* Mobile close button */}
             <button
