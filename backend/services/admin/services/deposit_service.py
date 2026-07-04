@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from packages.common.src.models import User, TradingAccount, Deposit, Withdrawal, Transaction, BonusOffer
@@ -56,7 +56,13 @@ def _withdrawal_to_out(w: Withdrawal, user: User = None) -> WithdrawalOut:
 
 
 async def list_pending_deposits(page: int, per_page: int, db: AsyncSession):
-    query = select(Deposit).where(Deposit.status == "pending")
+    # Only deposits still needing admin action — exclude those already
+    # approved-for-Razorpay / given a custom link (status stays 'pending'
+    # until the user pays, but they carry a payment_link).
+    query = select(Deposit).where(
+        Deposit.status == "pending",
+        or_(Deposit.payment_link.is_(None), Deposit.payment_link == ""),
+    )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -108,6 +114,15 @@ async def list_all_deposits(
             query = query.where(Deposit.status.in_(["approved", "auto_approved"]))
         else:
             query = query.where(Deposit.status == status)
+            # The Pending queue lists deposits that still need admin action.
+            # A local-banking request that's been approved-for-Razorpay or
+            # given a custom link keeps status='pending' (the webhook credits
+            # it only after the user actually pays) but carries a payment_link.
+            # It has been actioned, so drop it from the needs-review queue.
+            if status == "pending":
+                query = query.where(
+                    or_(Deposit.payment_link.is_(None), Deposit.payment_link == "")
+                )
     count_q = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_q)).scalar() or 0
 
