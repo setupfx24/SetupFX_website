@@ -1,84 +1,76 @@
-import Link from 'next/link'
-import { ArrowRight, Coins, Globe, Layers, Briefcase, Bitcoin } from 'lucide-react'
+'use client';
 
-export const metadata = { title: 'Markets — SetupFX' }
+import Link from 'next/link';
+import { ArrowUpRight, Repeat, BarChart3, Coins, Bitcoin, LineChart } from 'lucide-react';
+import { LiveChartSection } from '@/setupfx/components/LiveChartSection';
 
 const MARKETS = [
-  {
-    href: '/precious-metals',
-    icon: Coins,
-    title: 'Precious Metals',
-    body: 'Gold, silver, platinum and palladium. The assets that outlast every headline — traded with deep institutional liquidity.',
-  },
-  {
-    href: '/currency-pairs',
-    icon: Globe,
-    title: 'Currency Pairs',
-    body: 'The global FX market at your fingertips. Majors, minors, exotics — over 80 pairs with tight spreads and clean execution.',
-  },
-  {
-    href: '/cfds',
-    icon: Layers,
-    title: 'CFDs',
-    body: 'Go long, go short, go wherever the market takes you. Indices, commodities, single-stock CFDs.',
-  },
-  {
-    href: '/',
-    icon: Briefcase,
-    title: 'Securities',
-    body: 'Stocks, ETFs, bonds, options, futures, derivatives. The full arsenal for a portfolio that works as hard as you do.',
-  },
-  {
-    href: '/',
-    icon: Bitcoin,
-    title: 'Crypto',
-    body: '52 cryptocurrencies on the SetupFX-developed SQX exchange. Trade 24/7 with Swiss-grade security.',
-  },
-]
+  { title: 'Forex',       href: '/trading/forex',       Icon: Repeat,    blurb: 'Trade 60+ currency pairs — majors, minors, exotics. Tight spreads, deep liquidity, 24/7.' },
+  { title: 'Indices',     href: '/trading/indices',     Icon: BarChart3, blurb: "Get exposure to the world's top economies through US, European, and Asian stock indices." },
+  { title: 'Commodities', href: '/trading/commodities', Icon: Coins,     blurb: 'Trade Gold, Silver, Crude Oil, and Natural Gas with real-time pricing and institutional execution.' },
+  { title: 'Crypto',      href: '/trading/crypto',      Icon: Bitcoin,   blurb: 'Trade Bitcoin, Ethereum, and top digital assets around the clock with fast, transparent pricing.' },
+  { title: 'Stocks',      href: '/auth/register',       Icon: LineChart, blurb: 'Access global equities from major exchanges with margin flexibility and competitive conditions.' },
+];
 
 export default function MarketsPage() {
   return (
-    <div className="bg-white text-gray-900">
-      <section className="bg-gradient-to-b from-white to-gray-50 pt-24 pb-16 md:pt-28 md:pb-20">
-        <div className="max-w-5xl mx-auto px-6 lg:px-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1074FE]">
-            Markets
-          </p>
-          <h1 className="mt-4 text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase tracking-tight leading-[1.05] text-gray-900">
-            Every asset class.<br />
-            <span className="text-[#1074FE]">One account.</span>
-          </h1>
-          <p className="mt-6 text-base md:text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
-            From precious metals that have anchored wealth for centuries to crypto that
-            settles in seconds — SetupFX gives you reliable access to the assets that
-            matter, backed by enterprise-grade infrastructure.
-          </p>
+    <main className="relative min-h-screen bg-background overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 0%, hsl(217 99% 53% / 0.18), transparent 70%)' }}
+      />
+
+      {/* Live chart + instrument directory — moved to top of page */}
+      <div className="pt-24 sm:pt-28 md:pt-32">
+        <LiveChartSection />
+      </div>
+
+      <section className="mx-auto max-w-[1200px] px-[var(--gutter)] pt-4 pb-12 sm:pb-20 md:pb-24 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full liquid-glass text-xs uppercase tracking-[0.18em] text-foreground/70 font-body">
+          <span className="size-1.5 rounded-full bg-primary" />
+          What You Can Trade
         </div>
+        <h2 className="mt-6 font-display uppercase tracking-tight leading-[0.95] text-foreground text-3xl sm:text-5xl md:text-6xl lg:text-7xl break-words">
+          One Account.
+          <br />
+          <span className="text-primary">Every Market.</span>
+        </h2>
+        <p className="mt-7 mx-auto max-w-2xl text-foreground/70 text-base sm:text-lg leading-relaxed">
+          SetupFX gives you direct access to the world's most traded financial instruments —
+          all from a single, unified account.
+        </p>
       </section>
 
-      <section className="bg-white pb-24">
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {MARKETS.map(({ href, icon: Icon, title, body }) => (
-              <Link
-                key={title}
-                href={href}
-                className="group bg-gray-50 hover:bg-white rounded-2xl p-7 border border-gray-200/60 hover:border-[#1074FE]/40 hover:shadow-lg transition-all flex flex-col gap-4"
-              >
-                <span className="w-11 h-11 rounded-xl bg-[#1074FE]/10 text-[#1074FE] flex items-center justify-center">
-                  <Icon className="w-5 h-5" strokeWidth={2} />
-                </span>
-                <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-                <p className="text-sm text-gray-600 leading-relaxed">{body}</p>
-                <span className="fx-explore-btn mt-auto w-fit text-sm">
-                  Explore <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
-                </span>
-              </Link>
-            ))}
-          </div>
+      <section className="mx-auto max-w-[1200px] px-[var(--gutter)] pb-24">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {MARKETS.map(({ title, href, Icon, blurb }) => (
+            <Link
+              key={title}
+              href={href}
+              className="liquid-glass rounded-2xl p-7 group transition-transform hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="size-12 rounded-xl bg-primary/25 flex items-center justify-center">
+                  <Icon className="size-6 text-primary" />
+                </div>
+                <ArrowUpRight className="size-5 text-foreground/40 group-hover:text-primary transition-colors" />
+              </div>
+              <h3 className="mt-5 font-display text-2xl uppercase tracking-tight text-foreground">{title}</h3>
+              <p className="mt-3 text-sm text-foreground/65 leading-relaxed">{blurb}</p>
+            </Link>
+          ))}
+        </div>
 
+        <div className="mt-14 text-center">
+          <Link
+            href="/auth/register"
+            className="inline-flex items-center gap-2 rounded-full bg-primary text-white px-6 py-3 text-sm font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity"
+          >
+            Open Account <ArrowUpRight className="size-4" />
+          </Link>
         </div>
       </section>
-    </div>
-  )
+    </main>
+  );
 }

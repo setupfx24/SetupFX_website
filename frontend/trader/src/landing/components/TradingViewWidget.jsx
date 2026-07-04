@@ -6,27 +6,21 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
   const container = useRef(null)
 
   useEffect(() => {
-    const host = container.current
-    if (!host) return
-    host.innerHTML = ''
+    if (!container.current) return
+    container.current.innerHTML = ''
 
     const script = document.createElement('script')
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
     script.type = 'text/javascript'
     script.async = true
-    /* JSON.stringify does NOT escape `</script>` — if `symbol` ever
-     * carries that substring (e.g. a future caller passes
-     * `searchParams.get('symbol')` unvalidated), the inline <script>
-     * tag closes early and the rest becomes attacker-controlled
-     * JavaScript. Patch the serialized output before assignment. */
-    const config = JSON.stringify({
+    script.innerHTML = JSON.stringify({
       autosize: false,
       width: '100%',
       height: CHART_HEIGHT,
       symbol: symbol,
       interval: 'D',
       timezone: 'Etc/UTC',
-      theme: 'light',
+      theme: 'dark',
       style: '1',
       locale: 'en',
       allow_symbol_change: true,
@@ -34,27 +28,15 @@ function TradingViewWidget({ symbol = 'FX:EURUSD' }) {
       support_host: 'https://www.tradingview.com',
       backgroundColor: 'rgba(10, 14, 26, 1)',
       gridColor: 'rgba(255, 255, 255, 0.04)',
-    }).replace(/<\/(script)/gi, '<\\/$1')
-    script.innerHTML = config
+    })
 
     const widgetContainer = document.createElement('div')
     widgetContainer.className = 'tradingview-widget-container__widget'
     widgetContainer.style.height = `${CHART_HEIGHT}px`
     widgetContainer.style.width = '100%'
 
-    host.appendChild(widgetContainer)
-    host.appendChild(script)
-
-    /* Cleanup is critical here. TradingView's external script mutates this
-     * DOM subtree directly (it injects iframes / divs that React has no
-     * idea about). Without wiping the container on unmount, React's
-     * reconciler will later try to insertBefore / removeChild on a tree
-     * whose shape no longer matches its fiber — surfaces as the page-
-     * level "Something broke on our end." after navigating away from a
-     * page that mounted this widget. */
-    return () => {
-      try { host.innerHTML = '' } catch { /* element already detached */ }
-    }
+    container.current.appendChild(widgetContainer)
+    container.current.appendChild(script)
   }, [symbol])
 
   return (

@@ -1,0 +1,380 @@
+/* ═════════════════════════════════════════════════════════════════════
+   Light theme for sub-landing pages.
+
+   Scope: any element under `.landing-root` (the (landing) layout wraps
+   every non-home landing page in this class). The HOMEPAGE at `/`
+   renders WITHOUT `.landing-root` (see (landing)/layout.tsx isHome
+   branch), so its cinematic dark hero is untouched.
+
+   Strategy: override the HSL token triplets that setupfx/styles.css
+   and tailwind.config.ts read, plus explicitly white-paint the
+   `.liquid-glass` cards that were styled for a dark backdrop and
+   would otherwise vanish on white.
+
+   No JS, no IntersectionObserver, no scroll listeners — pure CSS,
+   safe to load on every sub-landing page.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Font uniformity across the entire marketing site.
+      Legacy pages (under /landing/pages/*.jsx) default to Inter; the
+      newer setupfx pages use Plus Jakarta Sans. Force Plus Jakarta Sans
+      everywhere inside .landing-root for visual consistency. The
+      `.setupfx-footer-dark` already gets it via the rule below; this
+      wider rule covers headings, body text, buttons, and links in any
+      legacy section. ── */
+.landing-root,
+.landing-root *:not(code):not(pre):not(.telemetry-num) {
+  font-family: 'Plus Jakarta Sans', Montserrat, ui-sans-serif, system-ui,
+               -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+               'Noto Sans', sans-serif !important;
+}
+
+/* ── Theme tokens flipped to LIGHT on .landing-root ── */
+.landing-root,
+.landing-root .setupfx-home,
+.landing-root.setupfx-home {
+  /* HSL triplets consumed by setupfx/styles.css utility classes
+     (.bg-background, .text-foreground, .bg-card, etc.) */
+  --background:             0 0% 100%;
+  --foreground:             222 47% 11%;
+  --card:                   0 0% 100%;
+  --card-foreground:        222 47% 11%;
+  --muted:                  220 14% 96%;
+  --muted-foreground:       220 9% 46%;
+  --border:                 220 14% 91%;
+  --input:                  220 14% 91%;
+  --ring:                   217 99% 53%;
+
+  /* Landing-design-system tokens */
+  --fx-bg:                  #FFFFFF;
+  --fx-bg-elev:             #F6F8FB;
+  --fx-bg-elev-2:           #EDF1F6;
+  --fx-line:                rgba(15, 23, 42, 0.08);
+  --fx-line-strong:         rgba(15, 23, 42, 0.16);
+  --fx-text:                #0F172A;
+  --fx-text-2:              #475569;
+  --fx-text-3:              #64748B;
+
+  --text-primary:           #0F172A;
+  --text-secondary:         #475569;
+  --text-tertiary:          #64748B;
+  --bg-primary:             #FFFFFF;
+  --bg-secondary:           #F6F8FB;
+
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+/* ── Legacy landing-page palette overrides.
+      Tailwind config has `primary.bg = #08090b` and `primary.secondary =
+      #101114` (both DARK) baked in. The legacy /landing/pages/*.jsx use
+      `bg-primary-bg` / `bg-primary-secondary` everywhere assuming a dark
+      theme. Flip both to the light palette so those pages match the
+      sub-landing light theme. ── */
+.landing-root .bg-primary-bg        { background-color: #FFFFFF !important; }
+.landing-root .bg-primary-secondary { background-color: #F4F8FF !important; }
+
+/* ── Universal text-white flip inside .landing-root.
+      The legacy pages hardcode `text-white` on H1/H2 because they were
+      designed for a dark theme. With our light palette flip, those
+      titles become INVISIBLE on white bg. Default `text-white` to dark
+      slate inside `.landing-root`; restore to actual white only in
+      known dark contexts below. ── */
+.landing-root .text-white          { color: #0F172A !important; }
+.landing-root .text-text-secondary { color: #475569 !important; }
+
+/* ── Restore TRUE white in legitimate dark contexts: ── */
+/*   • .setupfx-navbar-dark — site navbar (always dark bg) */
+/*   • [role="banner"] — BannerPlaceholder's hardcoded black hero */
+/*   • .setupfx-footer-dark — site footer */
+/*   • <th style="background: ..."> — inline gradient table headers */
+/*   • .bg-black, .bg-[#000…] — explicit black blocks */
+/*   • .hero-banner — legacy landing hero (dark gradient) */
+/*   • .bg-gradient-hero — legacy CTA bottom section (dark linear gradient) */
+.landing-root .setupfx-navbar-dark,
+.landing-root .setupfx-navbar-dark *,
+.landing-root .setupfx-navbar-dark .text-white,
+.landing-root [role="banner"] .text-white,
+.landing-root [role="banner"] h1,
+.landing-root [role="banner"] h2,
+.landing-root [role="banner"] p,
+.landing-root .setupfx-footer-dark .text-white,
+.landing-root th[style*="background"],
+.landing-root th[style*="background"] .text-white,
+.landing-root .bg-black,
+.landing-root .bg-black .text-white,
+.landing-root [class*="bg-[#0"]   .text-white,
+.landing-root .bg-gradient-hero .text-white,
+.landing-root .bg-gradient-hero h1,
+.landing-root .bg-gradient-hero h2,
+.landing-root .bg-gradient-hero h3,
+.landing-root .bg-gradient-hero p {
+  color: #FFFFFF !important;
+}
+/* Navbar inactive links should stay 60% white (matches the JSX
+   `text-white/60` original), active link goes full white. The
+   blanket selector above paints everything pure white; refine for
+   inactive items so the active vs inactive distinction stays visible. */
+.landing-root .setupfx-navbar-dark .text-white\/60       { color: rgba(255, 255, 255, 0.60) !important; }
+.landing-root .setupfx-navbar-dark .text-white\/65       { color: rgba(255, 255, 255, 0.65) !important; }
+.landing-root .setupfx-navbar-dark .text-white\/70       { color: rgba(255, 255, 255, 0.70) !important; }
+/* `.bg-gradient-hero` text-text-secondary should also be light on its dark bg */
+.landing-root .bg-gradient-hero .text-text-secondary {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* The legacy `.hero-banner` class is a dark gradient hero. Force its
+   bg back to dark navy so the white title reads properly. */
+.landing-root .hero-banner {
+  background:
+    linear-gradient(to bottom, rgba(7,12,28,0.55), rgba(7,12,28,0.55)),
+    radial-gradient(60% 60% at 70% 30%, rgba(16,116,254,0.30) 0%, transparent 60%),
+    #050B1F !important;
+}
+.landing-root .hero-banner .text-white,
+.landing-root .hero-banner h1,
+.landing-root .hero-banner h2,
+.landing-root .hero-banner p { color: #FFFFFF !important; }
+.landing-root .hero-banner .text-text-secondary { color: rgba(255, 255, 255, 0.72) !important; }
+
+/* ── Surface utilities mapped through CSS vars need explicit white-on-light
+      paint because the sub-landing pages rely on `.bg-background` /
+      `.text-foreground` etc. resolving to the dark trader-app palette. ── */
+.landing-root .bg-background          { background-color: #FFFFFF !important; }
+.landing-root .bg-background\/30      { background-color: rgba(255,255,255,0.30) !important; }
+.landing-root .bg-background\/40      { background-color: rgba(255,255,255,0.40) !important; }
+.landing-root .bg-background\/80      { background-color: rgba(255,255,255,0.80) !important; }
+.landing-root .text-background        { color: #FFFFFF !important; }
+.landing-root .bg-foreground          { background-color: #0F172A !important; }
+.landing-root .bg-foreground\/90      { background-color: rgba(15,23,42,0.90) !important; }
+.landing-root .text-foreground        { color: #0F172A !important; }
+.landing-root .text-foreground\/40    { color: rgba(15,23,42,0.40) !important; }
+.landing-root .text-foreground\/55    { color: rgba(15,23,42,0.55) !important; }
+.landing-root .text-foreground\/60    { color: rgba(15,23,42,0.60) !important; }
+.landing-root .text-foreground\/65    { color: rgba(15,23,42,0.65) !important; }
+.landing-root .text-foreground\/70    { color: rgba(15,23,42,0.70) !important; }
+.landing-root .text-foreground\/75    { color: rgba(15,23,42,0.75) !important; }
+.landing-root .text-foreground\/80    { color: rgba(15,23,42,0.80) !important; }
+.landing-root .text-foreground\/85    { color: rgba(15,23,42,0.85) !important; }
+.landing-root .border-border          { border-color: rgba(15,23,42,0.10) !important; }
+
+/* ── Image placeholders. globals.css forces .image-placeholder to be a
+      solid black box (per old client direction "use only real images,
+      plain black box as placeholder"). On the light marketing pages
+      that reads as broken/missing content. Replace with a soft blue
+      gradient + reveal whichever decorative child the markup nests
+      inside (icon, badge, ring) so the area at least communicates
+      "preview". ── */
+.landing-root .image-placeholder {
+  background: linear-gradient(135deg,
+    rgba(16, 116, 254, 0.10) 0%,
+    rgba(77, 149, 255, 0.06) 50%,
+    rgba(192, 219, 255, 0.10) 100%) !important;
+  background-image:
+    linear-gradient(135deg,
+      rgba(16, 116, 254, 0.10) 0%,
+      rgba(77, 149, 255, 0.06) 50%,
+      rgba(192, 219, 255, 0.10) 100%),
+    radial-gradient(40% 40% at 30% 30%, rgba(16,116,254,0.18) 0%, transparent 60%),
+    radial-gradient(50% 50% at 70% 70%, rgba(77,149,255,0.14) 0%, transparent 60%) !important;
+  border: 1px solid rgba(16, 116, 254, 0.18) !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+/* Reveal whatever the markup nested inside (icons / labels) so the
+   placeholder no longer reads as a black void. */
+.landing-root .image-placeholder > * {
+  display: block !important;
+  color: rgba(16, 116, 254, 0.55) !important;
+  opacity: 0.85 !important;
+}
+/* If the placeholder has no children, paint a centered "preview" badge
+   via ::before so it reads as intentionally empty, not broken. */
+.landing-root .image-placeholder:empty::before {
+  content: 'PREVIEW';
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: rgba(16, 116, 254, 0.55);
+}
+
+/* EXCEPTION: the BannerPlaceholder hero is marked `role="banner"` and
+   the `.image-placeholder` inside is the INTENTIONAL dark hero box
+   (white H1 + tagline are rendered on top). Restore solid black bg and
+   hide the gradient/preview decorations so the heading stays readable. */
+.landing-root [role="banner"] .image-placeholder {
+  background: #000 !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  display: block !important;
+  /* Restore `position: absolute` so the inline Tailwind `absolute
+     inset-0` classes do their job and the placeholder fills the banner
+     section. The generic .image-placeholder rule above sets `position:
+     relative` which collapsed the height to 0. */
+  position: absolute !important;
+}
+.landing-root [role="banner"] .image-placeholder > * {
+  display: none !important;
+}
+.landing-root [role="banner"] .image-placeholder:empty::before {
+  content: none !important;
+}
+
+/* ── Inputs / selects inside the liquid-glass wrapper — remove the
+      browser-native search-input pill border and any user-agent default
+      borders so only our wrapper's border shows. ── */
+.landing-root .liquid-glass input,
+.landing-root .liquid-glass select,
+.landing-root .liquid-glass textarea {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent !important;
+}
+.landing-root input[type="search"]::-webkit-search-decoration,
+.landing-root input[type="search"]::-webkit-search-cancel-button,
+.landing-root input[type="search"]::-webkit-search-results-button,
+.landing-root input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+/* ── Legacy ghost button — uses --fx-text which is now dark. On a dark
+      .hero-banner the dark text disappears. Force white inside dark
+      contexts so the button always reads. ── */
+.landing-root .hero-banner .btn-ghost,
+.landing-root .hero-banner .btn-outline,
+.landing-root .hero-banner .fx-btn-ghost,
+.landing-root .bg-gradient-hero .btn-ghost,
+.landing-root .bg-gradient-hero .btn-outline,
+.landing-root .bg-gradient-hero .fx-btn-ghost,
+.landing-root [role="banner"] .btn-ghost,
+.landing-root [role="banner"] .btn-outline {
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.30) !important;
+}
+.landing-root .hero-banner .btn-ghost:hover,
+.landing-root .bg-gradient-hero .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(77, 149, 255, 0.55) !important;
+}
+
+/* LiveChartSection no longer needs a CSS override here — the
+   component itself was updated to use semantic Tailwind classes
+   (`text-foreground`, `text-primary`) instead of hardcoded white. */
+
+/* ── Liquid-glass cards: re-skin for light backdrop.
+      Slight cool-blue tint (#F4F8FF) instead of pure white so the card
+      pops against the white page background. The page is #FFFFFF; the
+      card is #F4F8FF — subtle 4-step difference that registers as
+      "card" without screaming. ── */
+.landing-root .liquid-glass,
+.landing-root .liquid-glass-strong {
+  background: #F4F8FF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(16, 116, 254, 0.12) !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.02),
+    0 8px 24px -16px rgba(16, 116, 254, 0.18);
+}
+.landing-root .liquid-glass::before,
+.landing-root .liquid-glass-strong::before {
+  display: none !important;     /* hide the dark-glass gradient ring */
+}
+.landing-root .liquid-glass:hover,
+.landing-root .liquid-glass-strong:hover {
+  border-color: rgba(16, 116, 254, 0.40) !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.02),
+    0 12px 32px -12px rgba(16, 116, 254, 0.30);
+}
+
+/* ── Sub-landing hero header bands. Many pages do their own
+      `bg-primary/10` chip + black backdrop sections. Repaint to a
+      restrained light variant. ── */
+.landing-root .bg-primary\/10         { background-color: rgba(16, 116, 254, 0.08) !important; }
+.landing-root .bg-primary\/25         { background-color: rgba(16, 116, 254, 0.18) !important; }
+.landing-root .bg-primary\/60         { background-color: rgba(16, 116, 254, 0.50) !important; }
+.landing-root .text-primary           { color: #1074FE !important; }
+.landing-root .text-primary\/70       { color: rgba(16, 116, 254, 0.70) !important; }
+.landing-root .border-primary\/30     { border-color: rgba(16, 116, 254, 0.30) !important; }
+.landing-root .border-primary\/35     { border-color: rgba(16, 116, 254, 0.35) !important; }
+.landing-root .border-primary\/22     { border-color: rgba(16, 116, 254, 0.22) !important; }
+
+/* ── Scoped scrollbar styling override (the dark trader scrollbar
+      reads wrong on a light page). ── */
+.landing-root ::-webkit-scrollbar-track { background: #F6F8FB !important; }
+.landing-root ::-webkit-scrollbar-thumb { background: #CBD5E1 !important; }
+.landing-root ::-webkit-scrollbar-thumb:hover { background: #94A3B8 !important; }
+
+/* ── Sub-landing nav layered over light content — keep navbar dark
+      so it stays readable. Navbar's own JSX uses bg-white/5 + white
+      text which would vanish on a white page. Forcing opaque dark
+      preserves contrast. ── */
+.landing-root > header[class*="fixed"],
+.landing-root > * > header[class*="fixed"] {
+  background: rgba(8, 12, 25, 0.92) !important;
+  border-bottom: 1px solid rgba(16, 116, 254, 0.18) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* ── Footer keeps its dark identity on every page (home + sub-landing).
+      The Footer component uses the .setupfx-footer-dark scope class,
+      which we reset to the original dark-theme token values so all
+      Tailwind utility classes inside (text-foreground/65, etc.) resolve
+      to light text on the dark background. ── */
+.setupfx-footer-dark,
+.landing-root .setupfx-footer-dark {
+  /* Match the home footer EXACTLY: --foreground = 0 0% 96% (the cream
+     token from setupfx/styles.css). Default text color stays slate-200
+     (#E2E8F0) via inline style on the footer; .text-foreground/N
+     utilities resolve to rgba(245, 245, 245, N) just like home. */
+  --background:       0 0% 6%;
+  --foreground:       0 0% 96%;
+  --card:             0 0% 6%;
+  --card-foreground:  0 0% 96%;
+  --muted:            0 0% 14%;
+  --muted-foreground: 0 0% 70%;
+  --border:           0 0% 90%;
+  background: #070C1C !important;
+  color: #E2E8F0 !important;
+}
+/* Restore the trader's Tailwind text-size scale inside the footer.
+   landing.css forces every .text-xs/.text-sm/.text-base/... to the
+   default rem-based scale via `!important`, which makes the sub-landing
+   footer render text 1px bigger than the home footer (trader's
+   tailwind.config.ts defines xs=11px, sm=12px, base=13px etc., not
+   0.75rem/0.875rem/1rem). We override those overrides ONLY inside
+   the footer scope so both contexts render identically. */
+.landing-root .setupfx-footer-dark .text-xxs   { font-size: 10px !important; line-height: 14px !important; }
+.landing-root .setupfx-footer-dark .text-xs    { font-size: 11px !important; line-height: 16px !important; }
+.landing-root .setupfx-footer-dark .text-sm    { font-size: 12px !important; line-height: 16px !important; }
+.landing-root .setupfx-footer-dark .text-base  { font-size: 13px !important; line-height: 20px !important; }
+.landing-root .setupfx-footer-dark .text-md    { font-size: 14px !important; line-height: 20px !important; }
+.landing-root .setupfx-footer-dark .text-lg    { font-size: 16px !important; line-height: 24px !important; }
+.landing-root .setupfx-footer-dark .text-xl    { font-size: 20px !important; line-height: 28px !important; }
+
+/* Tailwind alpha utilities inside the footer — explicit light paint
+   so they don't pick up the .landing-root white overrides. */
+.landing-root .setupfx-footer-dark .text-foreground          { color: #F5F5F5 !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/40      { color: rgba(245,245,245,0.40) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/55      { color: rgba(245,245,245,0.55) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/60      { color: rgba(245,245,245,0.60) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/65      { color: rgba(245,245,245,0.65) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/70      { color: rgba(245,245,245,0.70) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/75      { color: rgba(245,245,245,0.75) !important; }
+.landing-root .setupfx-footer-dark .text-foreground\/85      { color: rgba(245,245,245,0.85) !important; }
+.landing-root .setupfx-footer-dark .bg-background\/40        { background-color: rgba(7, 12, 28, 0.92) !important; }
+.landing-root .setupfx-footer-dark .border-border            { border-color: rgba(245,245,245,0.10) !important; }
+.landing-root .setupfx-footer-dark .border-foreground\/10    { border-color: rgba(245,245,245,0.10) !important; }
+/* Brand colour stays the same; just make sure primary blue reads on dark */
+.landing-root .setupfx-footer-dark .text-primary             { color: #4D95FF !important; }

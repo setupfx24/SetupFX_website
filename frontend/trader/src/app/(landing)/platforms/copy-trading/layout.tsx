@@ -1,10 +1,21 @@
-import type { ReactNode } from 'react'
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'Copy Trading — SetupFX',
-  description: 'Follow proven traders and auto-replicate their positions in real-time.',
-}
+export const metadata: Metadata = {
+  title: 'Copy Trading — Replicate Top Traders Automatically',
+  description:
+    'Browse verified track records and automatically copy strategies from professional traders. Set your own risk and let proven traders trade for you.',
+  openGraph: {
+    title: 'Copy Trading — Replicate Top Traders Automatically',
+    description:
+      'Browse verified track records and automatically copy strategies from professional traders. Set your own risk and let proven traders trade for you.',
+  },
+  twitter: {
+    title: 'Copy Trading — Replicate Top Traders Automatically',
+    description:
+      'Browse verified track records and automatically copy strategies from professional traders. Set your own risk and let proven traders trade for you.',
+  },
+};
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <>{children}</>
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

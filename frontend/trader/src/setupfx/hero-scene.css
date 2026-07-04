@@ -1,0 +1,457 @@
+/* ═════════════════════════════════════════════════════════════════════
+   HeroScene — dark cinematic hero (theme P1: white+blue+black palette).
+   CSS-only layered background. No fragment shader, no rAF, no canvas.
+   Brand blue #1074FE replaces cyan/aurora. Scoped to .setupfx-home so
+   it cannot leak into the trader dashboard.
+   ═════════════════════════════════════════════════════════════════════ */
+
+.setupfx-home .hero-scene-root {
+  background:
+    radial-gradient(ellipse at top, #0A1A3E 0%, #050B1F 55%, #000 100%);
+  isolation: isolate;
+}
+
+/* Layer A: deep blue nebula clouds, slow drift. */
+.setupfx-home .hero-nebula-a {
+  background:
+    radial-gradient(60% 50% at 20% 30%, rgba(16, 116, 254, 0.16) 0%, transparent 60%),
+    radial-gradient(50% 40% at 80% 70%, rgba(8, 86, 197, 0.12) 0%, transparent 60%),
+    radial-gradient(40% 50% at 70% 20%, rgba(77, 149, 255, 0.10) 0%, transparent 60%);
+  animation: hero-drift-a 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Layer B: lighter blue glow, opposite drift. */
+.setupfx-home .hero-nebula-b {
+  background:
+    radial-gradient(50% 40% at 75% 30%, rgba(77, 149, 255, 0.10) 0%, transparent 60%),
+    radial-gradient(40% 50% at 25% 75%, rgba(16, 116, 254, 0.08) 0%, transparent 60%);
+  animation: hero-drift-b 42s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes hero-drift-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-3%, 2%, 0) scale(1.04); }
+}
+@keyframes hero-drift-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(3%, -2%, 0) scale(1.06); }
+}
+
+/* Layer C: dense starfield (white). */
+.setupfx-home .hero-stars {
+  background-image:
+    radial-gradient(1px 1px at 25% 12%, rgba(255,255,255,0.95) 50%, transparent 100%),
+    radial-gradient(1px 1px at 78% 8%,  rgba(255,255,255,0.85) 50%, transparent 100%),
+    radial-gradient(1px 1px at 12% 36%, rgba(255,255,255,0.70) 50%, transparent 100%),
+    radial-gradient(1px 1px at 45% 22%, rgba(255,255,255,0.60) 50%, transparent 100%),
+    radial-gradient(1px 1px at 88% 42%, rgba(255,255,255,0.90) 50%, transparent 100%),
+    radial-gradient(1px 1px at 33% 58%, rgba(255,255,255,0.70) 50%, transparent 100%),
+    radial-gradient(1px 1px at 65% 68%, rgba(255,255,255,0.85) 50%, transparent 100%),
+    radial-gradient(1px 1px at 8%  74%, rgba(255,255,255,0.60) 50%, transparent 100%),
+    radial-gradient(1px 1px at 92% 78%, rgba(255,255,255,0.70) 50%, transparent 100%),
+    radial-gradient(1px 1px at 18% 88%, rgba(255,255,255,0.85) 50%, transparent 100%),
+    radial-gradient(1px 1px at 55% 92%, rgba(255,255,255,0.60) 50%, transparent 100%),
+    radial-gradient(1px 1px at 72% 50%, rgba(255,255,255,0.75) 50%, transparent 100%),
+    radial-gradient(1px 1px at 40% 78%, rgba(255,255,255,0.70) 50%, transparent 100%),
+    radial-gradient(1px 1px at 5%  18%, rgba(255,255,255,0.65) 50%, transparent 100%),
+    radial-gradient(1px 1px at 60% 4%,  rgba(255,255,255,0.90) 50%, transparent 100%);
+  background-size: 600px 600px;
+  background-repeat: repeat;
+  opacity: 0.85;
+}
+
+/* Layer D: brighter twinkling accent stars (white + brand blue). */
+.setupfx-home .hero-stars-twinkle {
+  background-image:
+    radial-gradient(1.8px 1.8px at 28% 18%, rgba(77, 149, 255, 0.95) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 72% 32%, rgba(255,255,255,1.0) 50%, transparent 100%),
+    radial-gradient(1.6px 1.6px at 50% 62%, rgba(16, 116, 254, 0.95) 50%, transparent 100%),
+    radial-gradient(1.4px 1.4px at 88% 80%, rgba(255,255,255,1.0) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 10% 85%, rgba(77, 149, 255, 0.9) 50%, transparent 100%);
+  background-size: 900px 900px;
+  background-repeat: repeat;
+  animation: hero-twinkle 6s ease-in-out infinite;
+}
+
+@keyframes hero-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1.00; }
+}
+
+/* Planet horizon hint — brand blue at bottom. */
+.setupfx-home .hero-horizon {
+  background:
+    radial-gradient(120% 100% at 50% 100%,
+      rgba(16, 116, 254, 0.28) 0%,
+      rgba(8, 86, 197, 0.15) 30%,
+      transparent 60%);
+  filter: blur(10px);
+}
+
+/* Soft radial vignette for headline legibility. */
+.setupfx-home .hero-vignette {
+  background:
+    radial-gradient(60% 50% at 50% 45%, rgba(0,0,0,0) 0%, rgba(5,11,31,0.55) 100%);
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   Real 3D Earth wrapper (vanilla three.js).
+   Positioned to feel like the A-Space hero — large planet behind/right
+   of the headline, with horizon glow integrating it into the scene.
+   Canvas inside has pointer-events:none so scroll always passes through.
+   ═════════════════════════════════════════════════════════════════════ */
+.setupfx-home .hero-earth-3d-wrap {
+  position: absolute;
+  top: 50%;
+  right: -8%;
+  width: clamp(560px, 60vw, 1100px);
+  height: clamp(560px, 60vw, 1100px);
+  transform: translate3d(0, -50%, 0);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  animation: hero-earth-3d-in 1600ms cubic-bezier(0.2, 0.8, 0.2, 1) 300ms forwards;
+}
+@keyframes hero-earth-3d-in {
+  from { opacity: 0; transform: translate3d(2%, -50%, 0) scale(0.96); }
+  to   { opacity: 0.95; transform: translate3d(0, -50%, 0) scale(1); }
+}
+
+/* Mobile / tablet (<1024px): position the realistic Earth at the
+   bottom-half of the hero, centered horizontally and sized so it
+   reads like a planet sitting on the horizon. Hero content stays in
+   the upper half above it. */
+@media (max-width: 1023px) {
+  .setupfx-home .hero-earth-3d-wrap {
+    top: auto;
+    bottom: -20%;
+    right: 50%;
+    width: clamp(420px, 110vw, 700px);
+    height: clamp(420px, 110vw, 700px);
+    transform: translate3d(50%, 0, 0);
+    animation: hero-earth-3d-in-mobile 1600ms cubic-bezier(0.2, 0.8, 0.2, 1) 300ms forwards;
+  }
+}
+@keyframes hero-earth-3d-in-mobile {
+  from { opacity: 0; transform: translate3d(50%, 6%, 0) scale(0.94); }
+  to   { opacity: 1; transform: translate3d(50%, 0, 0) scale(1); }
+}
+/* Phone (<640px): tighter framing so headline + CTAs stay above the
+   Earth's apex without overlap. */
+@media (max-width: 640px) {
+  .setupfx-home .hero-earth-3d-wrap {
+    bottom: -30%;
+    width: clamp(380px, 115vw, 560px);
+    height: clamp(380px, 115vw, 560px);
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   CSS-only stylised Earth — radial-gradient sphere + atmosphere ring +
+   two orbit rings. Pure transform animations (GPU compositor only),
+   no canvas, no JS. Hidden on small viewports — the hero copy needs
+   the full width on mobile.
+   ═════════════════════════════════════════════════════════════════════ */
+.setupfx-home .hero-planet-wrap {
+  position: absolute;
+  top: 50%;
+  right: 6%;
+  width: clamp(360px, 38vw, 620px);
+  height: clamp(360px, 38vw, 620px);
+  transform: translate3d(0, -50%, 0);
+  z-index: 1;
+  pointer-events: none;
+  /* Fade in 200ms after mount so it doesn't pop. */
+  opacity: 0;
+  animation: hero-planet-in 1400ms cubic-bezier(0.2, 0.8, 0.2, 1) 200ms forwards;
+}
+@keyframes hero-planet-in {
+  from { opacity: 0; transform: translate3d(2%, -50%, 0) scale(0.96); }
+  to   { opacity: 0.95; transform: translate3d(0, -50%, 0) scale(1); }
+}
+
+.setupfx-home .hero-planet-body {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 30%,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(120, 180, 255, 0.35) 5%,
+      rgba(16, 116, 254, 0.95) 30%,
+      rgba(8, 86, 197, 1) 60%,
+      rgba(2, 20, 64, 1) 100%);
+  box-shadow:
+    inset -40px -20px 80px rgba(0, 0, 0, 0.55),
+    inset 30px 20px 70px rgba(120, 180, 255, 0.25),
+    0 0 60px rgba(16, 116, 254, 0.35);
+  overflow: hidden;
+  animation: hero-planet-rotate 90s linear infinite;
+  will-change: transform;
+}
+@keyframes hero-planet-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Continental noise — a procedural surface via repeating radial-gradients. */
+.setupfx-home .hero-planet-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 18% 10% at 28% 32%, rgba(80, 160, 255, 0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 14% 8% at 60% 45%, rgba(80, 160, 255, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 22% 12% at 45% 65%, rgba(60, 140, 240, 0.50) 0%, transparent 60%),
+    radial-gradient(ellipse 10% 7% at 78% 24%, rgba(100, 180, 255, 0.40) 0%, transparent 60%),
+    radial-gradient(ellipse 16% 9% at 22% 78%, rgba(60, 140, 240, 0.45) 0%, transparent 60%);
+  mix-blend-mode: screen;
+}
+
+/* Slow drifting cloud layer. */
+.setupfx-home .hero-planet-clouds {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse 30% 4% at 30% 20%, rgba(255, 255, 255, 0.40) 0%, transparent 70%),
+    radial-gradient(ellipse 38% 5% at 65% 38%, rgba(255, 255, 255, 0.30) 0%, transparent 70%),
+    radial-gradient(ellipse 24% 4% at 45% 58%, rgba(255, 255, 255, 0.35) 0%, transparent 70%),
+    radial-gradient(ellipse 32% 5% at 25% 78%, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+  animation: hero-planet-clouds 70s linear infinite reverse;
+  mix-blend-mode: screen;
+}
+@keyframes hero-planet-clouds {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Day-night terminator: subtle right-side shadow. */
+.setupfx-home .hero-planet-terminator {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 25% 25%,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.55) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* Atmospheric glow — soft cyan/blue rim around the planet. */
+.setupfx-home .hero-planet-atmosphere {
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    transparent 55%,
+    rgba(77, 149, 255, 0.20) 65%,
+    rgba(77, 149, 255, 0.45) 70%,
+    rgba(77, 149, 255, 0.15) 78%,
+    transparent 90%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+/* Outer orbit ring (large, tilted, slow rotation). */
+.setupfx-home .hero-planet-orbit-outer {
+  position: absolute;
+  inset: -2%;
+  border-radius: 50%;
+  border: 1px solid rgba(77, 149, 255, 0.25);
+  transform: rotate3d(1, 0.3, 0, 70deg);
+  animation: hero-planet-orbit 60s linear infinite;
+}
+.setupfx-home .hero-planet-orbit-outer::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4D95FF;
+  box-shadow: 0 0 12px #4D95FF;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.setupfx-home .hero-planet-orbit-inner {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  border: 1px dashed rgba(108, 203, 255, 0.20);
+  transform: rotate3d(1, 0.4, 0, 65deg);
+  animation: hero-planet-orbit 45s linear infinite reverse;
+}
+@keyframes hero-planet-orbit {
+  from { transform: rotate3d(1, 0.3, 0, 70deg) rotate(0deg); }
+  to   { transform: rotate3d(1, 0.3, 0, 70deg) rotate(360deg); }
+}
+
+/* Mobile (<1024px): subtle horizon planet at the bottom-right corner.
+   Use pixel-style negative offsets relative to the wrap size (via
+   translate) so the visible arc is predictable across phone widths. */
+@media (max-width: 1023px) {
+  .setupfx-home .hero-planet-wrap {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    width: clamp(320px, 70vw, 440px);
+    height: clamp(320px, 70vw, 440px);
+    /* Push 55% of the planet diameter off the right + 50% off the
+       bottom — leaves a quarter-circle visible at the lower-right
+       corner, well clear of the centered scroll cue. */
+    transform: translate(55%, 50%);
+    opacity: 0;
+    animation: hero-planet-in-mobile 1400ms cubic-bezier(0.2, 0.8, 0.2, 1) 250ms forwards;
+    z-index: 0;
+  }
+}
+@keyframes hero-planet-in-mobile {
+  from { opacity: 0; transform: translate(55%, 50%) scale(0.94); }
+  to   { opacity: 0.45; transform: translate(55%, 50%) scale(1); }
+}
+@media (max-width: 640px) {
+  .setupfx-home .hero-planet-wrap {
+    width: clamp(280px, 78vw, 380px);
+    height: clamp(280px, 78vw, 380px);
+    /* Phone: even tighter corner reveal so only ~30% of the planet
+       shows at bottom-right. */
+    transform: translate(60%, 55%);
+  }
+  @keyframes hero-planet-in-mobile {
+    from { opacity: 0; transform: translate(60%, 55%) scale(0.94); }
+    to   { opacity: 0.45; transform: translate(60%, 55%) scale(1); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setupfx-home .hero-planet-body,
+  .setupfx-home .hero-planet-clouds,
+  .setupfx-home .hero-planet-orbit-outer,
+  .setupfx-home .hero-planet-orbit-inner,
+  .setupfx-home .hero-planet-wrap {
+    animation: none !important;
+  }
+}
+
+/* Reveal animations. */
+@keyframes hero-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes hero-fade-in-up {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); filter: blur(4px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0);    filter: blur(0); }
+}
+
+.setupfx-home .hero-fade-in {
+  opacity: 0;
+  animation: hero-fade-in 700ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.setupfx-home .hero-fade-in-up {
+  opacity: 0;
+  animation: hero-fade-in-up 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Hero CTAs — brand-blue primary, white-ghost secondary. */
+.setupfx-home .hero-cta-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.95rem 2rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1074FE 0%, #0856C5 100%);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    0 0 0 1px rgba(16, 116, 254, 0.45),
+    0 8px 24px -8px rgba(16, 116, 254, 0.55);
+  will-change: transform;
+}
+.setupfx-home .hero-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px rgba(16, 116, 254, 0.65),
+    0 12px 36px -8px rgba(16, 116, 254, 0.75),
+    0 0 80px -10px rgba(16, 116, 254, 0.5);
+}
+
+.setupfx-home .hero-cta-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.95rem 2rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              background-color 280ms,
+              border-color 280ms;
+}
+.setupfx-home .hero-cta-ghost:hover {
+  transform: translateY(-2px);
+  background: rgba(16, 116, 254, 0.12);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile scroll cue (brand-blue). */
+.setupfx-home .hero-scroll-cue {
+  width: 24px;
+  height: 38px;
+  border: 2px solid rgba(77, 149, 255, 0.7);
+  border-radius: 16px;
+  position: relative;
+}
+.setupfx-home .hero-scroll-cue::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 3px;
+  height: 8px;
+  background: rgba(77, 149, 255, 0.95);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  animation: hero-scroll-cue 1.6s ease-in-out infinite;
+}
+@keyframes hero-scroll-cue {
+  0%   { opacity: 0; transform: translate(-50%, -4px); }
+  50%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 14px); }
+}
+
+/* Mobile guardrails. */
+@media (max-width: 768px) {
+  .setupfx-home .hero-stars         { background-size: 400px 400px; opacity: 0.7; }
+  .setupfx-home .hero-stars-twinkle { background-size: 600px 600px; }
+  .setupfx-home .hero-nebula-a,
+  .setupfx-home .hero-nebula-b      { animation-duration: 60s; }
+  .setupfx-home .hero-horizon       { filter: blur(20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .setupfx-home .hero-nebula-a,
+  .setupfx-home .hero-nebula-b,
+  .setupfx-home .hero-stars-twinkle,
+  .setupfx-home .hero-fade-in,
+  .setupfx-home .hero-fade-in-up,
+  .setupfx-home .hero-scroll-cue::before {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

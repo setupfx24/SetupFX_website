@@ -1,10 +1,21 @@
-import type { ReactNode } from 'react'
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'IB Management — SetupFX',
-  description: 'Introducing-broker portal with multi-tier commissions and real-time reporting.',
-}
+export const metadata: Metadata = {
+  title: 'IB Management Platform — Multi-Tier Partner Network',
+  description:
+    'Build and manage a multi-tier introducing broker network with SetupFX. Automated commissions, real-time analytics, branded partner dashboards.',
+  openGraph: {
+    title: 'IB Management Platform — Multi-Tier Partner Network',
+    description:
+      'Build and manage a multi-tier introducing broker network with SetupFX. Automated commissions, real-time analytics, branded partner dashboards.',
+  },
+  twitter: {
+    title: 'IB Management Platform — Multi-Tier Partner Network',
+    description:
+      'Build and manage a multi-tier introducing broker network with SetupFX. Automated commissions, real-time analytics, branded partner dashboards.',
+  },
+};
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <>{children}</>
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

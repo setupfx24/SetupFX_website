@@ -161,10 +161,10 @@ export default function AppNavbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#E5E5E5] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[60px] max-w-[1400px] items-center px-4 lg:px-6">
-        {/* LEFT — Logo (same PNG as the marketing navbar) */}
+        {/* LEFT — Logo (transparent homebar mark, no baked-in white box) */}
         <Link href="/dashboard" className="flex items-center shrink-0" aria-label="SetupFX home">
           <Image
-            src="/marketing/setupfx-logo.png"
+            src="/marketing/setupfx-homebar.png"
             alt="SetupFX"
             width={200}
             height={44}

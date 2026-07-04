@@ -1,0 +1,404 @@
+/* ─────────────────────────────────────────────────────────────────────
+   SetupFX marketing home — theme tokens, fonts, glass, marquee, fades.
+   Scoped to .setupfx-home so it does NOT leak into the trader dashboard
+   (which keeps its own dark theme).
+   ───────────────────────────────────────────────────────────────────── */
+
+@import "@fontsource/montserrat/300.css";
+@import "@fontsource/montserrat/400.css";
+@import "@fontsource/montserrat/500.css";
+@import "@fontsource/montserrat/600.css";
+@import "@fontsource/montserrat/700.css";
+@import "@fontsource/montserrat/800.css";
+
+.setupfx-home {
+  /* `clip` (not `hidden`) — `hidden` turned this wrapper into a vertical
+     scroll container that swallowed wheel events when content height
+     matched its own height, killing wheel scroll on every landing page.
+     `clip` clips horizontal overflow without the scroll-container side
+     effect. */
+  overflow-x: clip;
+
+  /* Smooth native scroll. `overscroll-behavior` removed — it was only
+     meaningful while this element was its own scroll container; now
+     that scroll lives on the documentElement it's a no-op. */
+  scroll-behavior: smooth;
+
+  /* ── Raw palette (HSL triplets, no hsl() so Tailwind alpha works) ── */
+  --ink:           0 0% 6%;
+  --cream:         0 0% 96%;
+  --brand-green:  217 99% 53%;       /* #1074FE — primary */
+  --brand-red:     0 100% 41%;      /* #d00000 — destructive */
+
+  --background:               var(--ink);
+  --foreground:               var(--cream);
+  --card:                     var(--ink);
+  --card-foreground:          var(--cream);
+  --primary:                  var(--brand-green);
+  --primary-foreground:       0 0% 100%;
+  --secondary:                var(--brand-red);
+  --secondary-foreground:     0 0% 100%;
+  --muted:                    0 0% 14%;
+  --muted-foreground:         0 0% 70%;
+  --accent:                   var(--brand-green);
+  --accent-foreground:        0 0% 100%;
+  --destructive:              var(--brand-red);
+  --destructive-foreground:   0 0% 100%;
+  --border:                   0 0% 90%;
+  --input:                    0 0% 90%;
+  --ring:                     var(--brand-green);
+  --radius:                   0.75rem;
+
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --gutter: clamp(16px, 4.2vw, 56px);
+  --max:    1440px;
+
+  /* ── Space-tech palette (additive, doesn't break brand-blue) ──
+     Used by new homepage redesign. Hex form for rgba() consumers,
+     HSL triplet form for Tailwind alpha utilities. */
+  --space-bg:        #030712;
+  --space-bg-2:      #060A1A;
+  --space-midnight:  #0B1437;
+  --space-deep:      #050818;
+  --cyan-glow:       #00E5FF;
+  --cyan-soft:       #6CCBFF;
+  --aurora-purple:   #8B5CF6;
+  --aurora-pink:     #C084FC;
+  --star-white:      #F5F7FA;
+  --grid-line:       rgba(0, 229, 255, 0.08);
+  --grid-line-strong: rgba(0, 229, 255, 0.18);
+
+  /* HSL triplets for Tailwind alpha utilities */
+  --cyan-glow-hsl:      188 100% 50%;
+  --aurora-purple-hsl:  258 90% 66%;
+  --space-bg-hsl:       222 64% 5%;
+
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Force dark even when html.theme-light is set on the trader-app side */
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-body);
+  word-spacing: 0.14em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Space-tech foundation utilities.
+   Scoped to .setupfx-home so they NEVER leak into the trader dashboard
+   (which has its own dark theme + token system).
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Holographic / mission-control glass panel.
+   Pairs frosted glass with a cyan→purple gradient border via mask-composite.
+   Designed to render cheaply on integrated GPUs (16px blur, single layer). */
+.setupfx-home .holo-panel {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(11, 20, 55, 0.55) 0%,
+    rgba(5, 8, 24, 0.45) 100%
+  );
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 32px -8px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.setupfx-home .holo-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 229, 255, 0.55) 0%,
+    rgba(0, 229, 255, 0.05) 35%,
+    rgba(139, 92, 246, 0.05) 65%,
+    rgba(139, 92, 246, 0.55) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+.setupfx-home .holo-panel-strong::before {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 229, 255, 0.85) 0%,
+    rgba(108, 203, 255, 0.20) 35%,
+    rgba(192, 132, 252, 0.20) 65%,
+    rgba(139, 92, 246, 0.85) 100%
+  );
+}
+
+/* Mission-control telemetry surface — flatter, more readable for data. */
+.setupfx-home .mc-panel {
+  background: linear-gradient(180deg, #0A1130 0%, #050818 100%);
+  border: 1px solid rgba(0, 229, 255, 0.14);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 24px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Soft outer glow used on focus states + hero CTAs. */
+.setupfx-home .cyan-glow {
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 255, 0.35),
+    0 0 24px -4px rgba(0, 229, 255, 0.55),
+    0 0 60px -10px rgba(0, 229, 255, 0.35);
+}
+.setupfx-home .aurora-glow {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.35),
+    0 0 24px -4px rgba(139, 92, 246, 0.55),
+    0 0 60px -10px rgba(139, 92, 246, 0.35);
+}
+
+/* Telemetry monospace counter — used by stat blocks. */
+.setupfx-home .telemetry-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum', 'ss01';
+  letter-spacing: -0.01em;
+}
+
+/* Animated star grid background — pure CSS, very cheap (no canvas).
+   Use as a section bg layer with `bg-star-grid`. */
+.setupfx-home .bg-star-grid {
+  background-color: var(--space-bg);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(0, 229, 255, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: auto, auto, 64px 64px, 64px 64px;
+  background-position: 0 0, 0 0, -1px -1px, -1px -1px;
+}
+
+/* Magnetic CTA — base styling; the translation is JS-driven via
+   MagneticButton component. Pure CSS provides the glow + ring. */
+.setupfx-home .magnetic-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00131A;
+  background: linear-gradient(135deg, #00E5FF 0%, #6CCBFF 100%);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 255, 0.4),
+    0 8px 24px -8px rgba(0, 229, 255, 0.6);
+  will-change: transform;
+}
+.setupfx-home .magnetic-cta:hover {
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 255, 0.6),
+    0 12px 36px -8px rgba(0, 229, 255, 0.75),
+    0 0 80px -10px rgba(0, 229, 255, 0.5);
+}
+.setupfx-home .magnetic-cta-ghost {
+  color: var(--star-white);
+  background: rgba(0, 229, 255, 0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 229, 255, 0.4),
+    0 0 24px -10px rgba(0, 229, 255, 0.4);
+}
+.setupfx-home .magnetic-cta-ghost:hover {
+  background: rgba(0, 229, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 229, 255, 0.6),
+    0 0 32px -8px rgba(0, 229, 255, 0.6);
+}
+
+/* Custom cursor — only shown on devices that can hover (desktop).
+   Mobile / touch: hidden completely (no perf cost, no FOUC). */
+@media (hover: hover) and (pointer: fine) {
+  .setupfx-home.cursor-active,
+  .setupfx-home.cursor-active * { cursor: none !important; }
+}
+
+/* Respect user's reduced-motion preference everywhere in the marketing
+   site. Pairs with the JS-side `prefers-reduced-motion` guard in the
+   smooth-scroll provider + GSAP code. */
+@media (prefers-reduced-motion: reduce) {
+  .setupfx-home,
+  .setupfx-home * {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile guardrails — drop expensive effects on small screens so scroll
+   stays at 60fps even on mid-range Androids. */
+@media (max-width: 768px) {
+  .setupfx-home .holo-panel,
+  .setupfx-home .holo-panel-strong {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .setupfx-home .bg-star-grid {
+    background-size: auto, auto, 48px 48px, 48px 48px;
+  }
+}
+
+.setupfx-home .font-display { font-family: var(--font-display); }
+.setupfx-home .font-body    { font-family: var(--font-body); }
+
+/* Tailwind utilities used by the home (mapped to CSS vars so we don't
+   need to rebuild the trader's tailwind config). The pages still use
+   classes like `bg-background`, `text-foreground`, but we resolve them
+   here via direct CSS so they work on the existing Tailwind v3 setup. */
+.setupfx-home .bg-background          { background-color: hsl(var(--background)); }
+.setupfx-home .bg-background\/30      { background-color: hsl(var(--background) / 0.3); }
+.setupfx-home .bg-background\/40      { background-color: hsl(var(--background) / 0.4); }
+.setupfx-home .bg-background\/80      { background-color: hsl(var(--background) / 0.8); }
+.setupfx-home .text-background        { color: hsl(var(--background)); }
+.setupfx-home .text-foreground        { color: hsl(var(--foreground)); }
+.setupfx-home .text-foreground\/40    { color: hsl(var(--foreground) / 0.4); }
+.setupfx-home .text-foreground\/55    { color: hsl(var(--foreground) / 0.55); }
+.setupfx-home .text-foreground\/60    { color: hsl(var(--foreground) / 0.6); }
+.setupfx-home .text-foreground\/65    { color: hsl(var(--foreground) / 0.65); }
+.setupfx-home .text-foreground\/70    { color: hsl(var(--foreground) / 0.7); }
+.setupfx-home .text-foreground\/75    { color: hsl(var(--foreground) / 0.75); }
+.setupfx-home .text-foreground\/80    { color: hsl(var(--foreground) / 0.8); }
+.setupfx-home .text-foreground\/85    { color: hsl(var(--foreground) / 0.85); }
+.setupfx-home .bg-foreground          { background-color: hsl(var(--foreground)); }
+.setupfx-home .bg-primary             { background-color: hsl(var(--primary)); }
+.setupfx-home .bg-primary\/25         { background-color: hsl(var(--primary) / 0.25); }
+.setupfx-home .bg-primary\/60         { background-color: hsl(var(--primary) / 0.6); }
+.setupfx-home .text-primary           { color: hsl(var(--primary)); }
+.setupfx-home .text-primary\/70       { color: hsl(var(--primary) / 0.7); }
+.setupfx-home .from-primary           { --tw-gradient-from: hsl(var(--primary)); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(var(--primary)/0)); }
+.setupfx-home .border-border          { border-color: hsl(var(--border) / 0.18); }
+.setupfx-home .bg-border              { background-color: hsl(var(--border) / 0.18); }
+.setupfx-home .ring-ring              { --tw-ring-color: hsl(var(--ring)); }
+.setupfx-home .ring-offset-background { --tw-ring-offset-color: hsl(var(--background)); }
+.setupfx-home .from-secondary\/60     { --tw-gradient-from: hsl(var(--secondary) / 0.6); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, hsl(var(--secondary)/0)); }
+.setupfx-home .bg-foreground\/90      { background-color: hsl(var(--foreground) / 0.9); }
+
+/* ── Marquee animations (used by Testimonials + LiveTickerBar) ── */
+.setupfx-home {
+  --animate-marquee:     marquee 28s linear infinite;
+  --animate-marquee-rev: marquee-rev 32s linear infinite;
+}
+
+@keyframes setupfx-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes setupfx-marquee-rev {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@keyframes setupfx-accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+@keyframes setupfx-accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+
+.setupfx-home {
+  --animate-marquee:        setupfx-marquee 28s linear infinite;
+  --animate-marquee-rev:    setupfx-marquee-rev 32s linear infinite;
+}
+
+.setupfx-home .marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+          mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+/* ── Liquid-glass surfaces ── */
+.setupfx-home .liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.setupfx-home .liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(135deg,
+    rgba(16, 116, 254, 0.85) 0%,
+    rgba(255, 255, 255, 0.25) 35%,
+    rgba(255, 255, 255, 0)   55%,
+    rgba(255, 255, 255, 0.25) 70%,
+    rgba(208, 0, 0, 0.85) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+.setupfx-home .liquid-glass-strong {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  /* 50px backdrop blur recalculates every paint and made scroll judder
+     on integrated GPUs. 16px reads visually identical at the small
+     element scale we use this on (cards / chips) and is ~9× cheaper
+     (GPU blur cost scales with radius²). */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: none;
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.05),
+              inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.setupfx-home .liquid-glass-strong::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.6px;
+  background: linear-gradient(135deg,
+    rgba(16, 116, 254, 1) 0%,
+    rgba(255, 255, 255, 0.35) 30%,
+    rgba(255, 255, 255, 0.05) 55%,
+    rgba(255, 255, 255, 0.35) 75%,
+    rgba(208, 0, 0, 1) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+.setupfx-home .gradient-fade-t {
+  background: linear-gradient(to top, transparent 0%, hsl(var(--background)) 100%);
+}
+.setupfx-home .gradient-fade-b {
+  background: linear-gradient(to bottom, transparent 0%, hsl(var(--background)) 100%);
+}
+
+/* Radix accordion height transitions */
+.setupfx-home [data-state='open'].setupfx-accordion-content { animation: setupfx-accordion-down 0.2s ease-out; }
+.setupfx-home [data-state='closed'].setupfx-accordion-content { animation: setupfx-accordion-up 0.2s ease-out; }

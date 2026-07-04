@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { Instagram, Youtube, Facebook, Mail } from 'lucide-react'
+import Link from 'next/link'
+import { Facebook, Instagram, Linkedin, Youtube, Mail } from 'lucide-react'
 import ScrollReveal from './animations/ScrollReveal'
 
 const columns = {
@@ -9,28 +9,42 @@ const columns = {
     { name: 'Commodities', path: '/trading/commodities' },
     { name: 'Crypto',      path: '/trading/crypto' },
   ],
-  Platforms: [
-    { name: 'Web Platform',  path: '/platforms/web' },
-    { name: 'Copy Trading',  path: '/platforms/copy-trading' },
-    { name: 'Prop Trading',  path: '/platforms/prop-trading' },
-    { name: 'IB Management', path: '/platforms/ib-management' },
+  Services: [
+    { name: 'AI Auto Trading',       path: '/services/ai-auto-trading' },
+    { name: 'Portfolio Management',  path: '/services/portfolio-management' },
+    { name: 'Market Research',       path: '/services/market-research' },
+    { name: 'Education',             path: '/services/education' },
+    { name: 'Automated Profit',      path: '/services/automated-profit' },
+    { name: 'ICO (Coming Soon)',     path: '/services/ico-coming-soon' },
   ],
   Accounts: [
     { name: 'Standard', path: '/accounts/standard' },
     { name: 'Pro',      path: '/accounts/pro' },
     { name: 'Demo',     path: '/accounts/demo' },
   ],
+  Academy: [
+    { name: 'Videos', path: '/academy/videos' },
+    { name: 'PDFs',   path: '/academy/pdfs' },
+    { name: 'Blogs',  path: '/academy/blogs' },
+  ],
+  'Risk Management': [
+    { name: 'Lot Size & Profit Calculator', path: '/risk-management/calculator' },
+  ],
+  Products: [
+    { name: 'IB Referral',              path: '/products/ib-referral' },
+    { name: 'Fixed Return Insurance',   path: '/products/fixed-return-insurance' },
+  ],
   Company: [
-    { name: 'About Us',       path: '/about' },
-    { name: 'Why SetupFX',    path: '/company/why-setupfx' },
-    { name: 'Contact',        path: '/contact' },
+    { name: 'About Us',       path: '/company/about' },
+    { name: 'Contact',        path: '/company/contact' },
   ],
 }
 
 const socials = [
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Youtube,   href: '#', label: 'YouTube' },
-  { icon: Facebook,  href: '#', label: 'Facebook' },
+  { icon: Facebook,  href: 'https://www.facebook.com/profile.php?id=61589880747321', label: 'Facebook' },
+  { icon: Instagram, href: 'https://www.instagram.com/setupfx/',                     label: 'Instagram' },
+  { icon: Linkedin,  href: 'https://www.linkedin.com/in/swis-dex-a62208410/',        label: 'LinkedIn' },
+  { icon: Youtube,   href: 'https://youtube.com/@setupfx-u7q',                       label: 'YouTube' },
 ]
 
 export default function Footer() {
@@ -52,28 +66,18 @@ export default function Footer() {
           {/* Brand block — spans more on mobile */}
           <div className="col-span-2 lg:col-span-2">
             <ScrollReveal variant="fadeLeft">
-              <Link to="/" className="inline-flex items-center gap-2 mb-5" aria-label="SetupFX home">
-                {/* Same inline Swiss-flag lockup as the navbar — keeps
-                    the brand consistent without depending on a logo
-                    PNG that may not yet be the final asset. */}
-                <svg
-                  viewBox="0 0 32 32"
-                  aria-hidden="true"
-                  className="w-7 h-7 shrink-0"
-                >
-                  <rect width="32" height="32" rx="4" fill="#DC2626" />
-                  <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-                  <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-                </svg>
-                <span className="inline-flex items-baseline font-bold tracking-tight text-lg select-none">
-                  <span className="text-white">Swiss</span>
-                  <span className="text-[#1074FE]">Cresta</span>
-                </span>
+              <Link href="/" className="inline-block mb-5" aria-label="SetupFX home">
+                <img src="/images/setupfx-logo2.png" alt="SetupFX" className="h-10 w-auto" />
               </Link>
               <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
-                SetupFX is an institutional-grade forex and CFD broker. Built for serious
-                traders who demand fast execution, transparent pricing, and a platform that
-                works as hard as they do.
+                SetupFX is an institutional-grade forex, CFD broker, and decentralized exchange
+                built for serious traders. It offers fast execution, low spreads, transparent
+                pricing, insured trades, and fully automated trading with no human intervention.
+              </p>
+              <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: 'var(--fx-text-2)' }}>
+                SetupFX also provides staking with fixed monthly income, anytime withdrawals,
+                and a rewarding IB (Introducing Broker) program with profit-sharing opportunities
+                for partners and affiliates.
               </p>
 
               <div className="flex items-center gap-2 text-sm mb-5" style={{ color: 'var(--fx-text-3)' }}>
@@ -88,6 +92,8 @@ export default function Footer() {
                   <a
                     key={label}
                     href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label={label}
                     className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
                     style={{
@@ -124,7 +130,7 @@ export default function Footer() {
                 {links.map((link) => (
                   <li key={link.path}>
                     <Link
-                      to={link.path}
+                      href={link.path}
                       className="text-sm transition-colors"
                       style={{ color: 'var(--fx-text-2)' }}
                       onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--fx-text)' }}
@@ -139,27 +145,45 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Risk warning */}
+        {/* Risk warning + Restricted regions */}
         <div
-          className="mt-12 md:mt-16 p-5 md:p-6 rounded-2xl"
+          className="mt-12 md:mt-16 p-6 md:p-8 rounded-2xl space-y-7"
           style={{
             background: 'var(--fx-bg-elev)',
             border: '1px solid var(--fx-line)',
           }}
         >
-          <p
-            className="text-[11px] uppercase tracking-[0.16em] font-semibold mb-2"
-            style={{ color: 'var(--fx-gold-light)' }}
-          >
-            Risk Warning
-          </p>
-          <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
-            Trading forex and contracts for difference (CFDs) carries a high level of risk
-            and may not be suitable for all investors. You could lose more than your initial
-            investment. Past performance is not indicative of future results. Please ensure
-            you fully understand the risks involved and seek independent advice if necessary.
-            SetupFX does not provide investment advice.
-          </p>
+          <div>
+            <h3
+              className="text-lg md:text-xl font-semibold mb-3"
+              style={{ color: 'var(--fx-text)' }}
+            >
+              Risk Warning
+            </h3>
+            <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
+              Please note that forex trading and trading in other leveraged products involves a
+              significant level of risk and is not suitable for all investors. Trading in financial
+              instruments may result in losses as well as profits and your losses can be greater than
+              your initial invested capital. Before undertaking any such transactions, you should
+              ensure that you fully understand the risks involved and seek independent advice if
+              necessary. SetupFX does not provide investment advice.
+            </p>
+          </div>
+
+          <div>
+            <h3
+              className="text-lg md:text-xl font-semibold mb-3"
+              style={{ color: 'var(--fx-text)' }}
+            >
+              Restricted Regions
+            </h3>
+            <p className="text-xs md:text-[13px] leading-relaxed" style={{ color: 'var(--fx-text-3)' }}>
+              SetupFX Ltd does not provide services for citizens/residents of the USA, Cuba, Iraq,
+              Myanmar, North Korea, and Sudan. The services of SetupFX Ltd are not intended for
+              distribution to, or use by, any person in any country or jurisdiction where such
+              distribution or use would be contrary to local law or regulation.
+            </p>
+          </div>
         </div>
 
         {/* Bottom bar */}
@@ -168,12 +192,12 @@ export default function Footer() {
           style={{ borderTop: '1px solid var(--fx-line)' }}
         >
           <p className="text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            © {year} SetupFX Ltd. All rights reserved.
+            © {year} SetupFX Ltd. All rights reserved. · Founded in 2010
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: 'var(--fx-text-3)' }}>
-            <Link to="/privacy" className="hover:underline">Privacy Policy</Link>
-            <Link to="/terms" className="hover:underline">Terms of Service</Link>
-            <Link to="/risk" className="hover:underline">Risk Disclosure</Link>
+            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+            <Link href="/terms" className="hover:underline">Terms of Service</Link>
+            <Link href="/risk" className="hover:underline">Risk Disclosure</Link>
           </div>
         </div>
       </div>

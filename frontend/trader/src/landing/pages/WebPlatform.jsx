@@ -102,16 +102,9 @@ const WebPlatform = () => {
             </ScrollReveal>
             <ScrollReveal variant="fadeRight" delay={0.2}>
               <div className="glass-card overflow-hidden">
-                <div
-                  aria-hidden
-                  className="aspect-video rounded-t-lg overflow-hidden"
-                  style={{
-                    background:
-                      'radial-gradient(ellipse 70% 60% at 50% 30%, rgba(16,116,254,0.28), transparent 65%), ' +
-                      'linear-gradient(135deg, #0F1530 0%, #0B0F1A 100%)',
-                  }}
-                />
-
+                <div className="aspect-video rounded-t-lg overflow-hidden">
+                  <img src="/images/setupfx-logo2.png" alt="SetupFX Web Platform" className="w-full h-full object-contain p-16 bg-gradient-to-br from-primary-bg to-primary-secondary" />
+                </div>
                 <div className="p-8">
                   <h3 className="text-2xl font-bold text-white mb-4">Access Anywhere</h3>
                   <p className="text-text-secondary mb-6">

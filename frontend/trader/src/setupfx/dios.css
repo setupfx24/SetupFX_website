@@ -1,0 +1,76 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Dios-inspired landing — additional fonts, keyframes, and animation
+   utility classes used by the new WebGLHero, HeroScroll, and section
+   components. Scoped to `.setupfx-home` (the landing wrapper) so it
+   never bleeds into the trader dashboard.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* Plus Jakarta Sans + JetBrains Mono via Google Fonts (cached by Google CDN). */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ── Smooth scroll for anchor links + offset for fixed navbar ── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* fixed Navbar height + buffer so anchors don't slide under */
+}
+
+/* Respect user preference: turn off smooth-scroll for accessibility. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* ── Fade-in/up/down keyframes used by the WebGL hero stagger ─── */
+@keyframes dios-fade-in-down {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dios-fade-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dios-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes dios-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.setupfx-home .animate-fade-in-down {
+  animation: dios-fade-in-down 0.8s ease-out forwards;
+}
+.setupfx-home .animate-fade-in-up {
+  animation: dios-fade-in-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+.setupfx-home .animation-delay-200 { animation-delay: 0.2s; }
+.setupfx-home .animation-delay-400 { animation-delay: 0.4s; }
+.setupfx-home .animation-delay-600 { animation-delay: 0.6s; }
+.setupfx-home .animation-delay-800 { animation-delay: 0.8s; }
+.setupfx-home .animate-gradient {
+  background-size: 200% 200%;
+  animation: dios-gradient-shift 3s ease infinite;
+}
+
+/* ── Market ticker marquee (separate from setupfx-marquee, used by
+       MarketTicker which needs a 40s loop matching Dios source). ── */
+.setupfx-home .marquee-track {
+  animation: dios-marquee 40s linear infinite;
+}
+.setupfx-home .marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* No-scrollbar utility for ticker container. */
+.setupfx-home .no-scrollbar::-webkit-scrollbar { display: none; }
+.setupfx-home .no-scrollbar { scrollbar-width: none; }
+
+/* Plus Jakarta Sans as a body utility (apply via .font-jakarta). */
+.setupfx-home .font-jakarta {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}

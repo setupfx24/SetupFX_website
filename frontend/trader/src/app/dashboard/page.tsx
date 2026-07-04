@@ -235,10 +235,10 @@ function BrokerHome() {
         <div className="rounded-2xl p-5 bg-bg-card border border-border-primary">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-[#E8F1FF] flex items-center justify-center shrink-0">
+              <div className={clsx('w-11 h-11 rounded-xl flex items-center justify-center shrink-0', todaysPnl >= 0 ? 'bg-[#E6F9F1]' : 'bg-[#FDECEC]')}>
                 {todaysPnl >= 0
-                  ? <TrendingUp size={20} className="text-[#1074FE]" />
-                  : <TrendingDown size={20} className="text-[#1074FE]" />}
+                  ? <TrendingUp size={20} className="text-[#10B981]" />
+                  : <TrendingDown size={20} className="text-[#EF4444]" />}
               </div>
               <p className="text-[11px] uppercase tracking-wide font-semibold text-text-tertiary">Open P/L</p>
             </div>
@@ -266,31 +266,31 @@ function BrokerHome() {
             const id = activeId || accounts[0]!.id;
             router.push(`/trading/terminal?account=${encodeURIComponent(id)}&view=chart`);
           }}
-          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#1074FE] transition-colors flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#7C5CFC] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#E8F1FF] flex items-center justify-center shrink-0">
-            <BarChart3 size={22} className="text-[#1074FE]" />
+          <div className="w-12 h-12 rounded-xl bg-[#EFEAFE] flex items-center justify-center shrink-0">
+            <BarChart3 size={22} className="text-[#7C5CFC]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold text-text-primary truncate">Trade Now</p>
             <p className="text-xs text-text-secondary mt-0.5">Start Trading</p>
           </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#1074FE] group-hover:translate-x-1 transition-all shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#7C5CFC] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
         <button
           type="button"
           onClick={() => router.push('/social')}
-          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#1074FE] transition-colors flex items-center gap-4 text-left"
+          className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#06B6D4] transition-colors flex items-center gap-4 text-left"
         >
-          <div className="w-12 h-12 rounded-xl bg-[#E8F1FF] flex items-center justify-center shrink-0">
-            <Users size={22} className="text-[#1074FE]" />
+          <div className="w-12 h-12 rounded-xl bg-[#E0F7FB] flex items-center justify-center shrink-0">
+            <Users size={22} className="text-[#0891B2]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-bold text-text-primary truncate">Copy Trading</p>
             <p className="text-xs text-text-secondary mt-0.5">Copy Top Traders</p>
           </div>
-          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#1074FE] group-hover:translate-x-1 transition-all shrink-0" />
+          <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#06B6D4] group-hover:translate-x-1 transition-all shrink-0" />
         </button>
 
         {/* Add Funds tile is meaningless for try-with-demo users — demo
@@ -299,16 +299,16 @@ function BrokerHome() {
           <button
             type="button"
             onClick={() => router.push('/wallet')}
-            className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#1074FE] transition-colors flex items-center gap-4 text-left"
+            className="group rounded-2xl p-5 bg-bg-card border border-border-primary hover:border-[#F59E0B] transition-colors flex items-center gap-4 text-left"
           >
-            <div className="w-12 h-12 rounded-xl bg-[#E8F1FF] flex items-center justify-center shrink-0">
-              <WalletIcon size={22} className="text-[#1074FE]" />
+            <div className="w-12 h-12 rounded-xl bg-[#FFF4E0] flex items-center justify-center shrink-0">
+              <WalletIcon size={22} className="text-[#F59E0B]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-base font-bold text-text-primary truncate">Add Funds</p>
               <p className="text-xs text-text-secondary mt-0.5">Deposit Now</p>
             </div>
-            <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#1074FE] group-hover:translate-x-1 transition-all shrink-0" />
+            <ArrowRight size={20} className="text-text-tertiary group-hover:text-[#F59E0B] group-hover:translate-x-1 transition-all shrink-0" />
           </button>
         )}
       </div>
@@ -440,8 +440,8 @@ function AccountBalanceCard({
 
       <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
         <Stat label="Balance" value={fmtUsd(a?.balance ?? 0)} highlight />
-        <Stat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} />
-        <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} />
+        <Stat label="Free margin" value={fmtUsd(a?.free_margin ?? 0)} color="#0891B2" />
+        <Stat label="Equity" value={fmtUsd(a?.equity ?? 0)} color="#10B981" />
         <Stat label="Leverage" value={a ? `1:${a.leverage}` : '—'} />
         <Stat label="Server" value="—" />
         <Stat label="No swap" value={a?.swap_free ? 'Yes' : 'No'} />
@@ -450,13 +450,13 @@ function AccountBalanceCard({
   );
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ label, value, highlight, color }: { label: string; value: string; highlight?: boolean; color?: string }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-[0.14em] font-medium text-text-tertiary">{label}</p>
       <p
         className={clsx('mt-1 font-bold tabular-nums', highlight ? 'text-xl md:text-2xl' : 'text-base md:text-lg')}
-        style={{ color: highlight ? '#1074FE' : 'var(--text-primary)' }}
+        style={{ color: highlight ? '#1074FE' : (color ?? 'var(--text-primary)') }}
       >
         {value}
       </p>

@@ -8,71 +8,35 @@ import { Menu, X, ChevronDown, ArrowRight } from 'lucide-react'
 
 const navItems = [
   { label: 'Home', path: '/' },
-  { label: 'Trading', path: '/trading/overview' },
-  { label: 'Copy Trading', path: '/platforms/copy-trading' },
-  { label: 'Protocol',   path: '/protocol' },
-  { label: 'About',      path: '/about' },
-  { label: 'Contact',    path: '/contact' },
+  { label: 'Trading', path: '/trading/forex' },
+  {
+    label: 'Platforms',
+    dropdown: [
+      { name: 'Web Platform',   path: '/platforms/web' },
+      { name: 'Copy Trading',   path: '/platforms/copy-trading' },
+      { name: 'IB Management',  path: '/platforms/ib-management' },
+    ],
+  },
+  {
+    label: 'Accounts',
+    dropdown: [
+      { name: 'Standard', path: '/accounts/standard' },
+      { name: 'Pro',      path: '/accounts/pro' },
+      { name: 'Demo',     path: '/accounts/demo' },
+    ],
+  },
+  { label: 'Education', path: '/education/tutorials' },
+  { label: 'About',     path: '/company/about' },
+  { label: 'Contact',   path: '/company/contact' },
 ]
 
-/* Two-mode palette. Layout passes `theme="light"` on the new
- * SetupFX-branded marketing pages (canvas #FFFFFF) and `theme="dark"`
- * on legacy dark sections (canvas #08090b). Keeps a single Navbar
- * component instead of swapping in/out two different chrome systems. */
-const THEMES = {
-  dark: {
-    bgScrolled:  'rgba(8,9,11,0.85)',
-    bgMobile:    'rgba(8,9,11,0.97)',
-    border:      'var(--fx-line)',
-    borderStrong:'var(--fx-line-strong)',
-    text:        'var(--fx-text)',
-    textMuted:   'var(--fx-text-2)',
-    textTertiary:'var(--fx-text-3)',
-    accent:      'var(--fx-gold-light)',
-    accentSoft:  'var(--fx-gold-soft)',
-    brandLeft:   '#FFFFFF',                    // "Swiss"
-    brandRight:  '#1074FE',                    // "Cresta"
-    dropdownBg:  'rgba(16,17,20,0.96)',
-    iconBg:      'rgba(255,255,255,0.04)',
-    hoverBg:     'rgba(255,255,255,0.04)',
-    ctaGhostText:    '#F5F5F5',
-    ctaGhostBorder:  'rgba(255,255,255,0.18)',
-    ctaPrimaryBg:    '#1074FE',
-    ctaPrimaryText:  '#FFFFFF',
-  },
-  light: {
-    bgScrolled:  'rgba(255,255,255,0.92)',
-    bgMobile:    'rgba(255,255,255,0.98)',
-    border:      'var(--mkt-line)',
-    borderStrong:'#D1D5DB',
-    text:        'var(--mkt-ink-primary)',
-    textMuted:   'var(--mkt-ink-secondary)',
-    textTertiary:'var(--mkt-ink-tertiary)',
-    accent:      '#2563EB',                    // blue accent for active state
-    accentSoft:  'rgba(37,99,235,0.08)',
-    brandLeft:   '#111827',                    // "Swiss" dark gray
-    brandRight:  '#2563EB',                    // "Cresta" blue
-    dropdownBg:  'rgba(255,255,255,0.98)',
-    iconBg:      'rgba(0,0,0,0.04)',
-    hoverBg:     'rgba(0,0,0,0.04)',
-    ctaGhostText:    '#374151',
-    ctaGhostBorder:  '#D1D5DB',
-    ctaPrimaryBg:    '#2563EB',
-    ctaPrimaryText:  '#FFFFFF',
-  },
-}
-
-export default function Navbar({ theme = 'dark' }) {
-  const t = THEMES[theme] || THEMES.dark
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [mobileDropdown, setMobileDropdown] = useState(null)
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const menuRef = useRef(null)
-
-  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -88,8 +52,8 @@ export default function Navbar({ theme = 'dark' }) {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  const isActive = (path) => mounted && pathname === path
-  const isDropdownActive = (dropdown) => mounted && dropdown?.some(d => pathname?.startsWith(d.path))
+  const isActive = (path) => pathname === path
+  const isDropdownActive = (dropdown) => dropdown?.some(d => pathname?.startsWith(d.path))
 
   return (
     <motion.nav
@@ -99,29 +63,22 @@ export default function Navbar({ theme = 'dark' }) {
       ref={menuRef}
       className="fixed top-0 left-0 right-0 z-50 transition-colors duration-300"
       style={{
-        background: scrolled || isOpen ? t.bgScrolled : 'transparent',
+        background: scrolled || isOpen ? 'rgba(8,9,11,0.85)' : 'transparent',
         backdropFilter: scrolled || isOpen ? 'blur(16px)' : 'none',
         WebkitBackdropFilter: scrolled || isOpen ? 'blur(16px)' : 'none',
-        borderBottom: scrolled || isOpen ? `1px solid ${t.border}` : '1px solid transparent',
+        borderBottom: scrolled || isOpen ? '1px solid var(--fx-line)' : '1px solid transparent',
       }}
     >
       <div className="fx-container">
         <div className="flex items-center justify-between h-16 md:h-[72px]">
 
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0 group" aria-label="SetupFX home">
-            <svg
-              viewBox="0 0 32 32"
-              aria-hidden="true"
-              className="w-7 h-7 md:w-8 md:h-8 shrink-0 transition-transform duration-300 group-hover:scale-[1.05]"
-            >
-              <rect width="32" height="32" rx="4" fill="#DC2626" />
-              <rect x="13" y="6" width="6" height="20" fill="#ffffff" />
-              <rect x="6" y="13" width="20" height="6" fill="#ffffff" />
-            </svg>
-            <span className="inline-flex items-baseline font-bold tracking-tight text-lg md:text-xl select-none">
-              <span style={{ color: t.brandLeft }}>Swiss</span>
-              <span style={{ color: t.brandRight }}>Cresta</span>
-            </span>
+          {/* Logo */}
+          <Link href="/" className="flex items-center flex-shrink-0 group" aria-label="SetupFX home">
+            <img
+              src="/images/setupfx-logo2.png"
+              alt="SetupFX"
+              className="h-10 md:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -136,9 +93,9 @@ export default function Navbar({ theme = 'dark' }) {
                 >
                   <button
                     type="button"
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
+                    className="flex items-center gap-1 px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-200"
                     style={{
-                      color: isDropdownActive(item.dropdown) ? t.accent : t.textMuted,
+                      color: isDropdownActive(item.dropdown) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                     }}
                   >
                     {item.label}
@@ -157,13 +114,11 @@ export default function Navbar({ theme = 'dark' }) {
                         transition={{ duration: 0.18 }}
                         className="absolute top-full left-0 mt-2 w-52 p-1.5 rounded-2xl"
                         style={{
-                          background: t.dropdownBg,
-                          border: `1px solid ${t.borderStrong}`,
+                          background: 'rgba(16,17,20,0.96)',
+                          border: '1px solid var(--fx-line-strong)',
                           backdropFilter: 'blur(20px)',
                           WebkitBackdropFilter: 'blur(20px)',
-                          boxShadow: theme === 'light'
-                            ? '0 20px 50px rgba(0,0,0,0.08)'
-                            : '0 20px 50px rgba(0,0,0,0.6)',
+                          boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
                         }}
                       >
                         {item.dropdown.map((sub) => {
@@ -174,10 +129,10 @@ export default function Navbar({ theme = 'dark' }) {
                               href={sub.path}
                               className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors duration-150"
                               style={{
-                                color: active ? t.accent : t.textMuted,
-                                background: active ? t.accentSoft : 'transparent',
+                                color: active ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
+                                background: active ? 'var(--fx-gold-soft)' : 'transparent',
                               }}
-                              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = t.hoverBg }}
+                              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
                               onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
                             >
                               {sub.name}
@@ -192,9 +147,9 @@ export default function Navbar({ theme = 'dark' }) {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className="px-2.5 py-1.5 rounded-full text-[13px] font-medium transition-colors duration-200"
+                  className="px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-200"
                   style={{
-                    color: isActive(item.path) ? t.accent : t.textMuted,
+                    color: isActive(item.path) ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
                   }}
                 >
                   {item.label}
@@ -207,22 +162,13 @@ export default function Navbar({ theme = 'dark' }) {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/auth/login"
-              className="hidden sm:inline-flex items-center text-sm font-medium py-2 px-4 rounded-full transition-colors"
-              style={{
-                color: t.ctaGhostText,
-                border: `1px solid ${t.ctaGhostBorder}`,
-                background: 'transparent',
-              }}
+              className="hidden sm:inline-flex fx-btn-ghost text-sm py-2 px-4"
             >
               Login
             </Link>
             <Link
               href="/auth/register"
-              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-full transition-opacity hover:opacity-90"
-              style={{
-                background: t.ctaPrimaryBg,
-                color: t.ctaPrimaryText,
-              }}
+              className="hidden sm:inline-flex fx-btn-primary text-sm py-2 px-4"
             >
               Open Account
               <ArrowRight size={14} />
@@ -233,9 +179,9 @@ export default function Navbar({ theme = 'dark' }) {
               onClick={() => setIsOpen(prev => !prev)}
               className="lg:hidden relative z-[60] w-10 h-10 flex items-center justify-center rounded-full transition-colors"
               style={{
-                background: t.iconBg,
-                border: `1px solid ${t.borderStrong}`,
-                color: t.text,
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid var(--fx-line-strong)',
+                color: 'var(--fx-text)',
               }}
               aria-label={isOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isOpen}
@@ -256,10 +202,10 @@ export default function Navbar({ theme = 'dark' }) {
             transition={{ duration: 0.28, ease: 'easeInOut' }}
             className="lg:hidden overflow-hidden"
             style={{
-              background: t.bgMobile,
+              background: 'rgba(8,9,11,0.97)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              borderTop: `1px solid ${t.border}`,
+              borderTop: '1px solid var(--fx-line)',
             }}
           >
             <div className="fx-container py-4 space-y-1 max-h-[calc(100dvh-72px)] overflow-y-auto">
@@ -277,8 +223,8 @@ export default function Navbar({ theme = 'dark' }) {
                         onClick={() => setMobileDropdown(mobileDropdown === item.label ? null : item.label)}
                         className="flex items-center justify-between w-full px-4 py-3 rounded-xl transition-colors"
                         style={{
-                          color: isDropdownActive(item.dropdown) ? t.accent : t.text,
-                          background: mobileDropdown === item.label ? t.hoverBg : 'transparent',
+                          color: isDropdownActive(item.dropdown) ? 'var(--fx-gold-light)' : 'var(--fx-text)',
+                          background: mobileDropdown === item.label ? 'rgba(255,255,255,0.04)' : 'transparent',
                         }}
                       >
                         <span className="text-sm font-medium">{item.label}</span>
@@ -286,7 +232,7 @@ export default function Navbar({ theme = 'dark' }) {
                           size={16}
                           className="transition-transform duration-200"
                           style={{
-                            color: t.textTertiary,
+                            color: 'var(--fx-text-3)',
                             transform: mobileDropdown === item.label ? 'rotate(180deg)' : 'none',
                           }}
                         />
@@ -308,8 +254,8 @@ export default function Navbar({ theme = 'dark' }) {
                                   href={sub.path}
                                   className="block pl-8 pr-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                                   style={{
-                                    color: active ? t.accent : t.textMuted,
-                                    background: active ? t.accentSoft : 'transparent',
+                                    color: active ? 'var(--fx-gold-light)' : 'var(--fx-text-2)',
+                                    background: active ? 'var(--fx-gold-soft)' : 'transparent',
                                   }}
                                 >
                                   {sub.name}
@@ -325,8 +271,8 @@ export default function Navbar({ theme = 'dark' }) {
                       href={item.path}
                       className="block px-4 py-3 rounded-xl text-sm font-medium transition-colors"
                       style={{
-                        color: isActive(item.path) ? t.accent : t.text,
-                        background: isActive(item.path) ? t.accentSoft : 'transparent',
+                        color: isActive(item.path) ? 'var(--fx-gold-light)' : 'var(--fx-text)',
+                        background: isActive(item.path) ? 'var(--fx-gold-soft)' : 'transparent',
                       }}
                     >
                       {item.label}
@@ -340,26 +286,12 @@ export default function Navbar({ theme = 'dark' }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.32, duration: 0.25 }}
                 className="pt-3 mt-2 border-t flex flex-col gap-2"
-                style={{ borderColor: t.border }}
+                style={{ borderColor: 'var(--fx-line)' }}
               >
-                <Link
-                  href="/auth/login"
-                  className="inline-flex items-center justify-center text-sm font-medium py-3 rounded-full transition-colors"
-                  style={{
-                    color: t.ctaGhostText,
-                    border: `1px solid ${t.ctaGhostBorder}`,
-                  }}
-                >
+                <Link href="/auth/login" className="fx-btn-ghost justify-center text-sm py-3">
                   Login
                 </Link>
-                <Link
-                  href="/auth/register"
-                  className="inline-flex items-center justify-center gap-2 text-sm font-semibold py-3 rounded-full transition-opacity hover:opacity-90"
-                  style={{
-                    background: t.ctaPrimaryBg,
-                    color: t.ctaPrimaryText,
-                  }}
-                >
+                <Link href="/auth/register" className="fx-btn-primary justify-center text-sm py-3">
                   Open Live Account
                   <ArrowRight size={14} />
                 </Link>

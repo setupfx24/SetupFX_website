@@ -5,11 +5,11 @@
  * Copy adapted from DETAILED_CONTENT_HOW_IT_WORKS_PAGE.docx (May 2026 client deck).
  */
 import Link from 'next/link';
-import { Wallet, ShieldCheck, Cpu, ArrowRight, Check, Zap, ChevronRight, Plus } from 'lucide-react';
+import { Wallet, ShieldCheck, Cpu, ArrowRight, Check, Zap, Headphones, Users, Target, BarChart3 } from 'lucide-react';
 
 export default function HowItWorksPage() {
   return (
-    <main className="relative overflow-hidden" style={{ background: 'var(--mkt-bg-canvas)' }}>
+    <main className="relative overflow-hidden" style={{ background: 'var(--fx-bg)' }}>
       <div className="fx-grid-bg" aria-hidden="true" />
       <div className="fx-glow-gold" aria-hidden="true" />
 
@@ -21,13 +21,13 @@ export default function HowItWorksPage() {
           <br />
           <span className="fx-gold-text">A Trading Protocol.</span>
         </h1>
-        <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed" style={{ color: 'var(--mkt-ink-secondary)' }}>
+        <p className="mt-6 max-w-2xl text-base md:text-lg leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>
           SetupFX does not hold your funds. Your trades operate through a
           structured smart contract system. Execution is automated. Control
           stays with you.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="#flow" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#1074FE] text-white font-bold text-sm hover:brightness-110">
+          <Link href="#flow" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[#1074FE] text-bg-base font-bold text-sm hover:brightness-110">
             See the Flow <ArrowRight size={14} />
           </Link>
           <Link href="/auth/register" className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-[#1074FE]/40 text-text-primary text-sm hover:border-[#1074FE]/70">
@@ -38,10 +38,10 @@ export default function HowItWorksPage() {
 
       {/* Broker vs Protocol */}
       <section className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--mkt-ink-primary)' }}>
+        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
           Traditional Broker vs SetupFX
         </h2>
-        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--mkt-ink-secondary)' }}>
+        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--fx-text-2)' }}>
           We don&apos;t hold your money. The system manages execution.
         </p>
         <div className="grid md:grid-cols-2 gap-5">
@@ -62,10 +62,10 @@ export default function HowItWorksPage() {
 
       {/* 7-step flow */}
       <section id="flow" className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--mkt-ink-primary)' }}>
+        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
           From Wallet to Trade — Step by Step
         </h2>
-        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--mkt-ink-secondary)' }}>
+        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--fx-text-2)' }}>
           Every step is system-driven. No manual control involved.
         </p>
         <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -75,46 +75,19 @@ export default function HowItWorksPage() {
                 <span className="font-mono">{String(i + 1).padStart(2, '0')}</span>
                 <span className="uppercase tracking-wider">{s.eyebrow}</span>
               </div>
-              <h3 className="font-semibold mb-1" style={{ color: 'var(--mkt-ink-primary)' }}>{s.title}</h3>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--mkt-ink-secondary)' }}>{s.body}</p>
+              <h3 className="font-semibold mb-1" style={{ color: 'var(--fx-text)' }}>{s.title}</h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>{s.body}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      {/* Visual flow — wallet → CRM → account → contract → engine → result → wallet */}
-      <section className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--mkt-ink-primary)' }}>
-          How Funds Move Inside the System
-        </h2>
-        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--mkt-ink-secondary)' }}>
-          Funds move only based on trading outcomes.
-        </p>
-        <div className="rounded-2xl border border-[#1074FE]/20 p-6 md:p-10 bg-[rgba(16,116,254,0.03)]">
-          <ol className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
-            {FLOW_NODES.map((node, i) => (
-              <li key={node} className="flex items-center gap-2 md:gap-3">
-                <span className="inline-flex items-center justify-center rounded-full border border-[#1074FE]/40 bg-[rgba(16,116,254,0.08)] px-3 md:px-4 py-2 text-[11px] md:text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--mkt-ink-primary)' }}>
-                  {node}
-                </span>
-                {i < FLOW_NODES.length - 1 && (
-                  <ChevronRight size={16} className="text-[#1074FE] shrink-0" aria-hidden />
-                )}
-              </li>
-            ))}
-          </ol>
-          <p className="mt-8 text-center text-[11px] md:text-xs uppercase tracking-[0.25em] text-[#1074FE]/85">
-            One direction · System decides
-          </p>
-        </div>
-      </section>
-
       {/* Security pillars */}
       <section className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--mkt-ink-primary)' }}>
+        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--fx-text)' }}>
           Built for Transparency and Control
         </h2>
-        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--mkt-ink-secondary)' }}>
+        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--fx-text-2)' }}>
           Designed to minimize trust dependency and maximize system-based execution.
         </p>
         <div className="grid md:grid-cols-3 gap-5">
@@ -126,7 +99,7 @@ export default function HowItWorksPage() {
 
       {/* Comparison table */}
       <section className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6" style={{ color: 'var(--mkt-ink-primary)' }}>
+        <h2 className="text-2xl md:text-3xl font-bold mb-6" style={{ color: 'var(--fx-text)' }}>
           SetupFX vs Traditional Brokers
         </h2>
         <div className="overflow-hidden rounded-xl border border-[#1074FE]/20">
@@ -141,9 +114,9 @@ export default function HowItWorksPage() {
             <tbody>
               {COMPARE.map((r) => (
                 <tr key={r[0]} className="border-t border-[#1074FE]/10">
-                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--mkt-ink-primary)' }}>{r[0]}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--mkt-ink-secondary)' }}>{r[1]}</td>
-                  <td className="px-4 py-3" style={{ color: 'var(--mkt-ink-secondary)' }}>{r[2]}</td>
+                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--fx-text)' }}>{r[0]}</td>
+                  <td className="px-4 py-3" style={{ color: 'var(--fx-text-2)' }}>{r[1]}</td>
+                  <td className="px-4 py-3" style={{ color: 'var(--fx-text-2)' }}>{r[2]}</td>
                 </tr>
               ))}
             </tbody>
@@ -151,31 +124,43 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* FAQ — trust questions */}
-      <section className="fx-container relative z-10 py-16">
-        <h2 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--mkt-ink-primary)' }}>
-          Common Questions
+      {/* Why Trade with SetupFX */}
+      <section className="fx-container relative z-10 py-16 md:py-24">
+        <h2
+          className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-12 md:mb-14"
+          style={{ color: 'var(--fx-text)' }}
+        >
+          Why Trade with SetupFX?
         </h2>
-        <p className="text-sm mb-10 max-w-2xl" style={{ color: 'var(--mkt-ink-secondary)' }}>
-          Direct answers on custody, withdrawals, and execution.
-        </p>
-        <div className="max-w-3xl mx-auto space-y-3">
-          {FAQS.map((f) => (
-            <details
-              key={f.q}
-              className="group rounded-xl border border-[#1074FE]/20 bg-[rgba(255,255,255,0.02)] open:border-[#1074FE]/45 open:bg-[rgba(16,116,254,0.04)] transition-colors"
-            >
-              <summary className="flex items-center justify-between gap-4 px-5 py-4 cursor-pointer list-none">
-                <span className="text-sm md:text-base font-semibold" style={{ color: 'var(--mkt-ink-primary)' }}>
-                  {f.q}
-                </span>
-                <Plus size={18} className="text-[#1074FE] shrink-0 transition-transform duration-200 group-open:rotate-45" aria-hidden />
-              </summary>
-              <div className="px-5 pb-5 -mt-1 text-sm leading-relaxed" style={{ color: 'var(--mkt-ink-secondary)' }}>
-                {f.a}
-              </div>
-            </details>
-          ))}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <WhyCard
+            icon={Zap}
+            title="Deep Liquidity, Fast Execution"
+            sub="sub-millisecond order fills"
+          />
+          <WhyCard
+            icon={Headphones}
+            title="24/7 Dedicated Support"
+            sub="live chat, phone & e-mail"
+          />
+          <WhyCard
+            icon={Users}
+            title="Copy Successful Traders"
+            sub="with our Social Trading products"
+          />
+          <WhyCard
+            icon={Target}
+            title="Raw, Institutional-Grade Spreads"
+            sub="from 0.0 pips"
+            wide
+          />
+          <WhyCard
+            icon={BarChart3}
+            title="Advanced Order Types"
+            sub="limit, stop-limit, one-click trading"
+            wide
+          />
         </div>
       </section>
 
@@ -183,14 +168,14 @@ export default function HowItWorksPage() {
       <section className="fx-container relative z-10 py-20">
         <div className="rounded-2xl border border-[#1074FE]/30 p-10 md:p-14 text-center bg-[rgba(16,116,254,0.04)]">
           <Zap size={28} className="text-[#1074FE] mx-auto mb-4" />
-          <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: 'var(--mkt-ink-primary)' }}>
+          <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ color: 'var(--fx-text)' }}>
             Experience System-Driven Trading
           </h2>
-          <p className="text-sm md:text-base max-w-xl mx-auto mb-6" style={{ color: 'var(--mkt-ink-secondary)' }}>
+          <p className="text-sm md:text-base max-w-xl mx-auto mb-6" style={{ color: 'var(--fx-text-2)' }}>
             No custody. No hidden control. Just structured execution.
           </p>
           <div className="flex justify-center gap-3 flex-wrap">
-            <Link href="/auth/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1074FE] text-white font-bold text-sm hover:brightness-110">
+            <Link href="/auth/register" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1074FE] text-bg-base font-bold text-sm hover:brightness-110">
               Start Trading <ArrowRight size={14} />
             </Link>
             <Link href="/auth/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[#1074FE]/40 text-text-primary text-sm hover:border-[#1074FE]/70">
@@ -221,43 +206,6 @@ const COMPARE: Array<[string, string, string]> = [
   ['User Control', 'High', 'Limited'],
 ];
 
-const FLOW_NODES = [
-  'Wallet',
-  'CRM',
-  'Trading Account',
-  'Smart Contract',
-  'Trade Engine',
-  'Result',
-  'Wallet',
-];
-
-const FAQS: Array<{ q: string; a: string }> = [
-  {
-    q: 'Does SetupFX hold my funds?',
-    a: 'No. Funds are allocated to a system-controlled contract environment — the platform does not custody trader balances directly.',
-  },
-  {
-    q: 'Can withdrawals be delayed?',
-    a: 'Withdrawals follow system rules and are not manually controlled. Once a withdrawal qualifies under the protocol logic, settlement returns to your wallet on the next on-chain cycle.',
-  },
-  {
-    q: 'Who controls trade execution?',
-    a: 'Execution is based on predefined system logic. The engine fills orders against live market data; no human dealer sits between the trader and the fill.',
-  },
-  {
-    q: 'Is this a decentralized system?',
-    a: 'It is a structured protocol combining smart-contract custody with a centralized matching engine. The custody layer is on-chain; the matching layer is off-chain for latency.',
-  },
-  {
-    q: 'What happens if I make profit?',
-    a: 'Profit is automatically credited to your trading balance based on the closing price and lot size. Withdrawal back to your wallet is on-demand from there.',
-  },
-  {
-    q: 'What happens if I incur loss?',
-    a: 'Loss is automatically deducted from the position’s margin pool at close, just like any standard derivatives platform. Stop-loss orders enforce the deduction at your chosen threshold.',
-  },
-];
-
 function Card({
   title, items, tone,
 }: { title: string; items: string[]; tone: 'ok' | 'warn' }) {
@@ -267,7 +215,7 @@ function Card({
       <h3 className="text-lg font-semibold mb-4" style={{ color: accent }}>{title}</h3>
       <ul className="space-y-2.5">
         {items.map((it) => (
-          <li key={it} className="flex items-start gap-2 text-sm" style={{ color: 'var(--mkt-ink-secondary)' }}>
+          <li key={it} className="flex items-start gap-2 text-sm" style={{ color: 'var(--fx-text-2)' }}>
             <Check size={14} className="mt-0.5 shrink-0" style={{ color: accent }} />
             <span>{it}</span>
           </li>
@@ -281,8 +229,40 @@ function Pillar({ icon: Icon, title, body }: { icon: any; title: string; body: s
   return (
     <div className="rounded-xl border border-[#1074FE]/20 p-6 bg-[rgba(255,255,255,0.02)]">
       <Icon size={24} className="text-[#1074FE] mb-3" />
-      <h3 className="font-semibold mb-1.5" style={{ color: 'var(--mkt-ink-primary)' }}>{title}</h3>
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--mkt-ink-secondary)' }}>{body}</p>
+      <h3 className="font-semibold mb-1.5" style={{ color: 'var(--fx-text)' }}>{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--fx-text-2)' }}>{body}</p>
+    </div>
+  );
+}
+
+function WhyCard({
+  icon: Icon, title, sub, wide,
+}: { icon: any; title: string; sub: string; wide?: boolean }) {
+  return (
+    <div
+      className={`rounded-2xl p-6 flex items-center gap-5 ${wide ? 'lg:col-span-3 xl:col-span-1' : ''}`}
+      style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid var(--fx-line)',
+      }}
+    >
+      <div
+        className="shrink-0 size-14 rounded-xl flex items-center justify-center"
+        style={{
+          background: 'rgba(16,116,254,0.18)',
+          border: '1px solid rgba(16,116,254,0.4)',
+        }}
+      >
+        <Icon size={26} className="text-[#1074FE]" />
+      </div>
+      <div>
+        <h3 className="font-semibold text-base md:text-lg leading-tight" style={{ color: 'var(--fx-text)' }}>
+          {title}
+        </h3>
+        <p className="mt-1 text-sm" style={{ color: 'var(--fx-text-3)' }}>
+          {sub}
+        </p>
+      </div>
     </div>
   );
 }

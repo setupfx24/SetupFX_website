@@ -30,7 +30,7 @@ const COPY: Record<Mode, {
   switchHref: string;
 }> = {
   signup: {
-    hero: 'A Swiss-precision trading platform for serious investors.',
+    hero: 'A precision-built trading platform for serious investors.',
     eyebrow: 'Welcome to SetupFX',
     title: 'Create your account',
     subtitle: 'Trade FX, indices, metals and crypto with bank-grade execution.',
@@ -40,7 +40,7 @@ const COPY: Record<Mode, {
     switchHref: '/auth/login',
   },
   login: {
-    hero: 'A Swiss-precision trading platform for serious investors.',
+    hero: 'A precision-built trading platform for serious investors.',
     eyebrow: 'Welcome back',
     title: 'Sign in to SetupFX',
     subtitle: 'Access your portfolio, positions and watchlists.',
@@ -218,15 +218,15 @@ export const FullScreenSignup = ({ mode = 'signup' }: FullScreenSignupProps) => 
           <Link
             href="/"
             aria-label="SetupFX home"
-            className="inline-flex items-center self-start relative z-10 bg-white/95 rounded-lg px-3 py-1.5"
+            className="inline-flex items-center self-start relative z-10"
           >
             <Image
-              src="/marketing/setupfx-logo.png"
+              src="/marketing/setupfx-logo-white.png"
               alt="SetupFX"
               width={220}
               height={48}
               priority
-              className="h-8 w-auto"
+              className="h-9 w-auto"
             />
           </Link>
           <h1 className="text-2xl md:text-3xl font-medium leading-tight tracking-tight relative z-10">

@@ -1,10 +1,21 @@
-import type { ReactNode } from 'react'
+import type { Metadata } from 'next';
 
-export const metadata = {
-  title: 'Trade Commodities — SetupFX',
-  description: 'Gold, silver, oil and other commodity CFDs with tight spreads.',
-}
+export const metadata: Metadata = {
+  title: 'Commodities Trading — Gold, Silver, Oil, Natural Gas',
+  description:
+    'Diversify your portfolio with precious metals, energy, and agricultural commodity CFDs on SetupFX.',
+  openGraph: {
+    title: 'Commodities Trading — Gold, Silver, Oil, Natural Gas',
+    description:
+      'Diversify your portfolio with precious metals, energy, and agricultural commodity CFDs on SetupFX.',
+  },
+  twitter: {
+    title: 'Commodities Trading — Gold, Silver, Oil, Natural Gas',
+    description:
+      'Diversify your portfolio with precious metals, energy, and agricultural commodity CFDs on SetupFX.',
+  },
+};
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <>{children}</>
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
