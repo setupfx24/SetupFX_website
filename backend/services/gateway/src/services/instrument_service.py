@@ -26,6 +26,21 @@ async def list_instruments(
     result = await db.execute(query)
     instruments = result.scalars().all()
 
+    # Hide instruments the price feed doesn't quote — e.g. a symbol Infoway
+    # doesn't provide — so the UI never offers one that renders
+    # "This symbol doesn't exist". A symbol counts as available if it has a
+    # live tick OR a durable last-known price (so market-closed symbols still
+    # show). Only applied to the trader-facing (active_only) list. Fallback:
+    # if the price set is empty (feed still warming up / down) don't filter —
+    # showing everything beats showing an empty instrument list.
+    if active_only:
+        try:
+            quoted = {(p.get("symbol") or "").upper() for p in await get_all_prices()}
+        except Exception:
+            quoted = set()
+        if quoted:
+            instruments = [i for i in instruments if (i.symbol or "").upper() in quoted]
+
     return [
         InstrumentResponse(
             id=inst.id,
