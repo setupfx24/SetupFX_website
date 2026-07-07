@@ -92,3 +92,6 @@ setupfx_web/
 # frontend/trader/public/downloads/setupfx1.apk. Keep locally, don't track.
 # (Scoped to the root folder only so the served public/ APK stays tracked.)
 /apk/
+
+# Served Android APK — large binary, deployed to the server manually (not via git).
+frontend/trader/public/downloads/*.apk
