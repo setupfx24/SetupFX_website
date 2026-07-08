@@ -218,16 +218,28 @@ export default function AccountsPage() {
      there automatically. Pool accounts (CT/PM/MM) shown for master funding.
      Inactive accounts are hidden via is_active (delete_master sets this false). */
   const visibleRows = useMemo(() => {
-    if (user?.is_demo) return rows.filter((a) => a.is_demo);
-    return rows.filter((a) => {
-      if ((a as { is_active?: boolean }).is_active === false) return false;
-      /* Live/Demo filter — 'all' passes both through; 'live' hides demo;
-         'demo' hides live. */
-      if (kindFilter === 'live' && a.is_demo) return false;
-      if (kindFilter === 'demo' && !a.is_demo) return false;
-      /* Account-group filter — 'all' or a specific group id. */
-      if (groupFilter !== 'all' && a.account_group?.id !== groupFilter) return false;
-      return true;
+    const filtered = user?.is_demo
+      ? rows.filter((a) => a.is_demo)
+      : rows.filter((a) => {
+          if ((a as { is_active?: boolean }).is_active === false) return false;
+          /* Live/Demo filter — 'all' passes both through; 'live' hides demo;
+             'demo' hides live. */
+          if (kindFilter === 'live' && a.is_demo) return false;
+          if (kindFilter === 'demo' && !a.is_demo) return false;
+          /* Account-group filter — 'all' or a specific group id. */
+          if (groupFilter !== 'all' && a.account_group?.id !== groupFilter) return false;
+          return true;
+        });
+    /* Pin the cards to a stable order. The 2 s live-equity poll returns
+       accounts in whatever order the backend emits, so without an explicit
+       sort the cards visibly reshuffle every refresh. Sort by creation time
+       (oldest first), tie-broken by account number — both fixed values,
+       unlike equity/margin which float with the market. */
+    return filtered.sort((a, b) => {
+      const ta = a.created_at ? Date.parse(a.created_at) : 0;
+      const tb = b.created_at ? Date.parse(b.created_at) : 0;
+      if (ta !== tb) return ta - tb;
+      return a.account_number.localeCompare(b.account_number);
     });
   }, [rows, user?.is_demo, kindFilter, groupFilter]);
 
