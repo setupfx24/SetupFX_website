@@ -81,11 +81,11 @@ def _hash_otp(otp: str, salt: str) -> str:
     return hashlib.sha256((salt + ":" + otp).encode("utf-8")).hexdigest()
 
 
-async def _email_already_registered(db: AsyncSession, email_lower: str) -> bool:
+async def _get_user_by_email(db: AsyncSession, email_lower: str) -> Optional[User]:
     res = await db.execute(
-        select(User.id).where(func.lower(User.email) == email_lower).limit(1)
+        select(User).where(func.lower(User.email) == email_lower).limit(1)
     )
-    return res.scalar_one_or_none() is not None
+    return res.scalar_one_or_none()
 
 
 async def start_pending_registration(
@@ -111,9 +111,13 @@ async def start_pending_registration(
     email_lower = email.strip().lower()
     rate_limit_http(request, f"register-start:{email_lower}", 3, 3600.0)
 
-    if await _email_already_registered(db, email_lower):
-        # Same error shape as the old /auth/register so the frontend
-        # doesn't need a special branch.
+    existing_user = await _get_user_by_email(db, email_lower)
+    if existing_user is not None and existing_user.email_verified:
+        # Only a VERIFIED account blocks a fresh signup. An unverified stub
+        # (left by the legacy /auth/register path, or an abandoned attempt)
+        # is reclaimed on verify, so those users aren't locked out forever.
+        # Same error shape as the old /auth/register so the frontend doesn't
+        # need a special branch.
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Maintenance / kill-switch gates — same as register_user().
@@ -223,27 +227,46 @@ async def complete_pending_registration(
         await redis_client.setex(_redis_key(email_lower), ttl, json.dumps(payload))
         raise HTTPException(status_code=400, detail="Invalid verification code.")
 
-    # Race guard: if someone else managed to register the same email
-    # between start and verify, treat as duplicate.
-    if await _email_already_registered(db, email_lower):
+    # Race/stub guard. A VERIFIED account with this email means someone
+    # finished registering between start and verify (or the address is
+    # genuinely taken) → duplicate. An UNVERIFIED stub (legacy
+    # /auth/register, or an abandoned attempt) is reclaimed in place so any
+    # FK children stay valid and the address is never locked forever.
+    existing_user = await _get_user_by_email(db, email_lower)
+    if existing_user is not None and existing_user.email_verified:
         await redis_client.delete(_redis_key(email_lower))
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    user = User(
-        email=email_lower,
-        password_hash=payload["password_hash"],
-        first_name=payload.get("first_name") or "",
-        last_name=payload.get("last_name") or "",
-        phone=payload.get("phone"),
-        country=payload.get("country"),
-        role="user",
-        status="active",
-        kyc_status="pending",
-        email_verified=True,
-        email_verified_at=datetime.now(timezone.utc),
-    )
-    db.add(user)
-    await db.flush()
+    if existing_user is not None:
+        user = existing_user
+        user.email = email_lower
+        user.password_hash = payload["password_hash"]
+        user.first_name = payload.get("first_name") or ""
+        user.last_name = payload.get("last_name") or ""
+        user.phone = payload.get("phone")
+        user.country = payload.get("country")
+        user.role = "user"
+        user.status = "active"
+        user.kyc_status = "pending"
+        user.email_verified = True
+        user.email_verified_at = datetime.now(timezone.utc)
+        await db.flush()
+    else:
+        user = User(
+            email=email_lower,
+            password_hash=payload["password_hash"],
+            first_name=payload.get("first_name") or "",
+            last_name=payload.get("last_name") or "",
+            phone=payload.get("phone"),
+            country=payload.get("country"),
+            role="user",
+            status="active",
+            kyc_status="pending",
+            email_verified=True,
+            email_verified_at=datetime.now(timezone.utc),
+        )
+        db.add(user)
+        await db.flush()
 
     referral_code = payload.get("referral_code")
     if referral_code:
