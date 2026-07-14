@@ -26,6 +26,7 @@ from .store import TickStore, BarStore
 from .tick_pipeline import TickGuard
 from .reconcile import reconcile_loop
 from .backfill_from_ticks import backfill_from_ticks
+from .yahoo_history import backfill_yahoo
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("market-data")
@@ -257,14 +258,21 @@ class MarketDataService:
             return
         try:
             # SET NX EX → only one runner per 12h window.
-            got = await redis_client.set("backfill_ticks_lock", "1", nx=True, ex=43200)
+            got = await redis_client.set("backfill_history_lock", "1", nx=True, ex=43200)
             if not got:
-                logger.info("Tick backfill skipped (ran within the last 12h)")
+                logger.info("History backfill skipped (ran within the last 12h)")
                 return
+            # 1) Deep FX/metals/indices history from Yahoo (real market data).
+            logger.info("Backfilling FX/metals/indices history from Yahoo…")
+            try:
+                await backfill_yahoo()
+            except Exception as exc:
+                logger.warning("Yahoo history backfill failed: %s", exc)
+            # 2) Fill any remaining gaps from our own stored ticks (seam-free).
             logger.info("Building OHLCV history from stored ticks…")
             await backfill_from_ticks()
         except Exception as exc:
-            logger.warning("Auto tick-backfill failed: %s", exc)
+            logger.warning("Auto history backfill failed: %s", exc)
 
     async def _auto_seed_bars(self) -> None:
         """Wait for first ticks to arrive, then seed historical bars if Redis is empty."""

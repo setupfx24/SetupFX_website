@@ -11,10 +11,12 @@ import { useTradingStore, type Position } from '@/stores/tradingStore';
 const LIBRARY_PATH = '/charting_library/';
 const SCRIPT_SRC = '/charting_library/charting_library.standalone.js';
 
-// Use the Trading Terminal Broker API (SL/TP/✕ buttons ON the position line,
-// drag-to-set brackets). When there's no active account we fall back to the
-// manual createOrderLine/createPositionLine path below.
-const USE_BROKER_API = true;
+// The v31 "Advanced Charts" bundle ships broker strings but the Broker API
+// (Trading Terminal) does NOT reliably initialise here, so we use the manual
+// createPositionLine/createOrderLine path — draggable SL/TP lines you can set
+// AND move straight from the chart. (Flip to true only on a real Trading
+// Terminal build.)
+const USE_BROKER_API = false;
 
 let scriptPromise: Promise<void> | null = null;
 function loadLibrary(): Promise<void> {
@@ -233,45 +235,60 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
         ]);
       }
 
-      // SL line (draggable).
-      syncOrderLine(slLines, pos, pos.stop_loss, '#ef5350', 'SL',
+      // Draggable SL/TP handles — always visible so you can SET them from the
+      // chart (drag the dashed handle) and MOVE them once set. Default handle
+      // sits ~0.3% on the correct side of the current price.
+      const tick = state.prices[sym];
+      const cur = tick ? (buy ? Number(tick.bid) : Number(tick.ask)) : Number(pos.open_price);
+      const off = Math.abs(cur) * 0.003 || 0;
+      const slDefault = buy ? cur - off : cur + off;
+      const tpDefault = buy ? cur + off : cur - off;
+
+      syncBracket(slLines, pos, pos.stop_loss, slDefault, '#ef5350', 'SL',
         (price) => modify(pos.id, { stop_loss: price }),
         () => modify(pos.id, { stop_loss: null }));
 
-      // TP line (draggable).
-      syncOrderLine(tpLines, pos, pos.take_profit, '#26a69a', 'TP',
+      syncBracket(tpLines, pos, pos.take_profit, tpDefault, '#26a69a', 'TP',
         (price) => modify(pos.id, { take_profit: price }),
         () => modify(pos.id, { take_profit: null }));
     }
   };
 
-  function syncOrderLine(
-    map: Map<string, any>, pos: Position, value: number | undefined,
+  function syncBracket(
+    map: Map<string, any>, pos: Position, value: number | undefined, defaultPrice: number,
     color: string, label: string,
-    onMove: (price: number) => void, onCancel: () => void,
+    onSet: (price: number) => void, onClear: () => void,
   ) {
-    if (value == null || value <= 0) { removeLine(map, pos.id); return; }
+    const isSet = value != null && value > 0;
+    const price = isSet ? (value as number) : defaultPrice;
+    if (!Number.isFinite(price) || price <= 0) { removeLine(map, pos.id); return; }
     let line = map.get(pos.id);
     if (!line) {
       try { line = chart.createOrderLine(); } catch { line = null; }
       if (!line) return;
       apply(line, [
-        ['setLineStyle', 2], ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
+        ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
         ['setBodyBackgroundColor', color], ['setBodyBorderColor', color],
         ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
         ['setCancelButtonBackgroundColor', color], ['setCancelButtonBorderColor', color],
-        ['setCancelButtonIconColor', '#ffffff'], ['setText', label], ['setQuantity', `${pos.lots}`],
+        ['setCancelButtonIconColor', '#ffffff'], ['setQuantity', `${pos.lots}`],
       ]);
+      // Drag the handle → set/move the level on the server.
       try {
         line.onMove(function (this: any) {
           const p = this.getPrice();
-          if (typeof p === 'number' && p > 0) onMove(p);
+          if (typeof p === 'number' && p > 0) onSet(p);
         });
       } catch { /* noop */ }
-      try { line.onCancel(() => onCancel()); } catch { /* noop */ }
+      try { line.onCancel(() => onClear()); } catch { /* noop */ }
       map.set(pos.id, line);
     }
-    apply(line, [['setPrice', value]]);
+    apply(line, [
+      ['setPrice', price],
+      ['setText', isSet ? label : `${label} · drag to set`],
+      ['setLineStyle', isSet ? 0 : 2],   // solid once set, dashed while it's a draggable default
+      ['setCancellable', isSet],         // ✕ (clear) only once actually set
+    ]);
   }
 
   // Initial paint + re-sync on any positions/prices change.
