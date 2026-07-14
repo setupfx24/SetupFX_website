@@ -37,6 +37,8 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
   const widgetRef = useRef<any>(null);
   const symbolRef = useRef(symbol);
   symbolRef.current = symbol;
+  // Lets the symbol-change effect force an immediate SL/TP line re-sync.
+  const syncRef = useRef<(() => void) | null>(null);
 
   // ── Create the widget once ────────────────────────────────────────────────
   useEffect(() => {
@@ -69,7 +71,9 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
 
       widget.onChartReady(() => {
         if (disposed) return;
-        cleanupLines = setupSLTPLines(widget, symbolRef);
+        const { cleanup, sync } = setupSLTPLines(widget, symbolRef);
+        cleanupLines = cleanup;
+        syncRef.current = sync;
       });
     }).catch((e) => {
       // eslint-disable-next-line no-console
@@ -79,6 +83,7 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
     return () => {
       disposed = true;
       if (cleanupLines) cleanupLines();
+      syncRef.current = null;
       try { widgetRef.current?.remove?.(); } catch { /* noop */ }
       widgetRef.current = null;
     };
@@ -92,7 +97,9 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
     if (!w) return;
     try {
       w.onChartReady(() => {
-        try { w.activeChart().setSymbol(symbol, () => { /* noop */ }); } catch { /* noop */ }
+        // Redraw SL/TP lines for the new symbol as soon as it loads (don't
+        // wait for the next store tick).
+        try { w.activeChart().setSymbol(symbol, () => { syncRef.current?.(); }); } catch { /* noop */ }
       });
     } catch { /* noop */ }
   }, [symbol]);
@@ -111,11 +118,21 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
  * bid scale — a buy's entry (an ask fill) naturally shows a spread above the
  * current bid candle, the MT4/MT5 look.
  */
-function setupSLTPLines(widget: any, symbolRef: { current: string }): () => void {
+function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup: () => void; sync: () => void } {
   const chart = widget.activeChart();
   const posLines = new Map<string, any>();
   const slLines = new Map<string, any>();
   const tpLines = new Map<string, any>();
+
+  // Apply setters one-by-one, ignoring any a given library build doesn't
+  // expose — so one odd method can never abort the whole line and leave the
+  // chart with no SL/TP handles.
+  const apply = (line: any, ops: Array<[string, unknown]>) => {
+    for (const [method, arg] of ops) {
+      try { if (typeof line?.[method] === 'function') line[method](arg); } catch { /* noop */ }
+    }
+    return line;
+  };
 
   const removeLine = (map: Map<string, any>, id: string) => {
     const line = map.get(id);
@@ -165,31 +182,27 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): () => void
       const buy = pos.side === 'buy';
       const color = buy ? '#2962FF' : '#ef5350';
 
-      // Entry / position line with P&L + close button.
+      // Entry / position line with P&L + close (✕) button.
       let pl = posLines.get(pos.id);
       if (!pl) {
-        try {
-          pl = chart.createPositionLine()
-            .setLineStyle(0)
-            .setLineColor(color)
-            .setBodyBorderColor(color)
-            .setBodyTextColor('#ffffff')
-            .setBodyBackgroundColor(color)
-            .setQuantityBackgroundColor(color)
-            .setQuantityBorderColor(color)
-            .setCloseButtonBackgroundColor(color)
-            .setCloseButtonBorderColor(color)
-            .setCloseButtonIconColor('#ffffff')
-            .onClose(() => closePos(pos.id));
+        try { pl = chart.createPositionLine(); } catch { pl = null; }
+        if (pl) {
+          apply(pl, [
+            ['setLineStyle', 0], ['setLineColor', color], ['setBodyBorderColor', color],
+            ['setBodyTextColor', '#ffffff'], ['setBodyBackgroundColor', color],
+            ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
+            ['setCloseButtonBackgroundColor', color], ['setCloseButtonBorderColor', color],
+            ['setCloseButtonIconColor', '#ffffff'],
+          ]);
+          try { pl.onClose(() => closePos(pos.id)); } catch { /* noop */ }
           posLines.set(pos.id, pl);
-        } catch { /* library variant without full position-line API */ }
+        }
       }
       if (pl) {
-        try {
-          pl.setPrice(pos.open_price)
-            .setQuantity(`${pos.lots}`)
-            .setText(`${buy ? 'BUY' : 'SELL'}  ${money(pos.profit || 0)}`);
-        } catch { /* noop */ }
+        apply(pl, [
+          ['setPrice', pos.open_price], ['setQuantity', `${pos.lots}`],
+          ['setText', `${buy ? 'BUY' : 'SELL'}  ${money(pos.profit || 0)}`],
+        ]);
       }
 
       // SL line (draggable).
@@ -210,38 +223,35 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): () => void
     onMove: (price: number) => void, onCancel: () => void,
   ) {
     if (value == null || value <= 0) { removeLine(map, pos.id); return; }
-    let line = map.get(map === slLines ? pos.id : pos.id);
+    let line = map.get(pos.id);
     if (!line) {
+      try { line = chart.createOrderLine(); } catch { line = null; }
+      if (!line) return;
+      apply(line, [
+        ['setLineStyle', 2], ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
+        ['setBodyBackgroundColor', color], ['setBodyBorderColor', color],
+        ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
+        ['setCancelButtonBackgroundColor', color], ['setCancelButtonBorderColor', color],
+        ['setCancelButtonIconColor', '#ffffff'], ['setText', label], ['setQuantity', `${pos.lots}`],
+      ]);
       try {
-        line = chart.createOrderLine()
-          .setLineStyle(2)
-          .setLineColor(color)
-          .setBodyTextColor('#ffffff')
-          .setBodyBackgroundColor(color)
-          .setBodyBorderColor(color)
-          .setQuantityBackgroundColor(color)
-          .setQuantityBorderColor(color)
-          .setCancelButtonBackgroundColor(color)
-          .setCancelButtonBorderColor(color)
-          .setCancelButtonIconColor('#ffffff')
-          .setText(label)
-          .setQuantity(`${pos.lots}`)
-          .onMove(function (this: any) {
-            const p = this.getPrice();
-            if (typeof p === 'number' && p > 0) onMove(p);
-          })
-          .onCancel(() => onCancel());
-        map.set(pos.id, line);
-      } catch { return; }
+        line.onMove(function (this: any) {
+          const p = this.getPrice();
+          if (typeof p === 'number' && p > 0) onMove(p);
+        });
+      } catch { /* noop */ }
+      try { line.onCancel(() => onCancel()); } catch { /* noop */ }
+      map.set(pos.id, line);
     }
-    try { line.setPrice(value); } catch { /* noop */ }
+    apply(line, [['setPrice', value]]);
   }
 
   // Initial paint + re-sync on any positions/prices change.
   sync();
   const unsub = useTradingStore.subscribe(sync);
-  return () => {
+  const cleanup = () => {
     unsub();
     for (const id of Array.from(posLines.keys())) removeAllFor(id);
   };
+  return { cleanup, sync };
 }
