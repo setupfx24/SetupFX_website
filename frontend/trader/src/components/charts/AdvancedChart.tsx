@@ -154,6 +154,14 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
   const slLines = new Map<string, any>();
   const tpLines = new Map<string, any>();
 
+  // One-time diagnostic so we can see in the console whether this build
+  // actually exposes the order/position-line API on the chart object.
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[sltp] chart ready. createOrderLine=%s createPositionLine=%s',
+      typeof chart?.createOrderLine, typeof chart?.createPositionLine);
+  } catch { /* noop */ }
+
   // Apply setters one-by-one, ignoring any a given library build doesn't
   // expose — so one odd method can never abort the whole line and leave the
   // chart with no SL/TP handles.
@@ -195,12 +203,21 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
 
   const money = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
 
+  let diagLast = -1;
   const sync = () => {
     const state = useTradingStore.getState();
     const sym = symbolRef.current.toUpperCase();
     const open = state.positions.filter(
       (p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'),
     );
+    // Log only when the matched-position count changes, so the console shows
+    // whether sync sees the position for the chart symbol.
+    if (open.length !== diagLast) {
+      diagLast = open.length;
+      // eslint-disable-next-line no-console
+      console.log('[sltp] sync sym=%s positions_on_symbol=%d total=%d',
+        sym, open.length, state.positions.length);
+    }
     const liveIds = new Set(open.map((p) => p.id));
 
     // Drop lines for positions no longer open / off-symbol.
@@ -267,6 +284,7 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
       try { line = chart.createOrderLine(); } catch { line = null; }
       if (!line) return;
       apply(line, [
+        ['setEditable', true],   // draggable
         ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
         ['setBodyBackgroundColor', color], ['setBodyBorderColor', color],
         ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
@@ -291,10 +309,14 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
     ]);
   }
 
-  // Initial paint + re-sync on any positions/prices change.
+  // Initial paint + re-sync on any positions/prices change (store subscribe),
+  // AND a 1.5s interval poll as a belt-and-suspenders so the lines appear even
+  // if the store-subscribe timing misses the moment the position lands.
   sync();
   const unsub = useTradingStore.subscribe(sync);
+  const poll = setInterval(sync, 1500);
   const cleanup = () => {
+    clearInterval(poll);
     unsub();
     for (const id of Array.from(posLines.keys())) removeAllFor(id);
   };
