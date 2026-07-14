@@ -1,21 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * TradingView Broker API adapter (Trading Terminal). This is what renders the
- * SL / TP / ✕ buttons ON the position line and lets the user drag brackets
- * straight from the chart — the exact UX in the reference.
+ * TradingView Trading Terminal — Broker API adapter. Renders each open position
+ * as a line with live P&L, SL / TP / ✕ buttons ON the line, and draggable
+ * brackets. Dragging a bracket and releasing pops the library's confirm dialog
+ * ("Set Stop Loss @ X → loss $Y — Cancel / Set SL") and, on confirm, calls the
+ * same server modify endpoint the panels use. This is the exact reference UX.
  *
- * We only implement the positions + brackets + close surface (no order ticket
- * placement from the chart); everything maps to the same REST + WS the panels
- * use. Live P&L and server-side SL/TP closes flow in via the trades WebSocket
- * (the store), which we relay to the chart with host.plUpdate / positionUpdate.
+ * We hide the library's own Account Manager panel (the app has its own
+ * positions table) so this adapter only needs to feed positions + brackets to
+ * the chart. Live P&L and server-side SL/TP closes flow in through the store
+ * (fed by the trades WebSocket) → host.plUpdate / positionUpdate.
  */
 import api from '@/lib/api/client';
 import { useTradingStore, type Position as StorePosition } from '@/stores/tradingStore';
 
-// Broker enums (from charting_library.d.ts).
 const Side = { Buy: 1, Sell: -1 } as const;
-const OrderType = { Limit: 1, Market: 2, Stop: 3, StopLimit: 4 } as const;
-const OrderStatus = { Filled: 2, Working: 6 } as const;
+const OrderType = { Limit: 1, Market: 2, Stop: 3 } as const;
+const OrderStatus = { Working: 6 } as const;
 const ParentType = { Position: 2 } as const;
 const ConnectionStatus = { Connected: 1 } as const;
 
@@ -43,55 +44,86 @@ function toBrokerPosition(p: StorePosition) {
 }
 
 /** Existing SL/TP shown as bracket orders parented to the position, so they
- *  render as draggable lines when the position already has them set. */
-function bracketOrdersFor(p: StorePosition) {
+ *  render as draggable lines when the position already has them. */
+function bracketOrders(p: StorePosition) {
   const out: any[] = [];
-  const oppSide = p.side === 'buy' ? Side.Sell : Side.Buy;
+  const opp = p.side === 'buy' ? Side.Sell : Side.Buy;
   if (p.stop_loss && p.stop_loss > 0) {
     out.push({
-      id: `${p.id}__sl`, symbol: p.symbol, qty: p.lots, side: oppSide,
-      type: OrderType.Stop, stopPrice: p.stop_loss, price: p.stop_loss,
-      status: OrderStatus.Working, parentId: p.id, parentType: ParentType.Position,
+      id: `${p.id}__sl`, symbol: p.symbol, type: OrderType.Stop, side: opp,
+      qty: p.lots, status: OrderStatus.Working, stopPrice: p.stop_loss, price: p.stop_loss,
+      parentId: p.id, parentType: ParentType.Position,
     });
   }
   if (p.take_profit && p.take_profit > 0) {
     out.push({
-      id: `${p.id}__tp`, symbol: p.symbol, qty: p.lots, side: oppSide,
-      type: OrderType.Limit, limitPrice: p.take_profit, price: p.take_profit,
-      status: OrderStatus.Working, parentId: p.id, parentType: ParentType.Position,
+      id: `${p.id}__tp`, symbol: p.symbol, type: OrderType.Limit, side: opp,
+      qty: p.lots, status: OrderStatus.Working, limitPrice: p.take_profit, price: p.take_profit,
+      parentId: p.id, parentType: ParentType.Position,
     });
   }
   return out;
 }
 
+/** Approx account-currency P&L if the position closed at `price` (for the
+ *  confirm dialog). Quote==USD is exact; other quotes are a close estimate. */
+function pnlAt(p: StorePosition, price: number): number {
+  const inst = instrumentFor(p.symbol);
+  const cs = inst?.contract_size || 100000;
+  const raw = p.side === 'buy'
+    ? (price - p.open_price) * p.lots * cs
+    : (p.open_price - price) * p.lots * cs;
+  const quote = (inst?.quote_currency || (p.symbol.length >= 6 ? p.symbol.slice(3, 6) : 'USD')).toUpperCase();
+  if (!quote || quote === 'USD') return raw;
+  return price ? raw / price : raw;   // rough base=USD conversion
+}
+
+function money(n: number): string {
+  const s = n >= 0 ? '+' : '-';
+  return `${s}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 export function createBroker(host: any, accountId: string) {
   const shown = new Set<string>();
-  const money = (n: number) => (Number.isFinite(n) ? n : 0);
+  const balanceWV = host.createWatchedValue ? host.createWatchedValue(0) : null;
+  const equityWV = host.createWatchedValue ? host.createWatchedValue(0) : null;
+  const plWV = host.createWatchedValue ? host.createWatchedValue(0) : null;
 
-  // Push live P&L + position/bracket changes to the chart whenever the store
-  // updates (the store is fed by the trades WS + the price stream), so a
-  // server-side SL/TP close removes the line without any refresh.
-  const unsub = useTradingStore.subscribe(() => {
+  const pushUpdates = () => {
+    const st = useTradingStore.getState();
+    const acct = st.activeAccount;
+    if (acct) {
+      balanceWV?.setValue(Number(acct.balance) || 0);
+      equityWV?.setValue(Number(acct.equity) || 0);
+    }
     const positions = openPositionsFor(accountId);
-    const live = new Set(positions.map((p) => p.id));
+    const live = new Set<string>();
+    let totalPl = 0;
     for (const p of positions) {
+      live.add(p.id);
       try { host.positionUpdate(toBrokerPosition(p)); } catch { /* noop */ }
       try { host.plUpdate(p.id, Number(p.profit) || 0); } catch { /* noop */ }
-      for (const o of bracketOrdersFor(p)) { try { host.orderUpdate(o); } catch { /* noop */ } }
+      for (const o of bracketOrders(p)) { try { host.orderUpdate(o); } catch { /* noop */ } }
+      totalPl += Number(p.profit) || 0;
+      shown.add(p.id);
     }
-    // Anything we previously showed that's now gone → flatten to qty 0 so the
-    // chart line disappears.
     for (const id of Array.from(shown)) {
       if (!live.has(id)) {
         try { host.positionUpdate({ id, symbol: '', qty: 0, side: Side.Buy, avgPrice: 0 }); } catch { /* noop */ }
         shown.delete(id);
       }
     }
-    positions.forEach((p) => shown.add(p.id));
-  });
+    plWV?.setValue(totalPl);
+  };
+  const unsub = useTradingStore.subscribe(pushUpdates);
+
+  const revert = (p: StorePosition | undefined) => {
+    if (!p) return;
+    try { host.positionUpdate(toBrokerPosition(p)); } catch { /* noop */ }
+    for (const o of bracketOrders(p)) { try { host.orderUpdate(o); } catch { /* noop */ } }
+  };
 
   const adapter = {
-    // ── connection / account ────────────────────────────────────────────
     connectionStatus: () => ConnectionStatus.Connected,
     isTradable: async () => true,
     chartContextMenuActions: (e: any) =>
@@ -99,57 +131,77 @@ export function createBroker(host: any, accountId: string) {
     accountsMetainfo: async () => [{ id: accountId, name: 'Trading Account', type: 'live' as const }],
     currentAccount: () => accountId,
 
+    // Required, but the Account Manager panel is disabled via
+    // `trading_account_manager`, so this just needs to be a valid shape.
     accountManagerInfo: () => ({
       accountTitle: 'SetupFX',
-      // Minimal Account Manager — the on-chart position lines are the point;
-      // the bottom panel just needs a valid (empty) shape.
-      summary: [],
+      summary: balanceWV ? [
+        { text: 'Balance', wValue: balanceWV, formatter: 'fixed' as any },
+        { text: 'Equity', wValue: equityWV, formatter: 'fixed' as any },
+        { text: 'Open P&L', wValue: plWV, formatter: 'fixed' as any },
+      ] : [],
       orderColumns: [],
       positionColumns: [],
       pages: [],
-      contextMenuActions: (_e: any, actions: any[]) => Promise.resolve(actions),
     }),
 
     symbolInfo: async (symbol: string) => {
       const inst = instrumentFor(symbol);
       const digits = inst?.digits ?? 5;
-      const minTick = 1 / Math.pow(10, digits);
       return {
-        qty: {
-          min: inst?.min_lot ?? 0.01,
-          max: inst?.max_lot ?? 100,
-          step: inst?.lot_step ?? 0.01,
-        },
+        qty: { min: inst?.min_lot ?? 0.01, max: inst?.max_lot ?? 100, step: inst?.lot_step ?? 0.01 },
         pipValue: 1,
         pipSize: inst?.pip_size ?? 0.0001,
-        minTick,
+        minTick: 1 / Math.pow(10, digits),
         description: inst?.display_name || symbol,
         type: (inst?.segment as any) || 'forex',
       };
     },
 
-    // ── read models ─────────────────────────────────────────────────────
     positions: async () => openPositionsFor(accountId).map(toBrokerPosition),
-    orders: async () => openPositionsFor(accountId).flatMap(bracketOrdersFor),
+    orders: async () => openPositionsFor(accountId).flatMap(bracketOrders),
     executions: async () => [],
 
-    // ── the SL/TP drag → server modify (§2) ─────────────────────────────
+    // Drag + release a bracket → confirm dialog → server modify (§ reference).
     editPositionBrackets: async (positionId: string, brackets: any) => {
-      const before = useTradingStore.getState().positions.find((p) => p.id === positionId);
+      const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
+      if (!pos) return;
+
       const patch: { stop_loss?: number | null; take_profit?: number | null } = {};
-      if ('stopLoss' in brackets) patch.stop_loss = brackets.stopLoss ?? null;
-      if ('takeProfit' in brackets) patch.take_profit = brackets.takeProfit ?? null;
+      let title = 'Update SL/TP';
+      let body = '';
+      if ('stopLoss' in brackets) {
+        const sl = brackets.stopLoss;
+        patch.stop_loss = sl ?? null;
+        if (sl) {
+          const impact = pnlAt(pos, sl);
+          title = `Set Stop Loss @ ${sl}`;
+          body = `${pos.side.toUpperCase()} ${pos.lots} ${pos.symbol} → ${impact >= 0 ? 'profit' : 'loss'} ${money(impact)}`;
+        }
+      }
+      if ('takeProfit' in brackets) {
+        const tp = brackets.takeProfit;
+        patch.take_profit = tp ?? null;
+        if (tp) {
+          const impact = pnlAt(pos, tp);
+          title = `Set Take Profit @ ${tp}`;
+          body = `${pos.side.toUpperCase()} ${pos.lots} ${pos.symbol} → ${impact >= 0 ? 'profit' : 'loss'} ${money(impact)}`;
+        }
+      }
+
+      // Confirm on drag-release (clearing a bracket via ✕ skips the dialog).
+      if (body && host.showSimpleConfirmDialog) {
+        let ok = false;
+        try { ok = await host.showSimpleConfirmDialog(title, body, 'Set', 'Cancel'); } catch { ok = false; }
+        if (!ok) { revert(pos); return; }
+      }
+
       try {
         await api.put(`/positions/${positionId}`, patch);
         await useTradingStore.getState().refreshPositions();
       } catch (e) {
-        // Server rejected (e.g. would trigger instantly) — re-push the OLD
-        // position so the dragged line snaps back, and surface the message.
-        if (before) {
-          try { host.positionUpdate(toBrokerPosition(before)); } catch { /* noop */ }
-          for (const o of bracketOrdersFor(before)) { try { host.orderUpdate(o); } catch { /* noop */ } }
-        }
-        throw new Error(e instanceof Error ? e.message : 'Failed to update SL/TP');
+        try { host.showNotification?.('SL/TP rejected', e instanceof Error ? e.message : 'Rejected', 1); } catch { /* noop */ }
+        revert(pos);   // snap the line back to the server value
       }
     },
 
@@ -159,13 +211,10 @@ export function createBroker(host: any, accountId: string) {
       await useTradingStore.getState().refreshPositions();
     },
 
-    // ── order-ticket surface (not used from the chart) ──────────────────
-    placeOrder: async () => {
-      throw new Error('Use the order panel to place trades.');
-    },
+    // Not used from the chart (order ticket is the app's own panel).
+    placeOrder: async () => { throw new Error('Use the order panel to place trades.'); },
     modifyOrder: async () => { /* brackets go through editPositionBrackets */ },
     cancelOrder: async (orderId: string) => {
-      // Cancelling a bracket line (the ✕ on an SL/TP line) clears that level.
       const [posId, kind] = String(orderId).split('__');
       if (!posId || !kind) return;
       const patch = kind === 'sl' ? { stop_loss: null } : { take_profit: null };
@@ -173,26 +222,19 @@ export function createBroker(host: any, accountId: string) {
       await useTradingStore.getState().refreshPositions();
     },
 
-    // Called by the library on teardown.
     destroy: () => { try { unsub(); } catch { /* noop */ } },
   };
 
-  // Seed initial P&L once the chart asks for positions.
-  setTimeout(() => {
-    for (const p of openPositionsFor(accountId)) {
-      try { host.plUpdate(p.id, money(Number(p.profit))); } catch { /* noop */ }
-      shown.add(p.id);
-    }
-  }, 0);
-
+  // Seed once.
+  setTimeout(pushUpdates, 0);
   return adapter;
 }
 
-/** Broker feature flags that drive the on-line SL/TP UX (spec §1). */
+/** Broker feature flags for the on-line SL/TP UX. */
 export const BROKER_CONFIG = {
   configFlags: {
     supportPositions: true,
-    supportPositionBrackets: true,   // ← SL/TP buttons + draggable lines on the position line
+    supportPositionBrackets: true,
     supportClosePosition: true,
     supportPLUpdate: true,
     supportOrderBrackets: false,

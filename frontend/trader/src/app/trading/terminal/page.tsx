@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { Maximize2, Minimize2, Search, X } from 'lucide-react';
+import { Minimize2, Search, X } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TERMINAL_RESIZE, maxBottomPanelHeightPx } from '@/lib/terminalLayout';
 import PanelResizeHandle from '@/components/trading/PanelResizeHandle';
@@ -714,22 +714,9 @@ export default function TradingTerminalPage() {
             ) : null}
             <div className="flex-1 min-w-0 min-h-0 overflow-hidden relative">
               <TradingViewChart />
-              {/* Enter-fullscreen toggle (desktop / tablet). Hidden when
-                  already expanded since the header's "Normal view" button
-                  collapses back. Positioned over the chart's top-right
-                  corner where TradingView's iframe has empty space. */}
-              {!chartExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setChartExpanded(true)}
-                  className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-text-secondary bg-bg-secondary/85 border border-border-primary backdrop-blur-sm hover:bg-bg-secondary hover:text-text-primary shadow-sm transition-colors"
-                  title="Expand chart to full screen"
-                  aria-label="Expand chart to full screen"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" aria-hidden />
-                  <span className="hidden sm:inline">Full screen</span>
-                </button>
-              )}
+              {/* The Advanced Chart has its own fullscreen + screenshot controls
+                  in its top-right toolbar, so the old custom "Full screen"
+                  button was removed — it overlapped those icons. */}
             </div>
           </div>
 

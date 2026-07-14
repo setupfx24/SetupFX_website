@@ -11,12 +11,12 @@ import { useTradingStore, type Position } from '@/stores/tradingStore';
 const LIBRARY_PATH = '/charting_library/';
 const SCRIPT_SRC = '/charting_library/charting_library.standalone.js';
 
-// The v31 "Advanced Charts" bundle ships broker strings but the Broker API
-// (Trading Terminal) does NOT reliably initialise here, so we use the manual
-// createPositionLine/createOrderLine path — draggable SL/TP lines you can set
-// AND move straight from the chart. (Flip to true only on a real Trading
-// Terminal build.)
-const USE_BROKER_API = false;
+// Trading Terminal Broker API: SL/TP/✕ buttons ON the position line, draggable
+// brackets, and a confirm dialog on drag-release — the reference UX. The bundle
+// ships the broker code; we hide its Account Manager panel (app has its own)
+// so only the on-chart brackets remain. Falls back to manual lines when there's
+// no active account.
+const USE_BROKER_API = true;
 
 let scriptPromise: Promise<void> | null = null;
 function loadLibrary(): Promise<void> {
@@ -82,8 +82,11 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
         enabled_features: [],
       };
       // Trading Terminal: renders SL/TP/✕ on the position line + draggable
-      // brackets, all wired to the same server modify/close endpoints.
+      // brackets, all wired to the same server modify/close endpoints. Hide the
+      // library's own Account Manager panel — the app has its own positions
+      // table, and a minimal account manager is what broke init before.
       if (useBroker) {
+        options.disabled_features.push('trading_account_manager');
         options.broker_factory = (host: any) => {
           broker = createBroker(host, accountId);
           return broker;
