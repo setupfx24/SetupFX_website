@@ -55,6 +55,94 @@ def _strip_weekends(bars: list[dict]) -> list[dict]:
     return out
 
 
+def _aggregate_bars(bars: list[dict], bar_sec: int) -> list[dict]:
+    """Roll smaller bars up into bar_sec buckets (e.g. 1h → 4h)."""
+    buckets: dict[int, dict] = {}
+    for b in sorted(bars, key=lambda x: x["time"]):
+        slot = (int(b["time"]) // bar_sec) * bar_sec
+        bk = buckets.get(slot)
+        if not bk:
+            buckets[slot] = {"time": slot, "open": b["open"], "high": b["high"],
+                             "low": b["low"], "close": b["close"], "volume": 0.0}
+        else:
+            bk["high"] = max(bk["high"], b["high"])
+            bk["low"] = min(bk["low"], b["low"])
+            bk["close"] = b["close"]
+    return [buckets[k] for k in sorted(buckets)]
+
+
+# Broker symbol → Yahoo symbol (FX "=X", metals/oil futures "=F", indices "^").
+_YAHOO_MAP: dict[str, str] = {
+    "EURUSD": "EURUSD=X", "GBPUSD": "GBPUSD=X", "USDJPY": "USDJPY=X",
+    "AUDUSD": "AUDUSD=X", "USDCAD": "USDCAD=X", "USDCHF": "USDCHF=X",
+    "NZDUSD": "NZDUSD=X", "EURJPY": "EURJPY=X", "GBPJPY": "GBPJPY=X",
+    "XAUUSD": "GC=F", "XAGUSD": "SI=F", "USOIL": "CL=F",
+    "US30": "^DJI", "US500": "^GSPC", "NAS100": "^NDX",
+    "GER40": "^GDAXI", "UK100": "^FTSE", "JP225": "^N225",
+}
+# TF → (Yahoo interval, Yahoo range). 4h uses the 60m pull, aggregated.
+_TF_YAHOO: dict[str, tuple[str, str]] = {
+    "1m": ("1m", "7d"), "5m": ("5m", "60d"), "15m": ("15m", "60d"),
+    "30m": ("30m", "60d"), "1h": ("60m", "730d"), "4h": ("60m", "730d"),
+    "1d": ("1d", "max"),
+}
+
+
+async def _fetch_yahoo_klines(sym: str, tf: str, to_time: int) -> list[dict]:
+    """On-demand FX/metals/indices history from Yahoo's free chart API, cached
+    in Redis 5 min so pan/zoom doesn't refetch. This is what makes the chart
+    load with real history the moment it opens (no dependency on a pre-run
+    backfill), for symbols we have no other kline source for."""
+    ysym = _YAHOO_MAP.get(sym.upper())
+    if not ysym:
+        return []
+    interval, rng = _TF_YAHOO.get(tf, ("5m", "60d"))
+    cache_key = f"yahoo_cache:{sym}:{tf}"
+    try:
+        cached = await redis_client.get(cache_key)
+        if cached:
+            allb = _json.loads(cached)
+            return [b for b in allb if not to_time or b["time"] <= to_time]
+    except Exception:
+        pass
+
+    import httpx
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{ysym}",
+                params={"interval": interval, "range": rng},
+                headers={"User-Agent": "Mozilla/5.0 (compatible; SetupFX/1.0)"},
+                timeout=20.0,
+            )
+            r.raise_for_status()
+            data = r.json()
+        res = (data.get("chart", {}).get("result") or [None])[0]
+        if not res:
+            return []
+        ts = res.get("timestamp") or []
+        q = ((res.get("indicators", {}).get("quote") or [{}])[0]) or {}
+        o, h, l, c = q.get("open") or [], q.get("high") or [], q.get("low") or [], q.get("close") or []
+        raw = []
+        for i, t in enumerate(ts):
+            if i >= len(o) or i >= len(h) or i >= len(l) or i >= len(c):
+                break
+            if None in (o[i], h[i], l[i], c[i]):
+                continue
+            raw.append({"time": int(t), "open": float(o[i]), "high": float(h[i]),
+                        "low": float(l[i]), "close": float(c[i]), "volume": 0.0})
+        bars = _aggregate_bars(raw, _TF_SECONDS["4h"]) if tf == "4h" else _grid_snap(raw, _TF_SECONDS.get(tf, 300))
+        if bars:
+            try:
+                await redis_client.set(cache_key, _json.dumps(bars), ex=300)
+            except Exception:
+                pass
+        return [b for b in bars if not to_time or b["time"] <= to_time]
+    except Exception as e:
+        _logger.debug("yahoo fetch %s %s failed: %s", sym, tf, e)
+        return []
+
+
 async def _fetch_ohlcv_durable(sym: str, tf: str, to_time: int, limit: int = _BARS_LIMIT) -> list[dict]:
     """Durable history from TimescaleDB — the real source of truth. Enforces
     ONLY the upper bound: it returns the latest `limit` bars at or before `to`,
@@ -299,10 +387,18 @@ async def get_bars(
     now_epoch = int(_time.time())
     has_recent = bars and (now_epoch - bars[-1]["time"]) < bar_sec * 3
     need_older = bool(from_time) and (not bars or bars[0]["time"] > from_time)
-    if is_crypto and (not has_recent or need_older):
+    thin = not bars or len(bars) < 20
+    if is_crypto and (not has_recent or need_older or thin):
         lo = from_time or (now_epoch - _BARS_LIMIT * bar_sec)
         hi = to_time or now_epoch
         provider_bars = await _fetch_binance_klines(sym, resolution, lo, hi)
+        if provider_bars:
+            bars = _grid_snap(bars + provider_bars, bar_sec)
+            await _persist_bars_durable(sym, tf, provider_bars)
+    elif not is_crypto and (not has_recent or need_older or thin):
+        # FX / metals / indices — pull real history from Yahoo on demand and
+        # persist it, so the chart loads with candles the first time it opens.
+        provider_bars = await _fetch_yahoo_klines(sym, tf, to_time or now_epoch)
         if provider_bars:
             bars = _grid_snap(bars + provider_bars, bar_sec)
             await _persist_bars_durable(sym, tf, provider_bars)
