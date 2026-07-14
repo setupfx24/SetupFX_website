@@ -39,6 +39,34 @@ async def get_current_price(symbol: str) -> tuple[Decimal, Decimal]:
     return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
 
 
+def validate_bracket_levels(side, ref_price: Decimal, stop_loss=None, take_profit=None) -> None:
+    """Shared SL/TP validity rule for BOTH order placement and position modify
+    (§4 — one helper so the two rules can't drift). The ONLY rejection is a
+    level that would trigger the instant it is set, judged against ``ref_price``:
+
+      • placement:        ref = expected FILL price   (ask for buy, bid for sell)
+      • modify (live):    ref = current CLOSE quote    (bid for buy, ask for sell)
+      • modify (no feed): ref = open price             (conservative fallback)
+
+    BUY closes at bid → SL must sit below ref, TP above ref. SELL mirrored.
+    Validating against the current close quote — NOT the open price — is what
+    ALLOWS break-even (SL == entry once price has moved) and profit-locking
+    stops. There is deliberately no min-distance buffer: the only question is
+    "would this fire immediately at ref?".
+    """
+    s = str(getattr(side, "value", side) or "").lower()
+    if s == "buy":
+        if stop_loss is not None and stop_loss >= ref_price:
+            raise HTTPException(status_code=400, detail=f"Stop-loss would trigger immediately — must be below {ref_price}")
+        if take_profit is not None and take_profit <= ref_price:
+            raise HTTPException(status_code=400, detail=f"Take-profit would trigger immediately — must be above {ref_price}")
+    else:  # sell
+        if stop_loss is not None and stop_loss <= ref_price:
+            raise HTTPException(status_code=400, detail=f"Stop-loss would trigger immediately — must be above {ref_price}")
+        if take_profit is not None and take_profit >= ref_price:
+            raise HTTPException(status_code=400, detail=f"Take-profit would trigger immediately — must be below {ref_price}")
+
+
 async def validate_account(account_id: UUID, user_id: UUID, db: AsyncSession) -> TradingAccount:
     result = await db.execute(
         select(TradingAccount)
@@ -256,16 +284,9 @@ async def place_order(
     if req.order_type == "market":
         fill_price = ask if req.side == "buy" else bid
 
-        if req.stop_loss:
-            if req.side == "buy" and req.stop_loss >= fill_price:
-                raise HTTPException(status_code=400, detail="BUY SL must be below entry price")
-            if req.side == "sell" and req.stop_loss <= fill_price:
-                raise HTTPException(status_code=400, detail="SELL SL must be above entry price")
-        if req.take_profit:
-            if req.side == "buy" and req.take_profit <= fill_price:
-                raise HTTPException(status_code=400, detail="BUY TP must be above entry price")
-            if req.side == "sell" and req.take_profit >= fill_price:
-                raise HTTPException(status_code=400, detail="SELL TP must be below entry price")
+        # Placement-time SL/TP validity — against the expected FILL price
+        # (shared with modify via one helper so the rules can't drift, §4).
+        validate_bracket_levels(req.side, fill_price, req.stop_loss, req.take_profit)
 
         # Pass account_group_id so the commission_pct on the user's account
         # tier (Micro/Standard/Pro/Elite) acts as the fallback rack rate when
@@ -763,57 +784,56 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     if pos_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
 
-    # MAM followers may set their own SL/TP on a mirrored position — they have
-    # independent control of their allocated account. (Previously this raised
-    # 403 and only the master's SL/TP applied.)
+    # NOTE: MAM/copy followers are intentionally allowed to set their own SL/TP
+    # on a mirrored position here (they own their allocated account) — a prior,
+    # deliberate product change. The reference spec would REJECT bracket edits
+    # on child positions; that policy reversal is left untouched pending a
+    # product decision and is flagged in the PR, not silently changed.
 
     sv = side_val(pos.side)
-    updated = False
 
-    # Min-distance guard against the CURRENT quote (spec §6). A level already
-    # on the wrong side of the market would fire on the very next tick — reject
-    # it. Skipped when there's no live quote (closed market) so the entry-side
-    # checks below still apply.
+    # Validate against the CURRENT close quote — the SAME quote the SL/TP engine
+    # triggers on — NOT the open price (§2). Open-price validation blocks
+    # break-even and profit-locking stops (a real bug we shipped and fixed). The
+    # only rejection is a level that would fire the instant it's set. Fall back
+    # to the open price ONLY when there's no live quote (dead feed / closed
+    # market) so we never accept blindly.
+    inst = (await db.execute(
+        select(Instrument).where(Instrument.id == pos.instrument_id)
+    )).scalar_one_or_none()
+    ref_price = pos.open_price
     try:
-        inst = (await db.execute(
-            select(Instrument).where(Instrument.id == pos.instrument_id)
-        )).scalar_one_or_none()
         if inst:
             cq_bid, cq_ask = await get_current_price(inst.symbol)
-            min_dist = Decimal(str(inst.pip_size or 0.0001)) * Decimal("2")
-            if req.stop_loss is not None:
-                if sv == "buy" and req.stop_loss > cq_bid - min_dist:
-                    raise HTTPException(status_code=400, detail="SL too close to / above current price")
-                if sv == "sell" and req.stop_loss < cq_ask + min_dist:
-                    raise HTTPException(status_code=400, detail="SL too close to / below current price")
-            if req.take_profit is not None:
-                if sv == "buy" and req.take_profit < cq_bid + min_dist:
-                    raise HTTPException(status_code=400, detail="TP too close to / below current price")
-                if sv == "sell" and req.take_profit > cq_ask - min_dist:
-                    raise HTTPException(status_code=400, detail="TP too close to / above current price")
-    except HTTPException:
-        raise
+            ref_price = cq_bid if sv == "buy" else cq_ask
     except Exception:
-        pass  # no live quote → keep only the entry-side checks below
+        ref_price = pos.open_price  # conservative fallback — no live quote
 
+    validate_bracket_levels(sv, ref_price, req.stop_loss, req.take_profit)
+
+    updated = False
     if req.stop_loss is not None:
-        if sv == "buy" and req.stop_loss >= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY SL must be below open price")
-        if sv == "sell" and req.stop_loss <= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL SL must be above open price")
         pos.stop_loss = req.stop_loss
         updated = True
-
     if req.take_profit is not None:
-        if sv == "buy" and req.take_profit <= pos.open_price:
-            raise HTTPException(status_code=400, detail="BUY TP must be above open price")
-        if sv == "sell" and req.take_profit >= pos.open_price:
-            raise HTTPException(status_code=400, detail="SELL TP must be below open price")
         pos.take_profit = req.take_profit
         updated = True
 
     if updated:
         await db.commit()
+
+        # Push a bracket-update event so every client on this account (chart,
+        # positions table, mobile, a second browser) re-syncs the SL/TP lines
+        # without polling (§2 / acceptance #4).
+        try:
+            await redis_client.publish(f"account:{pos.account_id}", json.dumps({
+                "type": "position_update",
+                "position_id": str(position_id),
+                "stop_loss": float(pos.stop_loss) if pos.stop_loss else None,
+                "take_profit": float(pos.take_profit) if pos.take_profit else None,
+            }))
+        except Exception:
+            pass
 
         # ── A-Book: forward SL/TP update to Corecen LP ──────────────────
         _pos_id_str = str(position_id)

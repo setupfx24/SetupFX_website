@@ -277,6 +277,18 @@ function TradingSession({ children }: { children: React.ReactNode }) {
         void refreshAccount();
         return;
       }
+      // A bracket edit (SL/TP drag) on another client / device — pull the new
+      // levels so this chart's SL/TP lines move in sync, no refresh (§2 / #4).
+      if (evt.type === 'position_update') {
+        void refreshPositions();
+        return;
+      }
+      // Balance changed server-side (close / stop-out) — refresh the account
+      // figure without inferring it from a close payload.
+      if (evt.type === 'balance_update') {
+        void refreshAccount();
+        return;
+      }
       if (evt.type !== 'position_closed') return;
 
       const reason = String(evt.reason ?? '');
