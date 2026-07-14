@@ -8,3 +8,9 @@ Dockerfile       text eol=lf
 docker-compose*.yml  text eol=lf
 .env.example     text eol=lf
 *.py             text eol=lf
+
+# Self-hosted TradingView Advanced Charting Library (vendored). Prevent any
+# EOL/encoding munging on the prebuilt bundle so the minified assets stay
+# byte-for-byte as shipped.
+frontend/trader/public/charting_library/** -text
+frontend/trader/public/datafeeds/**        -text

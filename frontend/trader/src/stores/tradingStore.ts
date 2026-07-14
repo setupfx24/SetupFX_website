@@ -300,6 +300,16 @@ export const useTradingStore = create<TradingState>()((set, get) => ({
     if (!sym) return state;
     const normalized: TickData = { ...tick, symbol: sym };
     const prev = state.prices[sym];
+    // Freshness guard (§7): a slow ~1.5s REST poll and the WS tick stream both
+    // feed this. If a poll response is OLDER than the tick we already have,
+    // drop it so a stale poll never clobbers a newer live tick.
+    if (prev?.timestamp && normalized.timestamp) {
+      const prevT = Date.parse(prev.timestamp);
+      const nextT = Date.parse(normalized.timestamp);
+      if (Number.isFinite(prevT) && Number.isFinite(nextT) && nextT < prevT) {
+        return state;
+      }
+    }
     return {
       prevPrices: prev
         ? { ...state.prevPrices, [sym]: prev.bid }

@@ -37,7 +37,9 @@ async def get_redis():
     return redis_client
 
 
-async def publish_price(symbol: str, bid: float, ask: float, timestamp: str):
+async def publish_price(
+    symbol: str, bid: float, ask: float, timestamp: str, spread_mult: float = 1.0,
+):
     import json
     data = json.dumps({
         "symbol": symbol,
@@ -45,6 +47,10 @@ async def publish_price(symbol: str, bid: float, ask: float, timestamp: str):
         "ask": ask,
         "timestamp": timestamp,
         "spread": round(ask - bid, 8),
+        # Applied-spread multiplier (admin spread ÷ native feed spread). Lets the
+        # chart's bid-shift and any downstream consumer know how much the mid was
+        # widened. 1.0 = native (no admin widening, or native spread unknown).
+        "spread_mult": round(spread_mult, 4),
     })
     # 120 s TTL: if market-data dies, stale prices clear themselves
     # within 2 min instead of persisting forever. Live feed refreshes

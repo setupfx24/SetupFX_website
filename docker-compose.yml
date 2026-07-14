@@ -101,6 +101,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      timescaledb:
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment:

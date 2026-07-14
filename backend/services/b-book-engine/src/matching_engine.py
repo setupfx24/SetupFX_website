@@ -20,12 +20,13 @@ from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Order, OrderType, OrderSide, OrderStatus,
     Position, PositionStatus, TradingAccount, Instrument,
-    SpreadConfig, Transaction, User,
+    SpreadConfig, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src import corecen_trade_client
 from packages.common.src.instrument_pricing import resolve_commission
+from packages.common.src.trading_service import claim_close, tick_is_fresh
 from packages.common.src.ib_commission import distribute_ib_commission
 
 logger = logging.getLogger("b-book-engine")
@@ -53,6 +54,15 @@ class MatchingEngine:
             return None
         tick = json.loads(tick_data)
         return Decimal(str(tick["bid"])), Decimal(str(tick["ask"]))
+
+    async def _get_price_fresh(self, symbol: str) -> Optional[tuple[Decimal, Decimal, bool]]:
+        """Like _get_price but also reports tick freshness so SL/TP can skip a
+        stale feed (a dead feed must never trigger a phantom close)."""
+        tick_data = await redis_client.get(PriceChannel.tick_key(symbol))
+        if not tick_data:
+            return None
+        tick = json.loads(tick_data)
+        return Decimal(str(tick["bid"])), Decimal(str(tick["ask"])), tick_is_fresh(tick)
 
     async def _get_spread_markup(self, instrument_id, user_id, segment_id, db: AsyncSession) -> Decimal:
         """Resolve spread markup using the config hierarchy: user > instrument > segment > default."""
@@ -225,11 +235,15 @@ class MatchingEngine:
                     positions = result.scalars().all()
 
                     for pos in positions:
-                        price_data = await self._get_price(pos.instrument.symbol)
+                        price_data = await self._get_price_fresh(pos.instrument.symbol)
                         if not price_data:
                             continue
 
-                        bid, ask = price_data
+                        bid, ask, fresh = price_data
+                        # Stale-price guard: a tick older than ~60s must not
+                        # trigger SL/TP — skip risk actions on a dead feed.
+                        if not fresh:
+                            continue
                         close_price = bid if pos.side == OrderSide.BUY else ask
 
                         sl_hit = False
@@ -259,6 +273,13 @@ class MatchingEngine:
 
     async def _close_position(self, pos: Position, close_price: Decimal, reason: str, db: AsyncSession):
         from packages.common.src.trading_service import quote_to_account_pnl
+
+        # IDEMPOTENT CLOSE GUARD — atomically claim open→closed. If another
+        # closer (the 1s engine, stop-out, or a manual close) already won,
+        # rowcount is 0 and we bail: no double-booked P&L, no duplicate rows.
+        if not await claim_close(db, pos.id):
+            return
+
         instrument = pos.instrument
         if pos.side == OrderSide.BUY:
             profit = (close_price - pos.open_price) * pos.lots * instrument.contract_size
@@ -285,6 +306,34 @@ class MatchingEngine:
             account.equity = account.balance + account.credit
             account.free_margin = account.equity - account.margin_used
 
+        # Write the ledger rows so this SL/TP close is never missing from
+        # history — same records the 1s engine writes, so whichever closer
+        # wins the ledger is consistent.
+        db.add(TradeHistory(
+            position_id=pos.id,
+            account_id=pos.account_id,
+            instrument_id=pos.instrument_id,
+            side=pos.side,
+            lots=pos.lots,
+            open_price=pos.open_price,
+            close_price=close_price,
+            swap=pos.swap or Decimal("0"),
+            commission=pos.commission or Decimal("0"),
+            profit=profit,
+            close_reason=reason,
+            opened_at=pos.created_at,
+            closed_at=pos.closed_at,
+        ))
+        db.add(Transaction(
+            user_id=account.user_id if account else pos.account_id,
+            account_id=pos.account_id,
+            type="profit" if profit >= 0 else "loss",
+            amount=profit,
+            balance_after=account.balance if account else None,
+            reference_id=pos.id,
+            description=f"{reason.upper()} hit: {instrument.symbol} {pos.side.value} {pos.lots} lots @ {close_price}",
+        ))
+
         logger.info(
             f"Position {pos.id} closed by {reason}: {instrument.symbol} "
             f"{pos.side.value} @ {close_price}, profit: {profit}"
@@ -297,6 +346,16 @@ class MatchingEngine:
             "close_price": str(close_price),
             "profit": str(profit),
         }))
+        # Dedicated balance_update so panels refresh the account figure without
+        # inferring it from the close payload.
+        if account:
+            await redis_client.publish(f"account:{pos.account_id}", json.dumps({
+                "type": "balance_update",
+                "account_id": str(pos.account_id),
+                "balance": str(account.balance),
+                "equity": str(account.equity),
+                "free_margin": str(account.free_margin),
+            }))
 
         await produce_event(KafkaTopics.TRADES, str(pos.id), {
             "event": f"position_closed_{reason}",

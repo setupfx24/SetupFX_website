@@ -21,6 +21,7 @@ from packages.common.src.models import (
 from packages.common.src.notify import create_notification
 from packages.common.src import corecen_trade_client
 from packages.common.src.engine_lock import engine_lock
+from packages.common.src.trading_service import tick_is_fresh
 from ..services import wallet_service
 
 logger = logging.getLogger("gateway.sltp")
@@ -122,6 +123,10 @@ class SLTPEngine:
                     continue
 
                 tick = self._prices[symbol]
+                # Stale-price guard: never trigger SL/TP off a tick older than
+                # ~60s (a dead feed must not fire phantom closes).
+                if not tick_is_fresh(tick):
+                    continue
                 bid = Decimal(str(tick["bid"]))
                 ask = Decimal(str(tick["ask"]))
                 side = _side_val(pos.side)
@@ -255,6 +260,14 @@ class SLTPEngine:
                 "profit": str(profit),
                 "close_price": str(close_price),
             }))
+            if account:
+                await redis_client.publish(f"account:{pos.account_id}", json.dumps({
+                    "type": "balance_update",
+                    "account_id": str(pos.account_id),
+                    "balance": str(account.balance),
+                    "equity": str(account.equity),
+                    "free_margin": str(account.free_margin),
+                }))
         except Exception:
             pass
 

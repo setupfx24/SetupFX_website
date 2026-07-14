@@ -8,6 +8,7 @@ import json
 import logging
 import secrets
 import socket
+import time
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -17,6 +18,14 @@ import websockets
 logger = logging.getLogger("market-data.infoway")
 
 INFOWAY_WS_BASE = "wss://data.infoway.io/ws"
+
+# DATA-silence watchdog. TCP + protocol pings can stay healthy while the
+# provider's push subscription dies silently — the classic "zombie
+# subscription" that leaves the chart with no candles at the next market open
+# and nobody reconnecting. If no DATA frame arrives for this long, force-close
+# the socket so the loop reconnects + resubscribes. Weekend reconnect churn
+# every ~16 min is harmless; a stale subscription at Sunday open is not.
+DATA_SILENCE_LIMIT_SEC = 900.0  # 15 minutes
 
 # Platform symbol -> Infoway product code (crypto uses *USDT on Infoway).
 CRYPTO_INFOWAY_CODES: Dict[str, str] = {
@@ -64,6 +73,10 @@ class InfowayFeed:
         self._tick_queue: asyncio.Queue = asyncio.Queue(maxsize=50_000)
         self._running = False
         self._tasks: List[asyncio.Task] = []
+        # Monotonic ts of the last real DATA frame per business socket — set
+        # ONLY on actual data (code 10005), never on heartbeats/acks, so the
+        # watchdog measures genuine feed silence.
+        self._last_data_frame: Dict[str, float] = {}
 
     @property
     def current_prices(self) -> Dict[str, float]:
@@ -214,6 +227,21 @@ class InfowayFeed:
                 logger.debug("Infoway heartbeat send failed: %s", exc)
                 break
 
+    async def _silence_watchdog(self, ws, business: str) -> None:
+        """Force-close the socket if no DATA frame has arrived within the
+        limit, breaking the `async for` so _run_socket reconnects+resubscribes."""
+        while self._running:
+            await asyncio.sleep(60.0)
+            last = self._last_data_frame.get(business, 0.0)
+            if time.monotonic() - last > DATA_SILENCE_LIMIT_SEC:
+                logger.error(
+                    "Infoway [%s] no data frames for >%.0f min — zombie subscription, "
+                    "forcing reconnect+resubscribe.", business, DATA_SILENCE_LIMIT_SEC / 60,
+                )
+                with contextlib.suppress(Exception):
+                    await ws.close(code=4000)
+                return
+
     async def _run_socket(self, business: str, codes: List[str]) -> None:
         if not codes:
             return
@@ -229,6 +257,7 @@ class InfowayFeed:
 
         while self._running:
             hb_task: Optional[asyncio.Task] = None
+            wd_task: Optional[asyncio.Task] = None
             try:
                 logger.info("Infoway [%s] connecting…", business)
                 async with websockets.connect(
@@ -257,8 +286,11 @@ class InfowayFeed:
                     # Healthy subscribe — reset the backoff counter so the
                     # next failure starts at 2s, not wherever we ended up.
                     reconnect_attempts = 0
+                    # Arm the silence watchdog from a fresh baseline.
+                    self._last_data_frame[business] = time.monotonic()
 
                     hb_task = asyncio.create_task(self._heartbeat_loop(ws))
+                    wd_task = asyncio.create_task(self._silence_watchdog(ws, business))
 
                     async for raw in ws:
                         if not self._running:
@@ -269,6 +301,7 @@ class InfowayFeed:
                             continue
                         code = msg.get("code")
                         if code == 10005:
+                            self._last_data_frame[business] = time.monotonic()
                             self._emit_depth(msg.get("data") or {})
                         elif code in (10004, 10001):
                             logger.debug("Infoway [%s] ack: %s", business, msg.get("msg"))
@@ -295,9 +328,10 @@ class InfowayFeed:
                     )
                 await asyncio.sleep(delay)
             finally:
-                if hb_task:
-                    hb_task.cancel()
-                    with contextlib.suppress(asyncio.CancelledError):
-                        await hb_task
+                for _t in (hb_task, wd_task):
+                    if _t:
+                        _t.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await _t
 
         logger.info("Infoway [%s] task ended", business)

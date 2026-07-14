@@ -453,6 +453,73 @@ async def price_stream(websocket: WebSocket, token: str | None = Query(default=N
         await pubsub.close()
 
 
+_WS_RESOLUTION_TO_TF = {
+    "1": "1m", "5": "5m", "15": "15m", "30": "30m",
+    "60": "1h", "240": "4h", "D": "1d", "1D": "1d",
+}
+
+
+@app.websocket("/ws/bars")
+async def bars_stream(websocket: WebSocket):
+    """Live candle stream for the charting datafeed. The client sends
+    {type:"subscribe", symbol, resolution}; we subscribe the Redis
+    `bars:updates` channel once and relay only the bars matching an active
+    (symbol, timeframe) subscription. Anonymous — candles aren't user data."""
+    if not _check_ws_origin(websocket):
+        await websocket.close(code=4003, reason="Origin not allowed")
+        return
+
+    await websocket.accept()
+    subs: set[tuple[str, str]] = set()
+    pubsub = redis_client.pubsub()
+    await pubsub.subscribe("bars:updates")
+
+    try:
+        ping_interval = 30
+        last_ping = asyncio.get_event_loop().time()
+        while True:
+            try:
+                ws_msg = await asyncio.wait_for(websocket.receive_text(), timeout=0.1)
+            except asyncio.TimeoutError:
+                ws_msg = None
+            if ws_msg:
+                try:
+                    data = json.loads(ws_msg)
+                    mtype = data.get("type")
+                    if mtype in ("subscribe", "unsubscribe"):
+                        sym = str(data.get("symbol") or "").strip().upper()
+                        tf = _WS_RESOLUTION_TO_TF.get(str(data.get("resolution") or ""), None)
+                        if sym and tf:
+                            if mtype == "subscribe":
+                                subs.add((sym, tf))
+                            else:
+                                subs.discard((sym, tf))
+                except (ValueError, TypeError):
+                    pass
+
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.1)
+            if message and message["type"] == "message":
+                try:
+                    payload = json.loads(message["data"])
+                    key = (str(payload.get("symbol") or "").upper(), str(payload.get("timeframe") or ""))
+                    if key in subs:
+                        await websocket.send_text(message["data"])
+                except (ValueError, TypeError):
+                    pass
+
+            now = asyncio.get_event_loop().time()
+            if now - last_ping >= ping_interval:
+                await websocket.send_json({"type": "ping"})
+                last_ping = now
+
+            await asyncio.sleep(0.01)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await pubsub.unsubscribe("bars:updates")
+        await pubsub.close()
+
+
 @app.websocket("/ws/trades/{account_id}")
 async def trade_stream(websocket: WebSocket, account_id: str, token: str | None = Query(default=None)):
     if not _check_ws_origin(websocket):

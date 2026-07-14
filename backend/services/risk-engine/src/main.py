@@ -19,12 +19,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from packages.common.src.database import AsyncSessionLocal
 from packages.common.src.models import (
     Position, PositionStatus, TradingAccount, Instrument,
-    OrderSide, SwapConfig, Notification, Transaction, User,
+    OrderSide, SwapConfig, Notification, Transaction, TradeHistory, User,
 )
 from packages.common.src.redis_client import redis_client, PriceChannel
 from packages.common.src.kafka_client import produce_event, KafkaTopics
 from packages.common.src.config import get_settings
 from packages.common.src import corecen_trade_client
+from packages.common.src.trading_service import claim_close, tick_is_fresh
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("risk-engine")
@@ -170,6 +171,15 @@ class RiskEngine:
                 continue
 
             tick = json.loads(tick_data)
+            # Stale-price guard: never liquidate off a tick older than ~60s.
+            if not tick_is_fresh(tick):
+                continue
+
+            # IDEMPOTENT CLOSE GUARD — claim open→closed atomically; if an
+            # SL/TP engine or manual close already took it, skip.
+            if not await claim_close(db, pos.id):
+                continue
+
             close_price = Decimal(str(tick["bid"])) if pos.side == OrderSide.BUY else Decimal(str(tick["ask"]))
 
             if pos.side == OrderSide.BUY:
@@ -196,6 +206,32 @@ class RiskEngine:
             account.equity = account.balance + account.credit
             account.free_margin = account.equity - account.margin_used
 
+            # Consistent ledger rows (stop-out previously wrote none).
+            db.add(TradeHistory(
+                position_id=pos.id,
+                account_id=pos.account_id,
+                instrument_id=pos.instrument_id,
+                side=pos.side,
+                lots=pos.lots,
+                open_price=pos.open_price,
+                close_price=close_price,
+                swap=pos.swap or Decimal("0"),
+                commission=pos.commission or Decimal("0"),
+                profit=profit,
+                close_reason="stop_out",
+                opened_at=pos.created_at,
+                closed_at=pos.closed_at,
+            ))
+            db.add(Transaction(
+                user_id=account.user_id,
+                account_id=account.id,
+                type="profit" if profit >= 0 else "loss",
+                amount=profit,
+                balance_after=account.balance,
+                reference_id=pos.id,
+                description=f"Stop-out: {pos.instrument.symbol} {pos.side.value} {pos.lots} lots @ {close_price}",
+            ))
+
             closed_count += 1
             realized_pnl += profit
 
@@ -204,6 +240,13 @@ class RiskEngine:
                 "position_id": str(pos.id),
                 "symbol": pos.instrument.symbol,
                 "profit": str(profit),
+            }))
+            await redis_client.publish(f"account:{account.id}", json.dumps({
+                "type": "balance_update",
+                "account_id": str(account.id),
+                "balance": str(account.balance),
+                "equity": str(account.equity),
+                "free_margin": str(account.free_margin),
             }))
 
             logger.info(f"Stop-out closed {pos.instrument.symbol} {pos.side.value}, profit: {profit}")

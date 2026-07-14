@@ -95,6 +95,15 @@ class StreamSpreadCache:
             except Exception as exc:
                 logger.warning("Spread cache reload failed: %s", exc)
 
+    def widen_ex(self, symbol: str, bid: float, ask: float) -> Tuple[float, float, float]:
+        """Like widen() but also returns the applied-spread multiplier
+        (admin spread ÷ native feed spread; 1.0 when native is 0/unknown)."""
+        native = max(ask - bid, 0.0)
+        b, a = self.widen(symbol, bid, ask)
+        applied = max(a - b, 0.0)
+        mult = (applied / native) if native > 0 else 1.0
+        return b, a, mult
+
     def widen(self, symbol: str, bid: float, ask: float) -> Tuple[float, float]:
         """Apply the admin spread when configured; otherwise return a 0 spread.
 

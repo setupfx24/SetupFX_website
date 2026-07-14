@@ -95,3 +95,8 @@ setupfx_web/
 
 # Served Android APK — large binary, deployed to the server manually (not via git).
 frontend/trader/public/downloads/*.apk
+
+# Raw TradingView library download — the deployed copy lives in
+# frontend/trader/public/charting_library (self-hosted). This is the
+# unpacked source archive and is not needed in the build.
+/charting_library-master/

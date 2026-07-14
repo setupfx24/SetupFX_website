@@ -770,6 +770,32 @@ async def modify_position(position_id: UUID, req, user_id: UUID, db: AsyncSessio
     sv = side_val(pos.side)
     updated = False
 
+    # Min-distance guard against the CURRENT quote (spec §6). A level already
+    # on the wrong side of the market would fire on the very next tick — reject
+    # it. Skipped when there's no live quote (closed market) so the entry-side
+    # checks below still apply.
+    try:
+        inst = (await db.execute(
+            select(Instrument).where(Instrument.id == pos.instrument_id)
+        )).scalar_one_or_none()
+        if inst:
+            cq_bid, cq_ask = await get_current_price(inst.symbol)
+            min_dist = Decimal(str(inst.pip_size or 0.0001)) * Decimal("2")
+            if req.stop_loss is not None:
+                if sv == "buy" and req.stop_loss > cq_bid - min_dist:
+                    raise HTTPException(status_code=400, detail="SL too close to / above current price")
+                if sv == "sell" and req.stop_loss < cq_ask + min_dist:
+                    raise HTTPException(status_code=400, detail="SL too close to / below current price")
+            if req.take_profit is not None:
+                if sv == "buy" and req.take_profit < cq_bid + min_dist:
+                    raise HTTPException(status_code=400, detail="TP too close to / below current price")
+                if sv == "sell" and req.take_profit > cq_ask - min_dist:
+                    raise HTTPException(status_code=400, detail="TP too close to / above current price")
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # no live quote → keep only the entry-side checks below
+
     if req.stop_loss is not None:
         if sv == "buy" and req.stop_loss >= pos.open_price:
             raise HTTPException(status_code=400, detail="BUY SL must be below open price")
@@ -835,9 +861,20 @@ async def close_position(position_id: UUID, req, user_id: UUID, db: AsyncSession
     if not account:
         raise HTTPException(status_code=403, detail="Not your position")
 
-    pos_status = pos.status.value if hasattr(pos.status, 'value') else str(pos.status)
-    if pos_status != "open":
+    # IDEMPOTENT CLOSE GUARD — lock the row and re-check it's still open, so a
+    # manual close can't double-book against the SL/TP engine or stop-out
+    # (which contend on the same row). A row lock (not a flip-to-closed claim)
+    # is used here because this path also does PARTIAL closes, which must leave
+    # the position open with reduced lots.
+    locked = (await db.execute(
+        select(Position).where(Position.id == position_id).with_for_update()
+    )).scalar_one_or_none()
+    if not locked:
+        raise HTTPException(status_code=404, detail="Position not found")
+    _locked_status = locked.status.value if hasattr(locked.status, 'value') else str(locked.status)
+    if _locked_status != "open":
         raise HTTPException(status_code=400, detail="Position is not open")
+    pos = locked
 
     # MAM gives followers independent control of their own allocated account:
     # a follower CAN close their mirrored position (it lives on the follower's

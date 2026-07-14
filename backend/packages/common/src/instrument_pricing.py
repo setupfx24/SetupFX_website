@@ -59,6 +59,34 @@ async def _instrument_config_price_impact(
     return Decimal("0")
 
 
+async def user_close_quote(
+    db: AsyncSession,
+    instrument: Instrument,
+    mid: Decimal,
+    *,
+    user_id: Optional[UUID] = None,
+    account_group_id: Optional[UUID] = None,
+) -> Tuple[Decimal, Decimal]:
+    """Re-derive THIS user's bid/ask by re-spreading the tick MID symmetrically
+    with the user's resolved spread config (priority: user+instrument → user →
+    group → instrument → segment → default; no config ⇒ ZERO spread, not market
+    spread). Fills, closes, and floating P&L should be valued against this
+    quote — NOT the raw broadcast tick — so the admin spread is crossed exactly
+    ONCE per round trip and open P&L doesn't start with a phantom loss.
+
+    Ready to wire; rolling it into the valuation call sites (list_positions,
+    calc_account_equity, and the closers) must be ONE coordinated, tested change
+    so every P&L view agrees — otherwise a partial rollout shows different P&L
+    in different panels.
+    """
+    sv, st, _pimp = await resolve_spread_config(
+        db, instrument, user_id=user_id, account_group_id=account_group_id,
+    )
+    pip = Decimal(str(getattr(instrument, "pip_size", None) or 0.0001))
+    digits = int(getattr(instrument, "digits", None) or 5)
+    return symmetric_quote_from_mid(Decimal(str(mid)), sv, st, pip, digits, Decimal("0"))
+
+
 async def resolve_spread_config(
     db: AsyncSession,
     instrument: Instrument,

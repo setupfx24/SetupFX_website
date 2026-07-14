@@ -22,7 +22,9 @@ from .corecen_lp_feed import CorecenLPFeed
 from .bar_aggregator import BarAggregator
 from .seed_bars import seed as seed_bars
 from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
-from .store import TickStore
+from .store import TickStore, BarStore
+from .tick_pipeline import TickGuard
+from .reconcile import reconcile_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("market-data")
@@ -67,9 +69,11 @@ class MarketDataService:
                 "No Corecen/Infoway feed — running LIVE crypto (Binance) only; "
                 "forex/indices/metals/shares are unquoted (show '-') until a real feed is set."
             )
-        self.aggregator = BarAggregator()
+        self.bar_store = BarStore()
+        self.aggregator = BarAggregator(bar_store=self.bar_store)
         self.store = TickStore()
         self.spread_cache = StreamSpreadCache()
+        self.tick_guard = TickGuard()
         self.running = True
         self._last_mid: dict[str, float] = {}
         # Native (pre-widen) bid/ask of the last tick per symbol. Used by the
@@ -85,6 +89,7 @@ class MarketDataService:
         signal.signal(signal.SIGTERM, lambda *_: setattr(self, "running", False))
 
         await self.store.init()
+        await self.bar_store.ensure_schema()
 
         await self.spread_cache.reload_if_stale(force=True)
         await self._seed_last_mid_from_redis()
@@ -97,6 +102,7 @@ class MarketDataService:
             asyncio.create_task(self._stale_quote_refresher()),
             asyncio.create_task(self.aggregator.run_aggregation_loop()),
             asyncio.create_task(self._auto_seed_bars()),
+            asyncio.create_task(reconcile_loop(self.bar_store, lambda: self.running)),
         ]
         if self._infoway_watchdog_armed:
             tasks.append(asyncio.create_task(self._infoway_fallback_watchdog()))
@@ -175,8 +181,8 @@ class MarketDataService:
                     continue
                 try:
                     b0, a0 = quote
-                    bid, ask = self.spread_cache.widen(symbol, b0, a0)
-                    await publish_price(symbol, bid, ask, ts)
+                    bid, ask, spread_mult = self.spread_cache.widen_ex(symbol, b0, a0)
+                    await publish_price(symbol, bid, ask, ts, spread_mult=spread_mult)
                 except Exception as exc:
                     logger.debug("Stale quote refresh failed for %s: %s", symbol, exc)
 
@@ -191,16 +197,23 @@ class MarketDataService:
             symbol = str(tick["symbol"] or "").strip().upper()
             if not symbol:
                 continue
-            bid = float(tick["bid"])
-            ask = float(tick["ask"])
+            raw_bid = float(tick["bid"])
+            raw_ask = float(tick["ask"])
             ts = tick.get("timestamp", datetime.now(timezone.utc).isoformat())
 
-            self._last_mid[symbol] = (bid + ask) / 2.0
-            self._last_quote[symbol] = (bid, ask)
-            self._last_live_mono[symbol] = time.monotonic()
-            bid, ask = self.spread_cache.widen(symbol, bid, ask)
+            # Bad-tick guard + de-spike BEFORE the spread engine. A dropped
+            # tick never reaches Redis, the DB, or the aggregator.
+            cleaned = self.tick_guard.process(symbol, raw_bid, raw_ask)
+            if cleaned is None:
+                continue
+            bid, ask, mid = cleaned
 
-            await publish_price(symbol, bid, ask, ts)
+            self._last_mid[symbol] = mid
+            self._last_quote[symbol] = (bid, ask)   # cleaned native quote
+            self._last_live_mono[symbol] = time.monotonic()
+            bid, ask, spread_mult = self.spread_cache.widen_ex(symbol, bid, ask)
+
+            await publish_price(symbol, bid, ask, ts, spread_mult=spread_mult)
 
             await self.store.insert_tick(symbol, bid, ask, ts)
 
@@ -251,6 +264,10 @@ class MarketDataService:
     async def shutdown(self):
         logger.info("Shutting down Market Data Service...")
         self.running = False
+        try:
+            await self.store.flush_pending()
+        except Exception as exc:
+            logger.warning("Tick flush on shutdown failed: %s", exc)
         await self.feed.stop()
         await close_producer()
         await redis_client.close()

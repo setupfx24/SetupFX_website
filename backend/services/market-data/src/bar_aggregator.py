@@ -1,5 +1,6 @@
 """Bar Aggregator — Aggregates ticks into OHLCV bars for multiple timeframes."""
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 from collections import defaultdict
@@ -17,6 +18,10 @@ TIMEFRAMES = {
     "4h": 14400,
     "1d": 86400,
 }
+
+# Channel every live-bar consumer (the /ws/bars relay) subscribes to. Payload
+# is a single forming-or-closed bar: {symbol,timeframe,time,open,high,low,close,volume}.
+BARS_UPDATES_CHANNEL = "bars:updates"
 
 
 class BarData:
@@ -39,9 +44,32 @@ class BarData:
 
 
 class BarAggregator:
-    def __init__(self):
+    def __init__(self, bar_store=None):
         self._bars: dict[str, dict[str, BarData]] = defaultdict(dict)
         self._bar_timestamps: dict[str, dict[str, int]] = defaultdict(dict)
+        # Durable OHLCV store (store.BarStore). Optional so the aggregator
+        # still runs (Redis-only) if Timescale is unavailable.
+        self._bar_store = bar_store
+        # Last (time, o, h, l, c) published per key, so the 1s loop only emits
+        # a forming-bar update when it actually changed — which also means a
+        # frozen market (no ticks) produces no phantom "live" updates.
+        self._last_pub: dict[str, tuple] = {}
+
+    async def _publish_update(self, symbol: str, timeframe: str, time_epoch: int, bar: "BarData"):
+        payload = {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "time": time_epoch,
+            "open": bar.open,
+            "high": bar.high,
+            "low": bar.low,
+            "close": bar.close,
+            "volume": bar.volume,
+        }
+        try:
+            await redis_client.publish(BARS_UPDATES_CHANNEL, json.dumps(payload))
+        except Exception as exc:
+            logger.debug("bars:updates publish failed for %s:%s: %s", symbol, timeframe, exc)
 
     def update(self, symbol: str, bid: float, ask: float, timestamp: str):
         mid = (bid + ask) / 2
@@ -72,7 +100,6 @@ class BarAggregator:
                     self._bars[symbol][tf_name].update(mid)
 
     async def _store_bar(self, symbol: str, timeframe: str, bar: BarData, bar_start: int):
-        import json
         bar_data = {
             "symbol": symbol,
             "timeframe": timeframe,
@@ -91,6 +118,20 @@ class BarAggregator:
         list_key = f"bars:{symbol}:{timeframe}"
         await redis_client.lpush(list_key, json.dumps(bar_data))
         await redis_client.ltrim(list_key, 0, 999)
+
+        # Durable history — the real source of truth (Redis is the cache).
+        if self._bar_store is not None:
+            await self._bar_store.upsert_bar(
+                timeframe, symbol, bar_start,
+                bar.open, bar.high, bar.low, bar.close, bar.volume, bar.tick_count,
+            )
+
+        # Push the newly CLOSED bar so live subscribers finalize it and the
+        # next tick opens a fresh candle in place.
+        await self._publish_update(symbol, timeframe, bar_start, bar)
+        self._last_pub[f"{symbol}:{timeframe}"] = (
+            bar_start, bar.open, bar.high, bar.low, bar.close,
+        )
 
         # ATR(14) — volatility metric cached for downstream consumers.
         # Computed only on 1m bars.
@@ -123,14 +164,20 @@ class BarAggregator:
             logger.debug("ATR update failed for %s: %s", symbol, exc)
 
     async def run_aggregation_loop(self):
-        """Periodically publish current bar state to Redis for chart consumers."""
-        import json
+        """Every second, snapshot the forming bar to `bar:current:<SYM>:<TF>`
+        (with its bar-start `time`, which the datafeed needs to align it) and
+        publish it on `bars:updates` — but only when it changed, so a frozen
+        market emits nothing (no fake 'live' candle)."""
         while True:
             for symbol, timeframes in list(self._bars.items()):
                 for tf_name, bar in list(timeframes.items()):
+                    bar_start = self._bar_timestamps.get(symbol, {}).get(tf_name)
+                    if bar_start is None:
+                        continue
                     bar_data = {
                         "symbol": symbol,
                         "timeframe": tf_name,
+                        "time": bar_start,
                         "open": bar.open,
                         "high": bar.high,
                         "low": bar.low,
@@ -140,5 +187,11 @@ class BarAggregator:
                     }
                     bar_key = f"bar:current:{symbol}:{tf_name}"
                     await redis_client.set(bar_key, json.dumps(bar_data))
+
+                    sig = (bar_start, bar.open, bar.high, bar.low, bar.close)
+                    key = f"{symbol}:{tf_name}"
+                    if self._last_pub.get(key) != sig:
+                        self._last_pub[key] = sig
+                        await self._publish_update(symbol, tf_name, bar_start, bar)
 
             await asyncio.sleep(1)

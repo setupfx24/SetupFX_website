@@ -129,6 +129,9 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
+      // The self-hosted Advanced Charting Library spawns its render/compute
+      // web workers from blob: URLs.
+      "worker-src 'self' blob:",
       // wss: for the WebSocket price feed, https: covers gateway + 3rd party.
       "connect-src 'self' https: wss:",
       "frame-src 'self' https://s.tradingview.com https://www.tradingview-widget.com https://www.tradingview.com https://accounts.google.com https://verify.walletconnect.com https://verify.walletconnect.org https://*.razorpay.com",

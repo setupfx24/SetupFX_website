@@ -24,7 +24,10 @@ import TerminalLeftRail, { type TerminalSpaceId } from '@/components/trading/Ter
 import TerminalTicker from '@/components/trading/TerminalTicker';
 import AppNavbar from '@/components/layout/AppNavbar';
 
-const TradingViewChart = dynamic(() => import('@/components/charts/TradingViewChart'), { ssr: false });
+// Trading terminal chart = self-hosted Advanced Charting Library on the
+// broker's own datafeed (real-time candles, deep history, draggable SL/TP).
+// The marketing pages still use the lightweight TradingViewChart widget.
+const TradingViewChart = dynamic(() => import('@/components/charts/TerminalChart'), { ssr: false });
 const TradingViewNewsTimeline = dynamic(() => import('@/components/charts/TradingViewNewsTimeline'), {
   ssr: false,
 });

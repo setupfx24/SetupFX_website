@@ -8,7 +8,7 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +19,49 @@ from .models import (
 from .redis_client import redis_client, PriceChannel
 
 logger = logging.getLogger("trading_service")
+
+# Max tick age (seconds) that may drive an SL/TP / stop-out / liquidation. A
+# dead feed must never trigger a phantom close — past this, closers update
+# display fields only and skip risk actions.
+STALE_TICK_MAX_AGE_SEC = 60.0
+
+
+async def claim_close(session: AsyncSession, position_id) -> bool:
+    """Atomically claim a position for closing (the idempotent close guard).
+
+    Flips status open→closed in ONE conditional UPDATE and returns True iff
+    THIS caller won the race (rowcount 1). Every closer — the 100ms monitor,
+    the 1s engine, stop-out, and manual close — must call this and bail on
+    False, otherwise racing closers double-book P&L and duplicate history rows.
+
+    The flip goes straight to 'closed' (not a transient 'closing') because the
+    position_status enum has no 'closing' value and, run inside the caller's
+    transaction, a direct flip auto-rolls-back if the rest of the close fails —
+    so a crash mid-close leaves the position re-closable, never stuck.
+    """
+    res = await session.execute(
+        text("UPDATE positions SET status = 'closed' WHERE id = :id AND status = 'open'"),
+        {"id": str(position_id)},
+    )
+    return (res.rowcount or 0) == 1
+
+
+def tick_is_fresh(tick: dict, max_age_sec: float = STALE_TICK_MAX_AGE_SEC) -> bool:
+    """True if the tick carries a timestamp no older than max_age_sec. Missing
+    or unparseable timestamps are treated as STALE (fail-safe: don't trigger)."""
+    from datetime import datetime, timezone
+    ts = tick.get("timestamp") if isinstance(tick, dict) else None
+    if not ts:
+        return False
+    try:
+        s = str(ts).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - dt).total_seconds()
+        return age <= max_age_sec
+    except (ValueError, TypeError):
+        return False
 
 
 class TradingServiceError(Exception):

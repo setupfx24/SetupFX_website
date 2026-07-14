@@ -64,6 +64,19 @@ CREATE TABLE ohlcv_15m (
 SELECT create_hypertable('ohlcv_15m', 'time');
 CREATE INDEX idx_ohlcv_15m_symbol ON ohlcv_15m (symbol, time DESC);
 
+CREATE TABLE ohlcv_30m (
+    time TIMESTAMPTZ NOT NULL,
+    symbol VARCHAR(20) NOT NULL,
+    open DECIMAL(18,8) NOT NULL,
+    high DECIMAL(18,8) NOT NULL,
+    low DECIMAL(18,8) NOT NULL,
+    close DECIMAL(18,8) NOT NULL,
+    volume DECIMAL(18,4) DEFAULT 0,
+    tick_count INT DEFAULT 0
+);
+SELECT create_hypertable('ohlcv_30m', 'time');
+CREATE INDEX idx_ohlcv_30m_symbol ON ohlcv_30m (symbol, time DESC);
+
 CREATE TABLE ohlcv_1h (
     time TIMESTAMPTZ NOT NULL,
     symbol VARCHAR(20) NOT NULL,
@@ -147,6 +160,17 @@ SELECT
     sum(tick_count) AS tick_count
 FROM ohlcv_1m
 GROUP BY time_bucket('1 hour', time), symbol;
+
+-- Idempotent-upsert support: one row per (symbol, candle-slot). A hypertable
+-- UNIQUE index must include the partition column (time). These let the
+-- aggregator / backfill / reconcile loops ON CONFLICT without duplicating bars.
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_1m_symbol_time_uidx  ON ohlcv_1m  (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_5m_symbol_time_uidx  ON ohlcv_5m  (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_15m_symbol_time_uidx ON ohlcv_15m (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_30m_symbol_time_uidx ON ohlcv_30m (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_1h_symbol_time_uidx  ON ohlcv_1h  (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_4h_symbol_time_uidx  ON ohlcv_4h  (symbol, time);
+CREATE UNIQUE INDEX IF NOT EXISTS ohlcv_1d_symbol_time_uidx  ON ohlcv_1d  (symbol, time);
 
 -- Retention policy: keep ticks for 30 days, 1m bars for 1 year
 SELECT add_retention_policy('ticks', INTERVAL '30 days');
