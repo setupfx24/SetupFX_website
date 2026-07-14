@@ -25,6 +25,7 @@ from .spread_cache import StreamSpreadCache, RELOAD_INTERVAL_SEC
 from .store import TickStore, BarStore
 from .tick_pipeline import TickGuard
 from .reconcile import reconcile_loop
+from .backfill_from_ticks import backfill_from_ticks
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-5s [%(name)s] %(message)s")
 logger = logging.getLogger("market-data")
@@ -103,6 +104,7 @@ class MarketDataService:
             asyncio.create_task(self.aggregator.run_aggregation_loop()),
             asyncio.create_task(self._auto_seed_bars()),
             asyncio.create_task(reconcile_loop(self.bar_store, lambda: self.running)),
+            asyncio.create_task(self._auto_backfill_from_ticks()),
         ]
         if self._infoway_watchdog_armed:
             tasks.append(asyncio.create_task(self._infoway_fallback_watchdog()))
@@ -241,6 +243,28 @@ class MarketDataService:
         # Crypto-only live feed (no price simulation) so at least crypto keeps ticking.
         self.feed = FeedSimulator(tick_rate_multiplier=1.0)
         asyncio.create_task(self.feed.start())
+
+    async def _auto_backfill_from_ticks(self) -> None:
+        """Build OHLCV history for FX/metals/indices from the stored ticks, so
+        the chart has candles immediately instead of only the forming bar.
+        Guarded by a Redis flag so a restart storm can't re-run the heavy
+        aggregation more than once every 12h (it's idempotent regardless)."""
+        try:
+            await asyncio.sleep(45.0)  # let the feed + tick store warm up first
+        except asyncio.CancelledError:
+            raise
+        if not self.running:
+            return
+        try:
+            # SET NX EX → only one runner per 12h window.
+            got = await redis_client.set("backfill_ticks_lock", "1", nx=True, ex=43200)
+            if not got:
+                logger.info("Tick backfill skipped (ran within the last 12h)")
+                return
+            logger.info("Building OHLCV history from stored ticks…")
+            await backfill_from_ticks()
+        except Exception as exc:
+            logger.warning("Auto tick-backfill failed: %s", exc)
 
     async def _auto_seed_bars(self) -> None:
         """Wait for first ticks to arrive, then seed historical bars if Redis is empty."""
