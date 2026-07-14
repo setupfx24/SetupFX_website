@@ -5,10 +5,16 @@ import { useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import { createDatafeed } from '@/lib/charting/datafeed';
+import { createBroker, BROKER_CONFIG } from '@/lib/charting/broker';
 import { useTradingStore, type Position } from '@/stores/tradingStore';
 
 const LIBRARY_PATH = '/charting_library/';
 const SCRIPT_SRC = '/charting_library/charting_library.standalone.js';
+
+// Use the Trading Terminal Broker API (SL/TP/✕ buttons ON the position line,
+// drag-to-set brackets). When there's no active account we fall back to the
+// manual createOrderLine/createPositionLine path below.
+const USE_BROKER_API = true;
 
 let scriptPromise: Promise<void> | null = null;
 function loadLibrary(): Promise<void> {
@@ -45,10 +51,16 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
     let disposed = false;
     let cleanupLines: (() => void) | null = null;
 
+    let broker: any = null;
+
     loadLibrary().then(() => {
       if (disposed || !containerRef.current) return;
       const TV = (window as any).TradingView;
-      const widget = new TV.widget({
+
+      const accountId = useTradingStore.getState().activeAccount?.id || '';
+      const useBroker = USE_BROKER_API && !!accountId;
+
+      const options: any = {
         container: containerRef.current,
         library_path: LIBRARY_PATH,
         datafeed: createDatafeed(),
@@ -66,14 +78,29 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
           'header_compare',
         ],
         enabled_features: [],
-      });
+      };
+      // Trading Terminal: renders SL/TP/✕ on the position line + draggable
+      // brackets, all wired to the same server modify/close endpoints.
+      if (useBroker) {
+        options.broker_factory = (host: any) => {
+          broker = createBroker(host, accountId);
+          return broker;
+        };
+        options.broker_config = BROKER_CONFIG;
+      }
+
+      const widget = new TV.widget(options);
       widgetRef.current = widget;
 
       widget.onChartReady(() => {
         if (disposed) return;
-        const { cleanup, sync } = setupSLTPLines(widget, symbolRef);
-        cleanupLines = cleanup;
-        syncRef.current = sync;
+        // Manual lines ONLY when the Broker API isn't active (else the
+        // broker draws the position/SL/TP lines and we'd double them up).
+        if (!useBroker) {
+          const { cleanup, sync } = setupSLTPLines(widget, symbolRef);
+          cleanupLines = cleanup;
+          syncRef.current = sync;
+        }
       });
     }).catch((e) => {
       // eslint-disable-next-line no-console
@@ -83,6 +110,7 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
     return () => {
       disposed = true;
       if (cleanupLines) cleanupLines();
+      try { broker?.destroy?.(); } catch { /* noop */ }
       syncRef.current = null;
       try { widgetRef.current?.remove?.(); } catch { /* noop */ }
       widgetRef.current = null;
