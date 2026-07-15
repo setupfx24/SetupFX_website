@@ -110,11 +110,6 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
   const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const suppressEidsRef = useRef<Set<string>>(new Set());
   const syncWarnedRef = useRef(false);
-  const pillNodeRef = useRef<Map<string, HTMLDivElement>>(new Map());
-  const paneTopRef = useRef<number | null>(null);
-  const lastMouseYRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const paneTopSamplesRef = useRef<number[]>([]);
   const placingRef = useRef<boolean>(false);
 
   // ── Reconcile SL/TP/entry SHAPES with open positions on the symbol ─────
@@ -249,79 +244,6 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     };
     try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
-  }, [chartReady]);
-
-  // ── Pin each position's control pill to its entry line (rAF projection) ─
-  useEffect(() => {
-    if (!chartReady) return;
-    const w = widgetRef.current;
-    const container = containerRef.current;
-    if (!w || !container) return;
-
-    const getChart = (): any => { try { return w.activeChart(); } catch { return null; } };
-    const readGeo = (chart: any) => {
-      try {
-        const pane = chart.getPanes?.()[0];
-        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-        const paneH = pane?.getHeight?.();
-        if (!range || !paneH || range.to === range.from) return null;
-        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
-      } catch { return null; }
-    };
-
-    const onMove = (e: MouseEvent) => { lastMouseYRef.current = e.clientY - container.getBoundingClientRect().top; };
-    container.addEventListener('mousemove', onMove);
-    const onResize = () => { paneTopSamplesRef.current = []; };
-    window.addEventListener('resize', onResize);
-
-    let crossSub: any = null;
-    const crossCb = (params: any) => {
-      const price = params?.price;
-      const my = lastMouseYRef.current;
-      if (price == null || my == null) return;
-      const chart = getChart();
-      const geo = chart && readGeo(chart);
-      if (!geo) return;
-      const candidate = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
-      if (!Number.isFinite(candidate)) return;
-      const arr = paneTopSamplesRef.current;
-      arr.push(candidate);
-      while (arr.length > 15) arr.shift();
-      const sorted = [...arr].sort((a, b) => a - b);
-      paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate;
-    };
-    try { crossSub = getChart()?.crossHairMoved?.(); crossSub?.subscribe(null, crossCb); } catch { /* ignore */ }
-
-    const HIDE = 'translate(-50%, -9999px)';
-    const tick = () => {
-      const chart = getChart();
-      const geo = chart && readGeo(chart);
-      if (geo) {
-        let paneTop = paneTopRef.current;
-        if (paneTop == null) paneTop = container.getBoundingClientRect().height - geo.paneH - 46;
-        const st = useTradingStore.getState();
-        const sym = (st.selectedSymbol ?? 'EURUSD').toUpperCase();
-        pillNodeRef.current.forEach((node, id) => {
-          if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
-          const pos = st.positions.find((p) => p.id === id);
-          if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
-          const pillPrice = Number(pos.open_price);
-          const y = (paneTop as number) + ((geo.top - pillPrice) / (geo.top - geo.bottom)) * geo.paneH;
-          node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
-            ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
-        });
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      container.removeEventListener('mousemove', onMove);
-      window.removeEventListener('resize', onResize);
-      try { crossSub?.unsubscribe(null, crossCb); } catch { /* ignore */ }
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
   }, [chartReady]);
 
   // ── Press an SL/TP button and drag onto the chart to place the line ────
@@ -467,7 +389,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
       {panelPositions.length > 0 && (
-        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 z-20 pointer-events-none flex flex-col items-center justify-center gap-1.5">
           {panelPositions.map((p) => {
             const profit = Number(p.profit ?? 0);
             const up = profit >= 0;
@@ -475,8 +397,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
             return (
               <div
                 key={p.id}
-                ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
-                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap"
+                className="pointer-events-auto flex items-center gap-1 px-2 py-1 text-[11px] font-bold whitespace-nowrap rounded-md bg-bg-secondary/90 border border-border-primary shadow-lg backdrop-blur-sm"
               >
                 <span className={p.side === 'buy' ? 'text-emerald-500' : 'text-rose-500'}>
                   {p.side.toUpperCase()} {p.lots}
