@@ -1,23 +1,26 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef } from 'react';
+/**
+ * Advanced chart (self-hosted TradingView Charting Library) with on-chart
+ * draggable SL/TP — ported from the proven reference implementation.
+ *
+ * KEY: this Advanced-Charts build has NO order-line API (createOrderLine /
+ * createPositionLine don't render), so SL/TP are drawn as horizontal-line
+ * SHAPES via chart.createShape(). Dragging is detected through the widget's
+ * `drawing_event`; a press-and-drag from the on-line SL/TP buttons places a
+ * line that follows the crosshair; releasing pops a confirm dialog, then the
+ * level is saved via the same modify endpoint the panels use.
+ */
+import { memo, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import api from '@/lib/api/client';
 import { createDatafeed } from '@/lib/charting/datafeed';
-import { createBroker, BROKER_CONFIG } from '@/lib/charting/broker';
-import { useTradingStore, type Position } from '@/stores/tradingStore';
+import { useTradingStore } from '@/stores/tradingStore';
 
 const LIBRARY_PATH = '/charting_library/';
 const SCRIPT_SRC = '/charting_library/charting_library.standalone.js';
-
-// Draggable SL/TP via the chart's order/position-line API. NOTE: in v31
-// createOrderLine()/createPositionLine() return PROMISES — they must be
-// awaited (the earlier bug: setters were called on the unresolved Promise, so
-// nothing rendered). This path draws a position line (P&L + ✕ close) and
-// draggable red SL / green TP lines; dragging + releasing pops a confirm
-// dialog, then modifies on the server.
-const USE_BROKER_API = false;
 
 let scriptPromise: Promise<void> | null = null;
 function loadLibrary(): Promise<void> {
@@ -35,339 +38,490 @@ function loadLibrary(): Promise<void> {
   return scriptPromise;
 }
 
-interface Props {
-  symbol: string;
-  interval?: string;
-  theme?: 'light' | 'dark';
-}
+function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string; theme?: string }) {
+  const CONTAINER_ID = useRef('sfx_tv_' + Math.random().toString(36).slice(2, 10)).current;
+  const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
 
-export default function AdvancedChart({ symbol, interval = '5', theme = 'light' }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
-  const symbolRef = useRef(symbol);
-  symbolRef.current = symbol;
-  // Lets the symbol-change effect force an immediate SL/TP line re-sync.
-  const syncRef = useRef<(() => void) | null>(null);
+  const readyRef = useRef(false);
 
-  // ── Create the widget once ────────────────────────────────────────────────
+  const positions = useTradingStore((s) => s.positions);
+  const [chartReady, setChartReady] = useState(false);
+  const linesRef = useRef<Map<string, any>>(new Map());
+  const syncBusyRef = useRef(false);
+
+  const [confirm, setConfirm] = useState<
+    { positionId: string; leg: 'sl' | 'tp'; price: number; side: string; lots: number; symbol: string; pnl: number } | null
+  >(null);
+  const confirmRevertRef = useRef<(() => void) | null>(null);
+  const requestBracketRef = useRef<((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => void) | null>(null);
+
+  // ── Mount the widget once ──────────────────────────────────────────────
   useEffect(() => {
     let disposed = false;
-    let cleanupLines: (() => void) | null = null;
+    (async () => {
+      try { await loadLibrary(); } catch { return; }
+      if (disposed || !containerRef.current || !(window as any).TradingView) return;
 
-    let broker: any = null;
-
-    loadLibrary().then(() => {
-      if (disposed || !containerRef.current) return;
-      const TV = (window as any).TradingView;
-
-      const accountId = useTradingStore.getState().activeAccount?.id || '';
-      const useBroker = USE_BROKER_API && !!accountId;
-
-      const options: any = {
-        container: containerRef.current,
-        library_path: LIBRARY_PATH,
-        datafeed: createDatafeed(),
-        symbol: symbolRef.current,
+      widgetRef.current = new (window as any).TradingView.widget({
+        symbol: (selectedSymbol ?? 'EURUSD').toUpperCase(),
         interval,
+        // This build wants the container's element ID (string), not the node.
+        container: CONTAINER_ID,
+        container_id: CONTAINER_ID,
+        datafeed: createDatafeed(),
+        library_path: LIBRARY_PATH,
         locale: 'en',
-        theme,
-        autosize: true,
         timezone: 'Etc/UTC',
-        // The datafeed already serves broker symbols, so no symbol search.
-        disabled_features: [
-          'use_localstorage_for_settings',
-          'header_symbol_search',
-          'symbol_search_hot_key',
-          'header_compare',
-        ],
-        enabled_features: [],
-      };
-      // Trading Terminal: renders SL/TP/✕ on the position line + draggable
-      // brackets, all wired to the same server modify/close endpoints. Hide the
-      // library's own Account Manager panel — the app has its own positions
-      // table, and a minimal account manager is what broke init before.
-      if (useBroker) {
-        options.disabled_features.push('trading_account_manager');
-        options.broker_factory = (host: any) => {
-          broker = createBroker(host, accountId);
-          return broker;
-        };
-        options.broker_config = BROKER_CONFIG;
-      }
-
-      const widget = new TV.widget(options);
-      widgetRef.current = widget;
-
-      widget.onChartReady(() => {
-        if (disposed) return;
-        // Manual lines ONLY when the Broker API isn't active (else the
-        // broker draws the position/SL/TP lines and we'd double them up).
-        if (!useBroker) {
-          const { cleanup, sync } = setupSLTPLines(widget, symbolRef);
-          cleanupLines = cleanup;
-          syncRef.current = sync;
-        }
+        theme: 'light',
+        autosize: true,
+        fullscreen: false,
+        toolbar_bg: '#ffffff',
+        loading_screen: { backgroundColor: '#ffffff' },
+        disabled_features: ['use_localstorage_for_settings', 'symbol_search_hot_key'],
+        enabled_features: ['hide_left_toolbar_by_default'],
       });
-    }).catch((e) => {
-      // eslint-disable-next-line no-console
-      console.error(e);
-    });
+      try {
+        widgetRef.current.onChartReady(() => { readyRef.current = true; setChartReady(true); });
+      } catch { /* ignore */ }
+    })();
 
     return () => {
       disposed = true;
-      if (cleanupLines) cleanupLines();
-      try { broker?.destroy?.(); } catch { /* noop */ }
-      syncRef.current = null;
-      try { widgetRef.current?.remove?.(); } catch { /* noop */ }
+      try { widgetRef.current?.remove?.(); } catch { /* ignore */ }
       widgetRef.current = null;
+      readyRef.current = false;
+      linesRef.current.clear();
+      setChartReady(false);
     };
-    // Recreate only when interval/theme change; symbol handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interval, theme]);
+  }, []);
 
-  // ── Switch symbol without tearing down the widget ─────────────────────────
+  // ── Switch symbol without reloading the library ────────────────────────
   useEffect(() => {
+    const sym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+    const w = widgetRef.current;
+    if (!w || typeof w.onChartReady !== 'function') return;
+    try { w.onChartReady(() => { try { w.chart().setSymbol(sym); } catch { /* ignore */ } }); } catch { /* ignore */ }
+  }, [selectedSymbol]);
+
+  const entityMapRef = useRef<Map<string, { positionId: string; leg: 'sl' | 'tp' }>>(new Map());
+  const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const suppressEidsRef = useRef<Set<string>>(new Set());
+  const syncWarnedRef = useRef(false);
+  const pillNodeRef = useRef<Map<string, HTMLDivElement>>(new Map());
+  const paneTopRef = useRef<number | null>(null);
+  const lastMouseYRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const paneTopSamplesRef = useRef<number[]>([]);
+  const placingRef = useRef<boolean>(false);
+
+  // ── Reconcile SL/TP/entry SHAPES with open positions on the symbol ─────
+  const syncLines = useCallback(async () => {
+    const w = widgetRef.current;
+    if (!w || syncBusyRef.current) return;
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart || typeof chart.createShape !== 'function') {
+      if (!syncWarnedRef.current) {
+        syncWarnedRef.current = true;
+        // eslint-disable-next-line no-console
+        console.warn('[chart] createShape unavailable — SL/TP lines cannot render on this build.');
+      }
+      return;
+    }
+
+    syncBusyRef.current = true;
+    try {
+      const state = useTradingStore.getState();
+      const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
+      const rel = (state.positions || []).filter((p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'));
+      const relIds = new Set(rel.map((p) => p.id));
+      const map = linesRef.current;
+
+      let anchorTime = Math.floor(Date.now() / 1000);
+      try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* keep now */ }
+
+      const removeEntity = (entityId?: string) => {
+        if (entityId == null) return;
+        try { chart.removeEntity(entityId); } catch { /* ignore */ }
+        entityMapRef.current.delete(String(entityId));
+      };
+
+      for (const [id, set] of Array.from(map.entries())) {
+        if (!relIds.has(id)) {
+          removeEntity(set.entry?.id); removeEntity(set.sl?.id); removeEntity(set.tp?.id);
+          map.delete(id);
+        }
+      }
+
+      const ensure = async (set: any, leg: 'entry' | 'sl' | 'tp', price: number, label: string, color: string, locked: boolean) => {
+        const existing = set[leg];
+        if (existing) {
+          if (Math.abs(Number(existing.price) - price) > 1e-9) {
+            suppressEidsRef.current.add(existing.id);
+            try { chart.getShapeById(existing.id).setPoints([{ time: anchorTime, price }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
+            existing.price = price;
+          }
+          return;
+        }
+        const creatingKey = `${leg}Creating`;
+        if (set[creatingKey]) return;
+        set[creatingKey] = true;
+        try {
+          const id = await chart.createShape(
+            { time: anchorTime, price },
+            {
+              shape: 'horizontal_line', text: label, lock: locked, disableSelection: locked,
+              disableSave: true, disableUndo: true,
+              overrides: {
+                linecolor: color, linewidth: leg === 'entry' ? 1 : 2, linestyle: leg === 'entry' ? 2 : 0,
+                showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true,
+              },
+            },
+          );
+          const sid = String(id);
+          set[leg] = { id: sid, price };
+          if (leg !== 'entry') entityMapRef.current.set(sid, { positionId: set.__pid, leg });
+        } catch { /* ignore */ }
+        set[creatingKey] = false;
+      };
+
+      for (const p of rel) {
+        let set = map.get(p.id);
+        if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
+        const isCopy = p.trade_type === 'copy_trade';
+
+        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
+
+        if (!isCopy && p.stop_loss != null) await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
+        else { removeEntity(set.sl?.id); set.sl = undefined; }
+        if (!isCopy && p.take_profit != null) await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
+        else { removeEntity(set.tp?.id); set.tp = undefined; }
+      }
+    } finally {
+      syncBusyRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!chartReady) return;
+    void syncLines();
+  }, [positions, selectedSymbol, chartReady, syncLines]);
+
+  // ── Drag an SL/TP line → confirm + persist (debounced to release) ──────
+  useEffect(() => {
+    if (!chartReady) return;
+    const w = widgetRef.current;
+    if (!w || typeof w.subscribe !== 'function') return;
+    const handler = (sourceId: unknown, type: string) => {
+      if (type !== 'move' && type !== 'points_changed') return;
+      const eid = String(sourceId);
+      if (suppressEidsRef.current.has(eid)) return;
+      const meta = entityMapRef.current.get(eid);
+      if (!meta) return;
+      const timers = dragTimersRef.current;
+      const prev = timers.get(eid);
+      if (prev) clearTimeout(prev);
+      timers.set(eid, setTimeout(() => {
+        timers.delete(eid);
+        let chart: any;
+        try { chart = w.activeChart(); } catch { return; }
+        let price: number | undefined;
+        try { price = chart.getShapeById(eid).getPoints()?.[0]?.price; } catch { return; }
+        if (price == null || !Number.isFinite(price)) return;
+        const newPrice = Number(price);
+        const revert = () => {
+          const set = linesRef.current.get(meta.positionId);
+          const cur = useTradingStore.getState().positions.find((x) => x.id === meta.positionId);
+          const back = meta.leg === 'sl' ? cur?.stop_loss : cur?.take_profit;
+          if (back != null) {
+            suppressEidsRef.current.add(eid);
+            try { chart.getShapeById(eid).setPoints([{ time: Math.floor(Date.now() / 1000), price: Number(back) }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(eid), 300);
+            if (set && set[meta.leg]) set[meta.leg].price = Number(back);
+          }
+        };
+        requestBracketRef.current?.(meta.positionId, meta.leg, newPrice, revert);
+      }, 450));
+    };
+    try { w.subscribe('drawing_event', handler); } catch { /* ignore */ }
+    return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
+  }, [chartReady]);
+
+  // ── Pin each position's control pill to its entry line (rAF projection) ─
+  useEffect(() => {
+    if (!chartReady) return;
+    const w = widgetRef.current;
+    const container = containerRef.current;
+    if (!w || !container) return;
+
+    const getChart = (): any => { try { return w.activeChart(); } catch { return null; } };
+    const readGeo = (chart: any) => {
+      try {
+        const pane = chart.getPanes?.()[0];
+        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+        const paneH = pane?.getHeight?.();
+        if (!range || !paneH || range.to === range.from) return null;
+        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
+      } catch { return null; }
+    };
+
+    const onMove = (e: MouseEvent) => { lastMouseYRef.current = e.clientY - container.getBoundingClientRect().top; };
+    container.addEventListener('mousemove', onMove);
+    const onResize = () => { paneTopSamplesRef.current = []; };
+    window.addEventListener('resize', onResize);
+
+    let crossSub: any = null;
+    const crossCb = (params: any) => {
+      const price = params?.price;
+      const my = lastMouseYRef.current;
+      if (price == null || my == null) return;
+      const chart = getChart();
+      const geo = chart && readGeo(chart);
+      if (!geo) return;
+      const candidate = my - ((geo.top - Number(price)) / (geo.top - geo.bottom)) * geo.paneH;
+      if (!Number.isFinite(candidate)) return;
+      const arr = paneTopSamplesRef.current;
+      arr.push(candidate);
+      while (arr.length > 15) arr.shift();
+      const sorted = [...arr].sort((a, b) => a - b);
+      paneTopRef.current = sorted[Math.floor(sorted.length / 2)] ?? candidate;
+    };
+    try { crossSub = getChart()?.crossHairMoved?.(); crossSub?.subscribe(null, crossCb); } catch { /* ignore */ }
+
+    const HIDE = 'translate(-50%, -9999px)';
+    const tick = () => {
+      const chart = getChart();
+      const geo = chart && readGeo(chart);
+      if (geo) {
+        let paneTop = paneTopRef.current;
+        if (paneTop == null) paneTop = container.getBoundingClientRect().height - geo.paneH - 46;
+        const st = useTradingStore.getState();
+        const sym = (st.selectedSymbol ?? 'EURUSD').toUpperCase();
+        pillNodeRef.current.forEach((node, id) => {
+          if (!node.isConnected) { pillNodeRef.current.delete(id); return; }
+          const pos = st.positions.find((p) => p.id === id);
+          if (!pos || String(pos.symbol).toUpperCase() !== sym) { node.style.transform = HIDE; return; }
+          const pillPrice = Number(pos.open_price);
+          const y = (paneTop as number) + ((geo.top - pillPrice) / (geo.top - geo.bottom)) * geo.paneH;
+          node.style.transform = (y < (paneTop as number) - 6 || y > (paneTop as number) + geo.paneH + 6)
+            ? HIDE : `translate(-50%, ${Math.round(y)}px)`;
+        });
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      container.removeEventListener('mousemove', onMove);
+      window.removeEventListener('resize', onResize);
+      try { crossSub?.unsubscribe(null, crossCb); } catch { /* ignore */ }
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [chartReady]);
+
+  // ── Press an SL/TP button and drag onto the chart to place the line ────
+  const startPlacement = useCallback((e: ReactPointerEvent, positionId: string, leg: 'sl' | 'tp') => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (placingRef.current) return;
     const w = widgetRef.current;
     if (!w) return;
-    try {
-      w.onChartReady(() => {
-        // Redraw SL/TP lines for the new symbol as soon as it loads (don't
-        // wait for the next store tick).
-        try { w.activeChart().setSymbol(symbol, () => { syncRef.current?.(); }); } catch { /* noop */ }
-      });
-    } catch { /* noop */ }
-  }, [symbol]);
+    let chart: any;
+    try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
+    if (!chart?.createShape || !chart?.crossHairMoved) return;
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
-}
-
-/** Styled confirm dialog (like the reference "Set Stop Loss @ X → loss $Y").
- *  Resolves true on the main button, false on cancel/dismiss. */
-function confirmDialog(title: string, body: string, okText: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    let settled = false;
-    const done = (v: boolean, id: string) => { if (settled) return; settled = true; toast.dismiss(id); resolve(v); };
-    toast(
-      (t) => (
-        <div style={{ minWidth: 230 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: '#0A0A0A' }}>{title}</div>
-          <div style={{ fontSize: 13, marginBottom: 12, color: '#4B5563' }}>{body}</div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={() => done(false, t.id)}
-              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #E5E5E5', background: '#fff', fontWeight: 600, cursor: 'pointer' }}
-            >Cancel</button>
-            <button
-              type="button"
-              onClick={() => done(true, t.id)}
-              style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-            >{okText}</button>
-          </div>
-        </div>
-      ),
-      { duration: Infinity },
-    );
-  });
-}
-
-/**
- * Renders each open position on the current chart symbol as:
- *   • a position line at the entry with live P&L + a close (✕) button, and
- *   • draggable SL / TP order lines whose drag calls the same PUT modify
- *     endpoint the panel uses (server re-validates side + min distance).
- *
- * Candles are drawn at BID; SL/TP/entry values are already bid-comparable, so
- * the lines are placed at their RAW prices (no shift) and sit correctly on the
- * bid scale — a buy's entry (an ask fill) naturally shows a spread above the
- * current bid candle, the MT4/MT5 look.
- */
-function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup: () => void; sync: () => void } {
-  const chart = widget.activeChart();
-  const posLines = new Map<string, any>();
-  const slLines = new Map<string, any>();
-  const tpLines = new Map<string, any>();
-  const creating = new Set<string>();   // keys mid-creation (async createOrderLine)
-  let disposed = false;
-
-  const apply = (line: any, ops: Array<[string, unknown]>) => {
-    for (const [method, arg] of ops) {
-      try { if (typeof line?.[method] === 'function') line[method](arg); } catch { /* noop */ }
-    }
-    return line;
-  };
-
-  const removeLine = (map: Map<string, any>, id: string) => {
-    const line = map.get(id);
-    if (line) { try { line.remove(); } catch { /* noop */ } map.delete(id); }
-  };
-  const removeAllFor = (id: string) => {
-    removeLine(posLines, id); removeLine(slLines, id); removeLine(tpLines, id);
-  };
-
-  const money = (n: number) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
-
-  const contractSize = (symbol: string) => {
-    const inst = useTradingStore.getState().instruments.find(
-      (i) => String(i.symbol).toUpperCase() === symbol.toUpperCase());
-    return inst?.contract_size || 100000;
-  };
-  // Approx account-currency P&L if the position closed at `price` (for confirm).
-  const pnlAt = (pos: Position, price: number) => {
-    const cs = contractSize(pos.symbol);
-    const raw = pos.side === 'buy'
-      ? (price - pos.open_price) * pos.lots * cs
-      : (pos.open_price - price) * pos.lots * cs;
-    const quote = pos.symbol.length >= 6 ? pos.symbol.slice(3, 6).toUpperCase() : 'USD';
-    return (!quote || quote === 'USD' || !price) ? raw : raw / price;
-  };
-
-  const modify = async (posId: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
-    try {
-      await api.put(`/positions/${posId}`, patch);
-      await useTradingStore.getState().refreshPositions();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed to update SL/TP');
-      sync();   // snap the dragged line back to the server value
-    }
-  };
-
-  // Drag-release → confirm dialog with P&L impact, then modify (or revert).
-  const confirmAndSet = async (posId: string, kind: 'sl' | 'tp', price: number) => {
-    const pos = useTradingStore.getState().positions.find((p) => p.id === posId);
+    const st = useTradingStore.getState();
+    const pos = st.positions.find((p) => p.id === positionId);
     if (!pos) return;
-    const impact = pnlAt(pos, price);
-    const title = `${kind === 'sl' ? 'Set Stop Loss' : 'Set Take Profit'} @ ${price}`;
-    const body = `${pos.side.toUpperCase()} ${pos.lots} ${pos.symbol} → ${impact >= 0 ? 'profit' : 'loss'} ${money(impact)}`;
-    const ok = await confirmDialog(title, body, kind === 'sl' ? 'Set SL' : 'Set TP');
-    if (!ok) { sync(); return; }   // revert the dragged line
-    await modify(posId, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
-  };
+    const color = leg === 'sl' ? '#dc2626' : '#16a34a';
+    const q = st.prices[String(pos.symbol).toUpperCase()];
+    const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
+    if (!Number.isFinite(startPrice)) return;
 
-  const closePos = async (posId: string) => {
+    placingRef.current = true;
+    let lineId: string | null = null;
+    let lastPrice = startPrice;
+    let anchorTime = Math.floor(Date.now() / 1000);
+    let crossSub: any = null;
+    let done = false;
+
+    const onCross = (params: any) => {
+      const p = params?.price;
+      if (p == null || !Number.isFinite(p)) return;
+      lastPrice = Number(p);
+      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+    };
+
+    const finish = async () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('pointerup', finish, true);
+      window.removeEventListener('mouseup', finish, true);
+      window.removeEventListener('pointercancel', finish, true);
+      window.removeEventListener('blur', finish);
+      try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
+      try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
+      placingRef.current = false;
+      try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
+      requestBracketRef.current?.(positionId, leg, Number(lastPrice));
+    };
+
+    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
+    window.addEventListener('pointerup', finish, true);
+    window.addEventListener('mouseup', finish, true);
+    window.addEventListener('pointercancel', finish, true);
+    window.addEventListener('blur', finish);
+
+    (async () => {
+      try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
+      if (done) return;
+      try {
+        lineId = String(await chart.createShape(
+          { time: anchorTime, price: startPrice },
+          { shape: 'horizontal_line', text: leg.toUpperCase(), lock: true, disableSave: true, disableUndo: true,
+            overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
+        ));
+      } catch { return; }
+      if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
+      try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const closePositionFromChart = useCallback(async (positionId: string) => {
     try {
-      await api.post(`/positions/${posId}/close`, {});
-      useTradingStore.getState().removePosition(posId);
+      await api.post(`/positions/${positionId}/close`, {});
+      useTradingStore.getState().removePosition(positionId);
       await useTradingStore.getState().refreshPositions();
+      toast.success('Position closed');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to close position');
     }
-  };
+  }, []);
 
-  async function ensurePositionLine(pos: Position, color: string) {
-    if (posLines.has(pos.id) || creating.has(`pos-${pos.id}`)) return;
-    creating.add(`pos-${pos.id}`);
+  const computePnlAt = useCallback((pos: any, price: number): number => {
+    const sym = String(pos.symbol).toUpperCase();
+    const inst = useTradingStore.getState().instruments.find((i) => String(i.symbol).toUpperCase() === sym);
+    const cs = Number(inst?.contract_size) || 100000;
+    const pnl = pos.side === 'buy'
+      ? (price - Number(pos.open_price)) * Number(pos.lots) * cs
+      : (Number(pos.open_price) - price) * Number(pos.lots) * cs;
+    const base = String(inst?.base_currency || sym.slice(0, 3)).toUpperCase();
+    const quote = String(inst?.quote_currency || sym.slice(3, 6)).toUpperCase();
+    if (!quote || quote === 'USD') return pnl;
+    if (base === 'USD' && price) return pnl / price;
+    const prices = useTradingStore.getState().prices;
+    const usdQ = prices[`USD${quote}`];
+    if (usdQ?.bid) return pnl / usdQ.bid;
+    const qUsd = prices[`${quote}USD`];
+    if (qUsd?.bid) return pnl * qUsd.bid;
+    return pnl;
+  }, []);
+
+  const requestBracket = useCallback((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => {
+    const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
+    if (!pos || !Number.isFinite(price)) { revert?.(); return; }
+    confirmRevertRef.current = revert ?? null;
+    setConfirm({
+      positionId, leg, price: Number(price.toFixed(5)),
+      side: pos.side, lots: pos.lots, symbol: pos.symbol, pnl: computePnlAt(pos, price),
+    });
+  }, [computePnlAt]);
+  requestBracketRef.current = requestBracket;
+
+  const confirmCancel = useCallback(() => {
+    const r = confirmRevertRef.current;
+    confirmRevertRef.current = null;
+    setConfirm(null);
+    r?.();
+  }, []);
+
+  const confirmSet = useCallback(async () => {
+    if (!confirm) return;
+    const { positionId, leg, price } = confirm;
+    confirmRevertRef.current = null;
+    setConfirm(null);
+    const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
+    const body: Record<string, number> = {};
+    body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = price;
+    const other = leg === 'sl' ? cur?.take_profit : cur?.stop_loss;
+    if (other != null) body[leg === 'sl' ? 'take_profit' : 'stop_loss'] = Number(other);
     try {
-      const pl = await chart.createPositionLine();   // ← Promise, must await
-      if (disposed) { try { pl.remove(); } catch { /* noop */ } return; }
-      apply(pl, [
-        ['setLineColor', color], ['setBodyBorderColor', color], ['setBodyTextColor', '#ffffff'],
-        ['setBodyBackgroundColor', color], ['setQuantityBackgroundColor', color],
-        ['setQuantityBorderColor', color], ['setCloseButtonBackgroundColor', color],
-        ['setCloseButtonBorderColor', color], ['setCloseButtonIconColor', '#ffffff'],
-      ]);
-      try { pl.onClose(() => closePos(pos.id)); } catch { /* noop */ }
-      posLines.set(pos.id, pl);
-    } catch { /* noop */ } finally { creating.delete(`pos-${pos.id}`); }
-  }
-
-  async function ensureBracket(
-    map: Map<string, any>, pos: Position, kind: 'sl' | 'tp', color: string,
-  ) {
-    if (map.has(pos.id) || creating.has(`${kind}-${pos.id}`)) return;
-    creating.add(`${kind}-${pos.id}`);
-    try {
-      const line = await chart.createOrderLine();     // ← Promise, must await
-      if (disposed) { try { line.remove(); } catch { /* noop */ } return; }
-      apply(line, [
-        ['setEditable', true],
-        ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
-        ['setBodyBackgroundColor', color], ['setBodyBorderColor', color],
-        ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
-        ['setCancelButtonBackgroundColor', color], ['setCancelButtonBorderColor', color],
-        ['setCancelButtonIconColor', '#ffffff'], ['setQuantity', `${pos.lots}`],
-      ]);
-      try {
-        line.onMove(function (this: any) {
-          const p = this.getPrice();
-          if (typeof p === 'number' && p > 0) confirmAndSet(pos.id, kind, p);
-        });
-      } catch { /* noop */ }
-      try {
-        line.onCancel(() => modify(pos.id, kind === 'sl' ? { stop_loss: null } : { take_profit: null }));
-      } catch { /* noop */ }
-      map.set(pos.id, line);
-    } catch { /* noop */ } finally { creating.delete(`${kind}-${pos.id}`); }
-  }
-
-  const reconcile = async () => {
-    if (disposed) return;
-    const state = useTradingStore.getState();
-    const sym = symbolRef.current.toUpperCase();
-    const open = state.positions.filter(
-      (p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'),
-    );
-    const liveIds = new Set(open.map((p) => p.id));
-
-    for (const id of Array.from(posLines.keys())) if (!liveIds.has(id)) removeAllFor(id);
-    for (const id of Array.from(slLines.keys())) if (!liveIds.has(id)) removeLine(slLines, id);
-    for (const id of Array.from(tpLines.keys())) if (!liveIds.has(id)) removeLine(tpLines, id);
-
-    for (const pos of open) {
-      const buy = pos.side === 'buy';
-      await ensurePositionLine(pos, buy ? '#2962FF' : '#ef5350');
-      const pl = posLines.get(pos.id);
-      if (pl) apply(pl, [
-        ['setPrice', pos.open_price], ['setQuantity', `${pos.lots}`],
-        ['setText', `${buy ? 'BUY' : 'SELL'}  ${money(pos.profit || 0)}`],
-      ]);
-
-      // Default handle ~0.3% on the correct side of the current price (unset).
-      const tick = state.prices[sym];
-      const cur = tick ? (buy ? Number(tick.bid) : Number(tick.ask)) : Number(pos.open_price);
-      const off = Math.abs(cur) * 0.003 || 0;
-
-      await ensureBracket(slLines, pos, 'sl', '#ef5350');
-      const slSet = pos.stop_loss != null && pos.stop_loss > 0;
-      const slPrice = slSet ? (pos.stop_loss as number) : (buy ? cur - off : cur + off);
-      const slLine = slLines.get(pos.id);
-      if (slLine && Number.isFinite(slPrice) && slPrice > 0) apply(slLine, [
-        ['setPrice', slPrice], ['setText', slSet ? 'SL' : 'SL · drag to set'],
-        ['setLineStyle', slSet ? 0 : 2], ['setCancellable', slSet],
-      ]);
-
-      await ensureBracket(tpLines, pos, 'tp', '#26a69a');
-      const tpSet = pos.take_profit != null && pos.take_profit > 0;
-      const tpPrice = tpSet ? (pos.take_profit as number) : (buy ? cur + off : cur - off);
-      const tpLine = tpLines.get(pos.id);
-      if (tpLine && Number.isFinite(tpPrice) && tpPrice > 0) apply(tpLine, [
-        ['setPrice', tpPrice], ['setText', tpSet ? 'TP' : 'TP · drag to set'],
-        ['setLineStyle', tpSet ? 0 : 2], ['setCancellable', tpSet],
-      ]);
+      await api.put(`/positions/${positionId}`, body);
+      await useTradingStore.getState().refreshPositions();
+      toast.success(`${leg.toUpperCase()} set @ ${price}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : `Failed to set ${leg.toUpperCase()}`);
     }
-  };
+  }, [confirm]);
 
-  // Coalesced async runner — the store fires many times/sec; one reconcile at a
-  // time, re-run once more if something changed while it was running.
-  let running = false;
-  let dirty = false;
-  const sync = () => {
-    if (running) { dirty = true; return; }
-    running = true;
-    (async () => {
-      try { do { dirty = false; await reconcile(); } while (dirty && !disposed); }
-      finally { running = false; }
-    })();
-  };
+  const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
+  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym && !p.id.startsWith('optim-'));
 
-  sync();
-  const unsub = useTradingStore.subscribe(sync);
-  const poll = setInterval(sync, 1500);
-  const cleanup = () => {
-    disposed = true;
-    clearInterval(poll);
-    unsub();
-    for (const id of Array.from(posLines.keys())) removeAllFor(id);
-  };
-  return { cleanup, sync };
+  return (
+    <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
+      <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
+
+      {panelPositions.length > 0 && (
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+          {panelPositions.map((p) => {
+            const profit = Number(p.profit ?? 0);
+            const up = profit >= 0;
+            const isCopy = p.trade_type === 'copy_trade';
+            return (
+              <div
+                key={p.id}
+                ref={(el) => { if (el) pillNodeRef.current.set(p.id, el); else pillNodeRef.current.delete(p.id); }}
+                className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[9999px] pointer-events-auto flex items-center gap-1 px-1 py-0.5 text-[11px] font-bold whitespace-nowrap"
+              >
+                <span className={p.side === 'buy' ? 'text-emerald-500' : 'text-rose-500'}>
+                  {p.side.toUpperCase()} {p.lots}
+                </span>
+                <span className={up ? 'text-emerald-500' : 'text-rose-500'}>
+                  {up ? '+' : '-'}${Math.abs(profit).toFixed(2)}
+                </span>
+                {!isCopy && (
+                  <>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black cursor-ns-resize touch-none" title="Press and drag onto the chart to set the stop-loss">SL</button>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-ns-resize touch-none" title="Press and drag onto the chart to set the take-profit">TP</button>
+                  </>
+                )}
+                <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {confirm && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 pointer-events-auto" onClick={confirmCancel}>
+          <div className="w-[340px] max-w-[90%] rounded-2xl bg-bg-secondary border border-border-primary shadow-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-sm font-bold text-text-primary">
+                Set {confirm.leg === 'sl' ? 'Stop Loss' : 'Take Profit'} @ {confirm.price}
+              </h3>
+              <button type="button" onClick={confirmCancel} className="text-text-tertiary hover:text-text-primary text-base leading-none" aria-label="Cancel">✕</button>
+            </div>
+            <p className="mt-2 text-xs text-text-secondary">
+              {confirm.side.toUpperCase()} {confirm.lots} {confirm.symbol} →{' '}
+              {confirm.pnl >= 0 ? 'profit ' : 'loss '}
+              <span className={confirm.pnl >= 0 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500'}>
+                {confirm.pnl >= 0 ? '+' : '-'}${Math.abs(confirm.pnl).toFixed(2)}
+              </span>
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button type="button" onClick={confirmCancel} className="flex-1 rounded-lg bg-bg-hover text-text-secondary py-2 text-sm font-semibold hover:opacity-80">Cancel</button>
+              <button type="button" onClick={() => void confirmSet()} className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white py-2 text-sm font-bold">Set {confirm.leg.toUpperCase()}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
+
+export default memo(AdvancedChart);
