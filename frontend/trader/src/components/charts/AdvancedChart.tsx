@@ -11,12 +11,13 @@ import { useTradingStore, type Position } from '@/stores/tradingStore';
 const LIBRARY_PATH = '/charting_library/';
 const SCRIPT_SRC = '/charting_library/charting_library.standalone.js';
 
-// Trading Terminal Broker API: SL/TP/✕ buttons ON the position line, draggable
-// brackets, and a confirm dialog on drag-release — the reference UX. The bundle
-// ships the broker code; we hide its Account Manager panel (app has its own)
-// so only the on-chart brackets remain. Falls back to manual lines when there's
-// no active account.
-const USE_BROKER_API = true;
+// Draggable SL/TP via the chart's order/position-line API. NOTE: in v31
+// createOrderLine()/createPositionLine() return PROMISES — they must be
+// awaited (the earlier bug: setters were called on the unresolved Promise, so
+// nothing rendered). This path draws a position line (P&L + ✕ close) and
+// draggable red SL / green TP lines; dragging + releasing pops a confirm
+// dialog, then modifies on the server.
+const USE_BROKER_API = false;
 
 let scriptPromise: Promise<void> | null = null;
 function loadLibrary(): Promise<void> {
@@ -140,6 +141,36 @@ export default function AdvancedChart({ symbol, interval = '5', theme = 'light' 
   return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }
 
+/** Styled confirm dialog (like the reference "Set Stop Loss @ X → loss $Y").
+ *  Resolves true on the main button, false on cancel/dismiss. */
+function confirmDialog(title: string, body: string, okText: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (v: boolean, id: string) => { if (settled) return; settled = true; toast.dismiss(id); resolve(v); };
+    toast(
+      (t) => (
+        <div style={{ minWidth: 230 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: '#0A0A0A' }}>{title}</div>
+          <div style={{ fontSize: 13, marginBottom: 12, color: '#4B5563' }}>{body}</div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => done(false, t.id)}
+              style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #E5E5E5', background: '#fff', fontWeight: 600, cursor: 'pointer' }}
+            >Cancel</button>
+            <button
+              type="button"
+              onClick={() => done(true, t.id)}
+              style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+            >{okText}</button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity },
+    );
+  });
+}
+
 /**
  * Renders each open position on the current chart symbol as:
  *   • a position line at the entry with live P&L + a close (✕) button, and
@@ -156,18 +187,9 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
   const posLines = new Map<string, any>();
   const slLines = new Map<string, any>();
   const tpLines = new Map<string, any>();
+  const creating = new Set<string>();   // keys mid-creation (async createOrderLine)
+  let disposed = false;
 
-  // One-time diagnostic so we can see in the console whether this build
-  // actually exposes the order/position-line API on the chart object.
-  try {
-    // eslint-disable-next-line no-console
-    console.log('[sltp] chart ready. createOrderLine=%s createPositionLine=%s',
-      typeof chart?.createOrderLine, typeof chart?.createPositionLine);
-  } catch { /* noop */ }
-
-  // Apply setters one-by-one, ignoring any a given library build doesn't
-  // expose — so one odd method can never abort the whole line and leave the
-  // chart with no SL/TP handles.
   const apply = (line: any, ops: Array<[string, unknown]>) => {
     for (const [method, arg] of ops) {
       try { if (typeof line?.[method] === 'function') line[method](arg); } catch { /* noop */ }
@@ -183,15 +205,43 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
     removeLine(posLines, id); removeLine(slLines, id); removeLine(tpLines, id);
   };
 
+  const money = (n: number) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
+
+  const contractSize = (symbol: string) => {
+    const inst = useTradingStore.getState().instruments.find(
+      (i) => String(i.symbol).toUpperCase() === symbol.toUpperCase());
+    return inst?.contract_size || 100000;
+  };
+  // Approx account-currency P&L if the position closed at `price` (for confirm).
+  const pnlAt = (pos: Position, price: number) => {
+    const cs = contractSize(pos.symbol);
+    const raw = pos.side === 'buy'
+      ? (price - pos.open_price) * pos.lots * cs
+      : (pos.open_price - price) * pos.lots * cs;
+    const quote = pos.symbol.length >= 6 ? pos.symbol.slice(3, 6).toUpperCase() : 'USD';
+    return (!quote || quote === 'USD' || !price) ? raw : raw / price;
+  };
+
   const modify = async (posId: string, patch: { stop_loss?: number | null; take_profit?: number | null }) => {
     try {
       await api.put(`/positions/${posId}`, patch);
       await useTradingStore.getState().refreshPositions();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to update SL/TP');
-      // Re-sync so a rejected drag snaps the line back to the server value.
-      sync();
+      sync();   // snap the dragged line back to the server value
     }
+  };
+
+  // Drag-release → confirm dialog with P&L impact, then modify (or revert).
+  const confirmAndSet = async (posId: string, kind: 'sl' | 'tp', price: number) => {
+    const pos = useTradingStore.getState().positions.find((p) => p.id === posId);
+    if (!pos) return;
+    const impact = pnlAt(pos, price);
+    const title = `${kind === 'sl' ? 'Set Stop Loss' : 'Set Take Profit'} @ ${price}`;
+    const body = `${pos.side.toUpperCase()} ${pos.lots} ${pos.symbol} → ${impact >= 0 ? 'profit' : 'loss'} ${money(impact)}`;
+    const ok = await confirmDialog(title, body, kind === 'sl' ? 'Set SL' : 'Set TP');
+    if (!ok) { sync(); return; }   // revert the dragged line
+    await modify(posId, kind === 'sl' ? { stop_loss: price } : { take_profit: price });
   };
 
   const closePos = async (posId: string) => {
@@ -204,121 +254,117 @@ function setupSLTPLines(widget: any, symbolRef: { current: string }): { cleanup:
     }
   };
 
-  const money = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
+  async function ensurePositionLine(pos: Position, color: string) {
+    if (posLines.has(pos.id) || creating.has(`pos-${pos.id}`)) return;
+    creating.add(`pos-${pos.id}`);
+    try {
+      const pl = await chart.createPositionLine();   // ← Promise, must await
+      if (disposed) { try { pl.remove(); } catch { /* noop */ } return; }
+      apply(pl, [
+        ['setLineColor', color], ['setBodyBorderColor', color], ['setBodyTextColor', '#ffffff'],
+        ['setBodyBackgroundColor', color], ['setQuantityBackgroundColor', color],
+        ['setQuantityBorderColor', color], ['setCloseButtonBackgroundColor', color],
+        ['setCloseButtonBorderColor', color], ['setCloseButtonIconColor', '#ffffff'],
+      ]);
+      try { pl.onClose(() => closePos(pos.id)); } catch { /* noop */ }
+      posLines.set(pos.id, pl);
+    } catch { /* noop */ } finally { creating.delete(`pos-${pos.id}`); }
+  }
 
-  let diagLast = -1;
-  const sync = () => {
-    const state = useTradingStore.getState();
-    const sym = symbolRef.current.toUpperCase();
-    const open = state.positions.filter(
-      (p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'),
-    );
-    // Log only when the matched-position count changes, so the console shows
-    // whether sync sees the position for the chart symbol.
-    if (open.length !== diagLast) {
-      diagLast = open.length;
-      // eslint-disable-next-line no-console
-      console.log('[sltp] sync sym=%s positions_on_symbol=%d total=%d',
-        sym, open.length, state.positions.length);
-    }
-    const liveIds = new Set(open.map((p) => p.id));
-
-    // Drop lines for positions no longer open / off-symbol.
-    for (const id of Array.from(posLines.keys())) if (!liveIds.has(id)) removeAllFor(id);
-    for (const id of Array.from(slLines.keys())) if (!liveIds.has(id)) removeLine(slLines, id);
-    for (const id of Array.from(tpLines.keys())) if (!liveIds.has(id)) removeLine(tpLines, id);
-
-    for (const pos of open) {
-      const buy = pos.side === 'buy';
-      const color = buy ? '#2962FF' : '#ef5350';
-
-      // Entry / position line with P&L + close (✕) button.
-      let pl = posLines.get(pos.id);
-      if (!pl) {
-        try { pl = chart.createPositionLine(); } catch { pl = null; }
-        if (pl) {
-          apply(pl, [
-            ['setLineStyle', 0], ['setLineColor', color], ['setBodyBorderColor', color],
-            ['setBodyTextColor', '#ffffff'], ['setBodyBackgroundColor', color],
-            ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
-            ['setCloseButtonBackgroundColor', color], ['setCloseButtonBorderColor', color],
-            ['setCloseButtonIconColor', '#ffffff'],
-          ]);
-          try { pl.onClose(() => closePos(pos.id)); } catch { /* noop */ }
-          posLines.set(pos.id, pl);
-        }
-      }
-      if (pl) {
-        apply(pl, [
-          ['setPrice', pos.open_price], ['setQuantity', `${pos.lots}`],
-          ['setText', `${buy ? 'BUY' : 'SELL'}  ${money(pos.profit || 0)}`],
-        ]);
-      }
-
-      // Draggable SL/TP handles — always visible so you can SET them from the
-      // chart (drag the dashed handle) and MOVE them once set. Default handle
-      // sits ~0.3% on the correct side of the current price.
-      const tick = state.prices[sym];
-      const cur = tick ? (buy ? Number(tick.bid) : Number(tick.ask)) : Number(pos.open_price);
-      const off = Math.abs(cur) * 0.003 || 0;
-      const slDefault = buy ? cur - off : cur + off;
-      const tpDefault = buy ? cur + off : cur - off;
-
-      syncBracket(slLines, pos, pos.stop_loss, slDefault, '#ef5350', 'SL',
-        (price) => modify(pos.id, { stop_loss: price }),
-        () => modify(pos.id, { stop_loss: null }));
-
-      syncBracket(tpLines, pos, pos.take_profit, tpDefault, '#26a69a', 'TP',
-        (price) => modify(pos.id, { take_profit: price }),
-        () => modify(pos.id, { take_profit: null }));
-    }
-  };
-
-  function syncBracket(
-    map: Map<string, any>, pos: Position, value: number | undefined, defaultPrice: number,
-    color: string, label: string,
-    onSet: (price: number) => void, onClear: () => void,
+  async function ensureBracket(
+    map: Map<string, any>, pos: Position, kind: 'sl' | 'tp', color: string,
   ) {
-    const isSet = value != null && value > 0;
-    const price = isSet ? (value as number) : defaultPrice;
-    if (!Number.isFinite(price) || price <= 0) { removeLine(map, pos.id); return; }
-    let line = map.get(pos.id);
-    if (!line) {
-      try { line = chart.createOrderLine(); } catch { line = null; }
-      if (!line) return;
+    if (map.has(pos.id) || creating.has(`${kind}-${pos.id}`)) return;
+    creating.add(`${kind}-${pos.id}`);
+    try {
+      const line = await chart.createOrderLine();     // ← Promise, must await
+      if (disposed) { try { line.remove(); } catch { /* noop */ } return; }
       apply(line, [
-        ['setEditable', true],   // draggable
+        ['setEditable', true],
         ['setLineColor', color], ['setBodyTextColor', '#ffffff'],
         ['setBodyBackgroundColor', color], ['setBodyBorderColor', color],
         ['setQuantityBackgroundColor', color], ['setQuantityBorderColor', color],
         ['setCancelButtonBackgroundColor', color], ['setCancelButtonBorderColor', color],
         ['setCancelButtonIconColor', '#ffffff'], ['setQuantity', `${pos.lots}`],
       ]);
-      // Drag the handle → set/move the level on the server.
       try {
         line.onMove(function (this: any) {
           const p = this.getPrice();
-          if (typeof p === 'number' && p > 0) onSet(p);
+          if (typeof p === 'number' && p > 0) confirmAndSet(pos.id, kind, p);
         });
       } catch { /* noop */ }
-      try { line.onCancel(() => onClear()); } catch { /* noop */ }
+      try {
+        line.onCancel(() => modify(pos.id, kind === 'sl' ? { stop_loss: null } : { take_profit: null }));
+      } catch { /* noop */ }
       map.set(pos.id, line);
-    }
-    apply(line, [
-      ['setPrice', price],
-      ['setText', isSet ? label : `${label} · drag to set`],
-      ['setLineStyle', isSet ? 0 : 2],   // solid once set, dashed while it's a draggable default
-      ['setCancellable', isSet],         // ✕ (clear) only once actually set
-    ]);
+    } catch { /* noop */ } finally { creating.delete(`${kind}-${pos.id}`); }
   }
 
-  // Initial paint + re-sync on any positions/prices change (store subscribe),
-  // AND a 1.5s interval poll as a belt-and-suspenders so the lines appear even
-  // if the store-subscribe timing misses the moment the position lands.
+  const reconcile = async () => {
+    if (disposed) return;
+    const state = useTradingStore.getState();
+    const sym = symbolRef.current.toUpperCase();
+    const open = state.positions.filter(
+      (p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'),
+    );
+    const liveIds = new Set(open.map((p) => p.id));
+
+    for (const id of Array.from(posLines.keys())) if (!liveIds.has(id)) removeAllFor(id);
+    for (const id of Array.from(slLines.keys())) if (!liveIds.has(id)) removeLine(slLines, id);
+    for (const id of Array.from(tpLines.keys())) if (!liveIds.has(id)) removeLine(tpLines, id);
+
+    for (const pos of open) {
+      const buy = pos.side === 'buy';
+      await ensurePositionLine(pos, buy ? '#2962FF' : '#ef5350');
+      const pl = posLines.get(pos.id);
+      if (pl) apply(pl, [
+        ['setPrice', pos.open_price], ['setQuantity', `${pos.lots}`],
+        ['setText', `${buy ? 'BUY' : 'SELL'}  ${money(pos.profit || 0)}`],
+      ]);
+
+      // Default handle ~0.3% on the correct side of the current price (unset).
+      const tick = state.prices[sym];
+      const cur = tick ? (buy ? Number(tick.bid) : Number(tick.ask)) : Number(pos.open_price);
+      const off = Math.abs(cur) * 0.003 || 0;
+
+      await ensureBracket(slLines, pos, 'sl', '#ef5350');
+      const slSet = pos.stop_loss != null && pos.stop_loss > 0;
+      const slPrice = slSet ? (pos.stop_loss as number) : (buy ? cur - off : cur + off);
+      const slLine = slLines.get(pos.id);
+      if (slLine && Number.isFinite(slPrice) && slPrice > 0) apply(slLine, [
+        ['setPrice', slPrice], ['setText', slSet ? 'SL' : 'SL · drag to set'],
+        ['setLineStyle', slSet ? 0 : 2], ['setCancellable', slSet],
+      ]);
+
+      await ensureBracket(tpLines, pos, 'tp', '#26a69a');
+      const tpSet = pos.take_profit != null && pos.take_profit > 0;
+      const tpPrice = tpSet ? (pos.take_profit as number) : (buy ? cur + off : cur - off);
+      const tpLine = tpLines.get(pos.id);
+      if (tpLine && Number.isFinite(tpPrice) && tpPrice > 0) apply(tpLine, [
+        ['setPrice', tpPrice], ['setText', tpSet ? 'TP' : 'TP · drag to set'],
+        ['setLineStyle', tpSet ? 0 : 2], ['setCancellable', tpSet],
+      ]);
+    }
+  };
+
+  // Coalesced async runner — the store fires many times/sec; one reconcile at a
+  // time, re-run once more if something changed while it was running.
+  let running = false;
+  let dirty = false;
+  const sync = () => {
+    if (running) { dirty = true; return; }
+    running = true;
+    (async () => {
+      try { do { dirty = false; await reconcile(); } while (dirty && !disposed); }
+      finally { running = false; }
+    })();
+  };
+
   sync();
   const unsub = useTradingStore.subscribe(sync);
   const poll = setInterval(sync, 1500);
   const cleanup = () => {
+    disposed = true;
     clearInterval(poll);
     unsub();
     for (const id of Array.from(posLines.keys())) removeAllFor(id);
