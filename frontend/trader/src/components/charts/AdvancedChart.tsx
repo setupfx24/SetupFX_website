@@ -271,13 +271,54 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     let anchorTime = Math.floor(Date.now() / 1000);
     let crossSub: any = null;
     let done = false;
+    let lastCrossTs = 0;
+    const container = containerRef.current;
+
+    const readGeo = () => {
+      try {
+        const pane = chart.getPanes?.()[0];
+        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
+        const paneH = pane?.getHeight?.();
+        if (!range || !paneH || range.to === range.from) return null;
+        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
+      } catch { return null; }
+    };
+    // This build has no price↔pixel API, so map the finger's Y to a price via
+    // the pane geometry (pane sits below the top toolbar and above the ~46px
+    // time axis). Approximate but tracks the finger closely enough to aim.
+    const priceFromClientY = (clientY: number): number | null => {
+      if (!container) return null;
+      const geo = readGeo();
+      if (!geo) return null;
+      const rect = container.getBoundingClientRect();
+      const paneTop = rect.height - geo.paneH - 46;
+      const t = (clientY - rect.top - paneTop) / geo.paneH; // 0 top … 1 bottom
+      if (!Number.isFinite(t) || t < -0.1 || t > 1.1) return null;
+      return geo.top - t * (geo.top - geo.bottom);
+    };
+    const updateLine = () => {
+      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+    };
 
     const onCross = (params: any) => {
       const p = params?.price;
       if (p == null || !Number.isFinite(p)) return;
+      lastCrossTs = Date.now();        // crosshair is driving (desktop) — precise
       lastPrice = Number(p);
-      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+      updateLine();
     };
+    // Mobile: a drag that STARTED on the button never reaches the chart canvas,
+    // so its crosshair never fires — compute the price from the finger's Y here
+    // so the line follows the finger and you can SEE where it'll land.
+    const onPtrMove = (clientY: number) => {
+      if (Date.now() - lastCrossTs < 200) return;   // prefer the crosshair when live
+      const price = priceFromClientY(clientY);
+      if (price == null) return;
+      lastPrice = price;
+      updateLine();
+    };
+    const onPointerMoveEvt = (ev: PointerEvent) => onPtrMove(ev.clientY);
+    const onTouchMoveEvt = (ev: TouchEvent) => { const t = ev.touches[0]; if (t) onPtrMove(t.clientY); };
 
     const finish = async () => {
       if (done) return;
@@ -285,7 +326,10 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       window.removeEventListener('pointerup', finish, true);
       window.removeEventListener('mouseup', finish, true);
       window.removeEventListener('pointercancel', finish, true);
+      window.removeEventListener('touchend', finish, true);
       window.removeEventListener('blur', finish);
+      window.removeEventListener('pointermove', onPointerMoveEvt, true);
+      window.removeEventListener('touchmove', onTouchMoveEvt, true);
       try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       placingRef.current = false;
@@ -297,7 +341,10 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     window.addEventListener('pointerup', finish, true);
     window.addEventListener('mouseup', finish, true);
     window.addEventListener('pointercancel', finish, true);
+    window.addEventListener('touchend', finish, true);
     window.addEventListener('blur', finish);
+    window.addEventListener('pointermove', onPointerMoveEvt, true);
+    window.addEventListener('touchmove', onTouchMoveEvt, { capture: true, passive: true });
 
     (async () => {
       try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
