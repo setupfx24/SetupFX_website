@@ -111,7 +111,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
   const suppressEidsRef = useRef<Set<string>>(new Set());
   const syncWarnedRef = useRef(false);
   // The not-yet-confirmed SL/TP line dropped by a button tap (see startPlacement).
-  const placingLineRef = useRef<{ id: string; positionId: string; leg: 'sl' | 'tp' } | null>(null);
+  const placingLineRef = useRef<{ id: string; bandId?: string; entry: number; positionId: string; leg: 'sl' | 'tp' } | null>(null);
 
   const removePlacementLine = useCallback(() => {
     const p = placingLineRef.current;
@@ -122,6 +122,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       const w = widgetRef.current;
       const chart = typeof w?.activeChart === 'function' ? w.activeChart() : w?.chart?.();
       chart?.removeEntity(p.id);
+      if (p.bandId) chart?.removeEntity(p.bandId);
     } catch { /* ignore */ }
   }, []);
 
@@ -272,11 +273,20 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       try {
         const ch = w.activeChart();
         const pr = ch.getShapeById(eid).getPoints()?.[0]?.price;
+        const now = Math.floor(Date.now() / 1000);
+        // Placement (temp) line → follow its own band.
+        const place = placingLineRef.current;
+        if (place && place.id === eid && place.bandId && pr != null && Number.isFinite(pr)) {
+          const bId = place.bandId;
+          suppressEidsRef.current.add(bId);
+          ch.getShapeById(bId).setPoints([{ time: now - 12 * 365 * 86400, price: place.entry }, { time: now + 12 * 365 * 86400, price: Number(pr) }]);
+          setTimeout(() => suppressEidsRef.current.delete(bId), 100);
+        }
+        // Existing (set) SL/TP line → follow its managed band.
         const set0 = linesRef.current.get(meta.positionId);
         const band = set0?.[meta.leg === 'sl' ? 'slBand' : 'tpBand'];
         if (band && pr != null && Number.isFinite(pr)) {
           suppressEidsRef.current.add(band.id);
-          const now = Math.floor(Date.now() / 1000);
           ch.getShapeById(band.id).setPoints([{ time: now - 12 * 365 * 86400, price: band.entry }, { time: now + 12 * 365 * 86400, price: Number(pr) }]);
           setTimeout(() => suppressEidsRef.current.delete(band.id), 100);
         }
@@ -344,6 +354,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     let anchorTime = Math.floor(Date.now() / 1000);
     try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
 
+    const entryPx = Number(pos.open_price);
     (async () => {
       try {
         const id = String(await chart.createShape(
@@ -352,7 +363,17 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
             overrides: { linecolor: color, linewidth: 2, linestyle: 2, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
         ));
         entityMapRef.current.set(id, { positionId, leg });
-        placingLineRef.current = { id, positionId, leg };
+        placingLineRef.current = { id, entry: entryPx, positionId, leg };
+        // Shaded zone (entry → line) so the band shows WHILE placing, exactly as
+        // it does after the level is set. Live-followed by the drag handler.
+        try {
+          const bandId = String(await chart.createMultipointShape(
+            [{ time: anchorTime - 12 * 365 * 86400, price: entryPx }, { time: anchorTime + 12 * 365 * 86400, price }],
+            { shape: 'rectangle', lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+              overrides: { backgroundColor: color, color, fillBackground: true, linewidth: 0, transparency: 82 } },
+          ));
+          if (placingLineRef.current && placingLineRef.current.id === id) placingLineRef.current.bandId = bandId;
+        } catch { /* ignore */ }
       } catch { /* ignore */ }
     })();
   }, [removePlacementLine]);
