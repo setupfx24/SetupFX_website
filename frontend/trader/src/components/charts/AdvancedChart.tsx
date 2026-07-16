@@ -110,7 +110,20 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
   const dragTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const suppressEidsRef = useRef<Set<string>>(new Set());
   const syncWarnedRef = useRef(false);
-  const placingRef = useRef<boolean>(false);
+  // The not-yet-confirmed SL/TP line dropped by a button tap (see startPlacement).
+  const placingLineRef = useRef<{ id: string; positionId: string; leg: 'sl' | 'tp' } | null>(null);
+
+  const removePlacementLine = useCallback(() => {
+    const p = placingLineRef.current;
+    if (!p) return;
+    placingLineRef.current = null;
+    entityMapRef.current.delete(p.id);
+    try {
+      const w = widgetRef.current;
+      const chart = typeof w?.activeChart === 'function' ? w.activeChart() : w?.chart?.();
+      chart?.removeEntity(p.id);
+    } catch { /* ignore */ }
+  }, []);
 
   // ── Reconcile SL/TP/entry SHAPES with open positions on the symbol ─────
   const syncLines = useCallback(async () => {
@@ -131,7 +144,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     try {
       const state = useTradingStore.getState();
       const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
-      const rel = (state.positions || []).filter((p) => String(p.symbol).toUpperCase() === sym && !p.id.startsWith('optim-'));
+      const rel = (state.positions || []).filter((p) => String(p.symbol).toUpperCase() === sym && !String(p.id ?? '').startsWith('optim-'));
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
 
@@ -223,7 +236,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
         const isCopy = p.trade_type === 'copy_trade';
         const entryPx = Number(p.open_price);
 
-        await ensure(set, 'entry', entryPx, `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
+        await ensure(set, 'entry', entryPx, `${String(p.side ?? '').toUpperCase()} ${p.lots}`, '#64748b', true);
 
         if (!isCopy && p.stop_loss != null) {
           await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
@@ -297,138 +310,52 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     return () => { try { w.unsubscribe('drawing_event', handler); } catch { /* ignore */ } };
   }, [chartReady]);
 
-  // ── Press an SL/TP button and drag onto the chart to place the line ────
+  // ── Tap an SL/TP button → drop a DRAGGABLE line at a sensible default ──
+  // The user then drags the LINE itself; the chart moves it natively (smooth &
+  // accurate on touch, unlike a button-to-chart pixel guess which this build
+  // can't do reliably on mobile). Releasing pops the confirm via `drawing_event`
+  // (the same handler that drags existing SL/TP lines). Works identically on
+  // mobile and desktop.
   const startPlacement = useCallback((e: ReactPointerEvent, positionId: string, leg: 'sl' | 'tp') => {
     e.preventDefault();
     e.stopPropagation();
-    if (placingRef.current) return;
     const w = widgetRef.current;
     if (!w) return;
     let chart: any;
     try { chart = typeof w.activeChart === 'function' ? w.activeChart() : w.chart(); } catch { return; }
-    if (!chart?.createShape || !chart?.crossHairMoved) return;
+    if (!chart?.createShape) return;
 
     const st = useTradingStore.getState();
     const pos = st.positions.find((p) => p.id === positionId);
     if (!pos) return;
+
+    // Drop any half-placed line from a previous tap.
+    removePlacementLine();
+
     const color = leg === 'sl' ? '#dc2626' : '#16a34a';
     const q = st.prices[String(pos.symbol).toUpperCase()];
-    const startPrice = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
-    if (!Number.isFinite(startPrice)) return;
-
-    placingRef.current = true;
-    const entryPx = Number(pos.open_price);
-    let lineId: string | null = null;
-    let bandId: string | null = null;
-    let lastPrice = startPrice;
+    const cur = Number(pos.side === 'buy' ? (q?.bid ?? pos.open_price) : (q?.ask ?? pos.open_price));
+    if (!Number.isFinite(cur)) return;
+    const off = Math.abs(cur) * 0.004 || 0.0004;
+    const buy = pos.side === 'buy';
+    // SL sits on the losing side, TP on the winning side of the current price,
+    // so the default already passes the modify validation.
+    const price = leg === 'sl' ? (buy ? cur - off : cur + off) : (buy ? cur + off : cur - off);
     let anchorTime = Math.floor(Date.now() / 1000);
-    let crossSub: any = null;
-    let done = false;
-    let lastCrossTs = 0;
-    const container = containerRef.current;
-
-    const readGeo = () => {
-      try {
-        const pane = chart.getPanes?.()[0];
-        const range = pane?.getMainSourcePriceScale?.()?.getVisiblePriceRange?.();
-        const paneH = pane?.getHeight?.();
-        if (!range || !paneH || range.to === range.from) return null;
-        return { paneH: Number(paneH), top: Number(range.to), bottom: Number(range.from) };
-      } catch { return null; }
-    };
-    // This build has no price↔pixel API, so map the finger's Y to a price via
-    // the pane geometry (pane sits below the top toolbar and above the ~46px
-    // time axis). Approximate but tracks the finger closely enough to aim.
-    const priceFromClientY = (clientY: number): number | null => {
-      if (!container) return null;
-      const geo = readGeo();
-      if (!geo) return null;
-      const rect = container.getBoundingClientRect();
-      const paneTop = rect.height - geo.paneH - 46;
-      const t = (clientY - rect.top - paneTop) / geo.paneH; // 0 top … 1 bottom
-      if (!Number.isFinite(t) || t < -0.1 || t > 1.1) return null;
-      return geo.top - t * (geo.top - geo.bottom);
-    };
-    const updateLine = () => {
-      try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
-      try {
-        if (bandId) chart.getShapeById(bandId).setPoints([
-          { time: anchorTime - 12 * 365 * 86400, price: entryPx },
-          { time: anchorTime + 12 * 365 * 86400, price: lastPrice },
-        ]);
-      } catch { /* ignore */ }
-    };
-
-    const onCross = (params: any) => {
-      const p = params?.price;
-      if (p == null || !Number.isFinite(p)) return;
-      lastCrossTs = Date.now();        // crosshair is driving (desktop) — precise
-      lastPrice = Number(p);
-      updateLine();
-    };
-    // Mobile: a drag that STARTED on the button never reaches the chart canvas,
-    // so its crosshair never fires — compute the price from the finger's Y here
-    // so the line follows the finger and you can SEE where it'll land.
-    const onPtrMove = (clientY: number) => {
-      if (Date.now() - lastCrossTs < 200) return;   // prefer the crosshair when live
-      const price = priceFromClientY(clientY);
-      if (price == null) return;
-      lastPrice = price;
-      updateLine();
-    };
-    const onPointerMoveEvt = (ev: PointerEvent) => onPtrMove(ev.clientY);
-    const onTouchMoveEvt = (ev: TouchEvent) => { const t = ev.touches[0]; if (t) onPtrMove(t.clientY); };
-
-    const finish = async () => {
-      if (done) return;
-      done = true;
-      window.removeEventListener('pointerup', finish, true);
-      window.removeEventListener('mouseup', finish, true);
-      window.removeEventListener('pointercancel', finish, true);
-      window.removeEventListener('touchend', finish, true);
-      window.removeEventListener('blur', finish);
-      window.removeEventListener('pointermove', onPointerMoveEvt, true);
-      window.removeEventListener('touchmove', onTouchMoveEvt, true);
-      try { w.unsubscribe?.('mouse_up', finish); } catch { /* ignore */ }
-      try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
-      placingRef.current = false;
-      try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
-      try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ }
-      requestBracketRef.current?.(positionId, leg, Number(lastPrice));
-    };
-
-    try { w.subscribe?.('mouse_up', finish); } catch { /* ignore */ }
-    window.addEventListener('pointerup', finish, true);
-    window.addEventListener('mouseup', finish, true);
-    window.addEventListener('pointercancel', finish, true);
-    window.addEventListener('touchend', finish, true);
-    window.addEventListener('blur', finish);
-    window.addEventListener('pointermove', onPointerMoveEvt, true);
-    window.addEventListener('touchmove', onTouchMoveEvt, { capture: true, passive: true });
+    try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
 
     (async () => {
-      try { const vr = chart.getVisibleRange?.(); if (vr && Number.isFinite(vr.from)) anchorTime = Math.floor(vr.from); } catch { /* ignore */ }
-      if (done) return;
       try {
-        lineId = String(await chart.createShape(
-          { time: anchorTime, price: startPrice },
-          { shape: 'horizontal_line', text: leg.toUpperCase(), lock: true, disableSave: true, disableUndo: true,
-            overrides: { linecolor: color, linewidth: 2, linestyle: 0, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
+        const id = String(await chart.createShape(
+          { time: anchorTime, price },
+          { shape: 'horizontal_line', text: `${leg.toUpperCase()} ⇕ drag`, lock: false, disableSave: true, disableUndo: true,
+            overrides: { linecolor: color, linewidth: 2, linestyle: 2, showLabel: true, textcolor: color, horzLabelsAlign: 'right', showPrice: true, bold: true } },
         ));
-      } catch { return; }
-      if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
-      // Shaded zone between the entry and the line the user is placing.
-      try {
-        bandId = String(await chart.createMultipointShape(
-          [{ time: anchorTime - 12 * 365 * 86400, price: entryPx }, { time: anchorTime + 12 * 365 * 86400, price: startPrice }],
-          { shape: 'rectangle', lock: true, disableSelection: true, disableSave: true, disableUndo: true,
-            overrides: { backgroundColor: color, color, fillBackground: true, linewidth: 0, transparency: 82 } },
-        ));
+        entityMapRef.current.set(id, { positionId, leg });
+        placingLineRef.current = { id, positionId, leg };
       } catch { /* ignore */ }
-      if (done) { try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ } return; }
-      try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
     })();
-  }, []);
+  }, [removePlacementLine]);
 
   const closePositionFromChart = useCallback(async (positionId: string) => {
     try {
@@ -476,13 +403,16 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     confirmRevertRef.current = null;
     setConfirm(null);
     r?.();
-  }, []);
+    removePlacementLine();   // drop a just-placed (unconfirmed) line
+  }, [removePlacementLine]);
 
   const confirmSet = useCallback(async () => {
     if (!confirm) return;
     const { positionId, leg, price } = confirm;
     confirmRevertRef.current = null;
     setConfirm(null);
+    // Drop the temp placement line; syncLines redraws the managed SL/TP line.
+    removePlacementLine();
     const cur = useTradingStore.getState().positions.find((x) => x.id === positionId);
     const body: Record<string, number> = {};
     body[leg === 'sl' ? 'stop_loss' : 'take_profit'] = price;
@@ -495,10 +425,10 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to set ${leg.toUpperCase()}`);
     }
-  }, [confirm]);
+  }, [confirm, removePlacementLine]);
 
   const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
-  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym && !p.id.startsWith('optim-'));
+  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym && !String(p.id ?? '').startsWith('optim-'));
 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
@@ -516,15 +446,15 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
                 className="pointer-events-auto flex items-center gap-1 px-2 py-1 text-[11px] font-bold whitespace-nowrap rounded-md bg-bg-secondary/90 border border-border-primary shadow-lg backdrop-blur-sm"
               >
                 <span className={p.side === 'buy' ? 'text-emerald-500' : 'text-rose-500'}>
-                  {p.side.toUpperCase()} {p.lots}
+                  {String(p.side ?? '').toUpperCase()} {p.lots}
                 </span>
                 <span className={up ? 'text-emerald-500' : 'text-rose-500'}>
                   {up ? '+' : '-'}${Math.abs(profit).toFixed(2)}
                 </span>
                 {!isCopy && (
                   <>
-                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black cursor-ns-resize touch-none" title="Press and drag onto the chart to set the stop-loss">SL</button>
-                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-ns-resize touch-none" title="Press and drag onto the chart to set the take-profit">TP</button>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'sl')} className="rounded px-1.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-black cursor-pointer touch-none" title="Tap to drop a stop-loss line, then drag it to the price">SL</button>
+                    <button type="button" onPointerDown={(e) => startPlacement(e, p.id, 'tp')} className="rounded px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer touch-none" title="Tap to drop a take-profit line, then drag it to the price">TP</button>
                   </>
                 )}
                 <button type="button" onClick={() => closePositionFromChart(p.id)} className="rounded px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white" title="Close position">✕</button>
