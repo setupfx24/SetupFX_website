@@ -92,6 +92,13 @@ def _send_sync(to_email: str, subject: str, html: str, text: Optional[str]) -> N
     port = int(s.SMTP_PORT)
     user = (s.SMTP_USER or "").strip()
     pwd = (s.SMTP_PASSWORD or "").strip()
+    # Google shows app passwords grouped as "xxxx xxxx xxxx xxxx" for
+    # readability, but they're a single 16-char token with NO spaces — a
+    # password pasted with the display spaces makes Gmail reject the login
+    # ("535 Username and Password not accepted"). Strip internal spaces for
+    # Gmail hosts so the common copy-paste mistake still authenticates.
+    if "gmail" in host.lower() or "google" in host.lower():
+        pwd = pwd.replace(" ", "")
 
     # Port 465 = implicit TLS (SMTPS) — needs SMTP_SSL which negotiates
     # TLS before the SMTP greeting. Port 587 = STARTTLS — connect plain,
