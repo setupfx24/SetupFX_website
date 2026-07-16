@@ -615,6 +615,16 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
       <div id={CONTAINER_ID} ref={containerRef} className="h-full w-full min-h-[200px]" />
 
+      {/* Loader shown until the widget fires onChartReady — no blank flash. */}
+      {!chartReady && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-white" aria-label="Loading chart">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-9 w-9 rounded-full border-[3px] border-gray-300 border-t-blue-600 animate-spin" />
+            <span className="text-xs font-medium text-gray-500">Loading chart…</span>
+          </div>
+        </div>
+      )}
+
       {panelPositions.length > 0 && (
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
           {panelPositions.map((p) => {
