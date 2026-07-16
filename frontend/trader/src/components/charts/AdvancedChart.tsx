@@ -147,6 +147,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       for (const [id, set] of Array.from(map.entries())) {
         if (!relIds.has(id)) {
           removeEntity(set.entry?.id); removeEntity(set.sl?.id); removeEntity(set.tp?.id);
+          removeEntity(set.slBand?.id); removeEntity(set.tpBand?.id);
           map.delete(id);
         }
       }
@@ -184,17 +185,54 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
         set[creatingKey] = false;
       };
 
+      // Full-width shaded zone between the entry and an SL/TP line (transparent
+      // red for SL, green for TP), like the reference. It's a locked rectangle
+      // spanning a very wide time range so it always covers the visible width.
+      const bandFrom = anchorTime - 12 * 365 * 86400;
+      const bandTo = anchorTime + 12 * 365 * 86400;
+      const ensureBand = async (set: any, key: 'slBand' | 'tpBand', entryPrice: number, legPrice: number, color: string) => {
+        const existing = set[key];
+        if (existing) {
+          if (Math.abs(Number(existing.price) - legPrice) > 1e-9 || Math.abs(Number(existing.entry) - entryPrice) > 1e-9) {
+            suppressEidsRef.current.add(existing.id);
+            try { chart.getShapeById(existing.id).setPoints([{ time: bandFrom, price: entryPrice }, { time: bandTo, price: legPrice }]); } catch { /* ignore */ }
+            setTimeout(() => suppressEidsRef.current.delete(existing.id), 300);
+            existing.price = legPrice; existing.entry = entryPrice;
+          }
+          return;
+        }
+        const creatingKey = `${key}Creating`;
+        if (set[creatingKey]) return;
+        set[creatingKey] = true;
+        try {
+          const id = await chart.createMultipointShape(
+            [{ time: bandFrom, price: entryPrice }, { time: bandTo, price: legPrice }],
+            {
+              shape: 'rectangle', lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+              overrides: { backgroundColor: color, color, fillBackground: true, linewidth: 0, transparency: 82 },
+            },
+          );
+          set[key] = { id: String(id), price: legPrice, entry: entryPrice };
+        } catch { /* ignore */ }
+        set[creatingKey] = false;
+      };
+
       for (const p of rel) {
         let set = map.get(p.id);
         if (!set) { set = { __pid: p.id }; map.set(p.id, set); }
         const isCopy = p.trade_type === 'copy_trade';
+        const entryPx = Number(p.open_price);
 
-        await ensure(set, 'entry', Number(p.open_price), `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
+        await ensure(set, 'entry', entryPx, `${p.side.toUpperCase()} ${p.lots}`, '#64748b', true);
 
-        if (!isCopy && p.stop_loss != null) await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
-        else { removeEntity(set.sl?.id); set.sl = undefined; }
-        if (!isCopy && p.take_profit != null) await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
-        else { removeEntity(set.tp?.id); set.tp = undefined; }
+        if (!isCopy && p.stop_loss != null) {
+          await ensure(set, 'sl', Number(p.stop_loss), 'SL', '#dc2626', false);
+          await ensureBand(set, 'slBand', entryPx, Number(p.stop_loss), '#dc2626');
+        } else { removeEntity(set.sl?.id); set.sl = undefined; removeEntity(set.slBand?.id); set.slBand = undefined; }
+        if (!isCopy && p.take_profit != null) {
+          await ensure(set, 'tp', Number(p.take_profit), 'TP', '#16a34a', false);
+          await ensureBand(set, 'tpBand', entryPx, Number(p.take_profit), '#16a34a');
+        } else { removeEntity(set.tp?.id); set.tp = undefined; removeEntity(set.tpBand?.id); set.tpBand = undefined; }
       }
     } finally {
       syncBusyRef.current = false;
@@ -217,6 +255,19 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       if (suppressEidsRef.current.has(eid)) return;
       const meta = entityMapRef.current.get(eid);
       if (!meta) return;
+      // Live-follow the shaded zone while the line is being dragged.
+      try {
+        const ch = w.activeChart();
+        const pr = ch.getShapeById(eid).getPoints()?.[0]?.price;
+        const set0 = linesRef.current.get(meta.positionId);
+        const band = set0?.[meta.leg === 'sl' ? 'slBand' : 'tpBand'];
+        if (band && pr != null && Number.isFinite(pr)) {
+          suppressEidsRef.current.add(band.id);
+          const now = Math.floor(Date.now() / 1000);
+          ch.getShapeById(band.id).setPoints([{ time: now - 12 * 365 * 86400, price: band.entry }, { time: now + 12 * 365 * 86400, price: Number(pr) }]);
+          setTimeout(() => suppressEidsRef.current.delete(band.id), 100);
+        }
+      } catch { /* ignore */ }
       const timers = dragTimersRef.current;
       const prev = timers.get(eid);
       if (prev) clearTimeout(prev);
@@ -266,7 +317,9 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     if (!Number.isFinite(startPrice)) return;
 
     placingRef.current = true;
+    const entryPx = Number(pos.open_price);
     let lineId: string | null = null;
+    let bandId: string | null = null;
     let lastPrice = startPrice;
     let anchorTime = Math.floor(Date.now() / 1000);
     let crossSub: any = null;
@@ -298,6 +351,12 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     };
     const updateLine = () => {
       try { if (lineId) chart.getShapeById(lineId).setPoints([{ time: anchorTime, price: lastPrice }]); } catch { /* ignore */ }
+      try {
+        if (bandId) chart.getShapeById(bandId).setPoints([
+          { time: anchorTime - 12 * 365 * 86400, price: entryPx },
+          { time: anchorTime + 12 * 365 * 86400, price: lastPrice },
+        ]);
+      } catch { /* ignore */ }
     };
 
     const onCross = (params: any) => {
@@ -334,6 +393,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
       try { crossSub?.unsubscribe(null, onCross); } catch { /* ignore */ }
       placingRef.current = false;
       try { if (lineId) chart.removeEntity(lineId); } catch { /* ignore */ }
+      try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ }
       requestBracketRef.current?.(positionId, leg, Number(lastPrice));
     };
 
@@ -357,6 +417,15 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
         ));
       } catch { return; }
       if (done) { try { chart.removeEntity(lineId); } catch { /* ignore */ } return; }
+      // Shaded zone between the entry and the line the user is placing.
+      try {
+        bandId = String(await chart.createMultipointShape(
+          [{ time: anchorTime - 12 * 365 * 86400, price: entryPx }, { time: anchorTime + 12 * 365 * 86400, price: startPrice }],
+          { shape: 'rectangle', lock: true, disableSelection: true, disableSave: true, disableUndo: true,
+            overrides: { backgroundColor: color, color, fillBackground: true, linewidth: 0, transparency: 82 } },
+        ));
+      } catch { /* ignore */ }
+      if (done) { try { if (bandId) chart.removeEntity(bandId); } catch { /* ignore */ } return; }
       try { crossSub = chart.crossHairMoved(); crossSub?.subscribe(null, onCross); } catch { /* ignore */ }
     })();
   }, []);
