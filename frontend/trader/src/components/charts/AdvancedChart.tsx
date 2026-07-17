@@ -48,6 +48,13 @@ function postDragToNative(active: boolean) {
   } catch { /* ignore */ }
 }
 
+// The positions API keys everything on a UUID id. Optimistic/copy/placeholder
+// rows can carry a non-UUID id (e.g. "optim-…"/"copy_…"); sending one to
+// /positions/{id} makes the backend reject it ("Input should be a valid UUID").
+// Only ever drive on-chart actions off real UUID positions.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v: unknown): boolean => UUID_RE.test(String(v ?? ''));
+
 function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string; theme?: string }) {
   const CONTAINER_ID = useRef('sfx_tv_' + Math.random().toString(36).slice(2, 10)).current;
   const selectedSymbol = useTradingStore((s) => s.selectedSymbol);
@@ -149,7 +156,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
     try {
       const state = useTradingStore.getState();
       const sym = (state.selectedSymbol ?? 'EURUSD').toUpperCase();
-      const rel = (state.positions || []).filter((p) => String(p.symbol).toUpperCase() === sym && !String(p.id ?? '').startsWith('optim-'));
+      const rel = (state.positions || []).filter((p) => String(p.symbol).toUpperCase() === sym && isUuid(p.id));
       const relIds = new Set(rel.map((p) => p.id));
       const map = linesRef.current;
 
@@ -542,6 +549,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
   }, []);
 
   const closePositionFromChart = useCallback(async (positionId: string) => {
+    if (!isUuid(positionId)) return;   // never POST a non-UUID id to the backend
     try {
       await api.post(`/positions/${positionId}/close`, {});
       useTradingStore.getState().removePosition(positionId);
@@ -573,7 +581,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
 
   const requestBracket = useCallback((positionId: string, leg: 'sl' | 'tp', price: number, revert?: () => void) => {
     const pos = useTradingStore.getState().positions.find((p) => p.id === positionId);
-    if (!pos || !Number.isFinite(price)) { revert?.(); return; }
+    if (!pos || !isUuid(positionId) || !Number.isFinite(price)) { revert?.(); return; }
     confirmRevertRef.current = revert ?? null;
     setConfirm({
       positionId, leg, price: Number(price.toFixed(5)),
@@ -609,7 +617,7 @@ function AdvancedChart({ interval = '5' }: { symbol?: string; interval?: string;
   }, [confirm]);
 
   const chartSym = (selectedSymbol ?? 'EURUSD').toUpperCase();
-  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym && !String(p.id ?? '').startsWith('optim-'));
+  const panelPositions = positions.filter((p) => String(p.symbol).toUpperCase() === chartSym && isUuid(p.id));
 
   return (
     <div className={clsx('relative w-full h-full min-h-[200px] min-w-0 bg-bg-base')} data-tv-chart-root>
